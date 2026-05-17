@@ -62,10 +62,22 @@ jobs:
           python -m pip install pytest
           python -m pip install -e packages/core-python
 
-      - name: Typecheck (core-ts + mobile)
-        # `pnpm run build` chains `core-ts typecheck` then mobile's
-        # `tsc --noEmit -p tsconfig.json`. No emit, no bundle.
-        run: pnpm run build
+      - name: Typecheck (core-ts)
+        # Dedicated step so the core-ts typecheck has its own
+        # pass/fail signal in the GitHub Actions UI. Invokes the
+        # workspace `typecheck` script which runs `tsc --noEmit`
+        # against `packages/core-ts/tsconfig.json` (no emit, no bundle).
+        run: pnpm --filter core-ts run typecheck
+
+      - name: Typecheck (mobile)
+        # Mobile typecheck kept as a sibling step so a core-ts type
+        # regression cannot mask a mobile-only regression (or vice versa).
+        # Delegates to the workspace `typecheck` script
+        # (`tsc --noEmit -p tsconfig.json`) so the command stays a
+        # single source of truth in `apps/mobile/package.json`.
+        # Non-zero exit from `tsc` fails this step (and the job),
+        # yielding a discrete pass/fail signal in the Actions UI.
+        run: pnpm --filter mobile run typecheck
 
       - name: Run vitest (core-ts)
         run: pnpm --filter core-ts run test
