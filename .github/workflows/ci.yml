@@ -1,0 +1,95 @@
+# Minimal CI for the personal-color-kr pnpm monorepo.
+#
+# Scope (locked by the Seed for AC 3):
+#   - One job, one runner: ubuntu-latest, Node 20.x, Python 3.12.
+#   - Three checks: typecheck (core-ts + mobile), vitest (core-ts), pytest
+#     (core-python). No lint, no coverage gating, no security scans,
+#     no E2E, no deploy.
+#   - Built-in caching only (actions/setup-node `cache: pnpm` and
+#     actions/setup-python `cache: pip`). No custom cache layers.
+#   - `.env`-gated tests are expected to skip themselves via
+#     `describe.skipIf` / `pytest.mark.skipif`, so the workflow stays green
+#     out-of-the-box on forks and clones that have no secrets.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+
+# Cancel in-progress runs for the same ref when a new push lands. Keeps
+# us inside the 2,000 free private-repo minutes/month budget.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Node 20 / Python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'packages/core-python/pyproject.toml'
+
+      - name: Install Node.js dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Python dependencies
+        # `pyproject.toml` only declares runtime deps (python-dotenv). We
+        # install pytest separately since it is a CI-only requirement.
+        # `-e` editable install wires `src/` onto sys.path so the test
+        # suite can import the package without a build step.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pip install -e packages/core-python
+
+      - name: Typecheck (core-ts)
+        # Dedicated step so the core-ts typecheck has its own
+        # pass/fail signal in the GitHub Actions UI. Invokes the
+        # workspace `typecheck` script which runs `tsc --noEmit`
+        # against `packages/core-ts/tsconfig.json` (no emit, no bundle).
+        run: pnpm --filter core-ts run typecheck
+
+      - name: Typecheck (mobile)
+        # Mobile typecheck kept as a sibling step so a core-ts type
+        # regression cannot mask a mobile-only regression (or vice versa).
+        # Delegates to the workspace `typecheck` script
+        # (`tsc --noEmit -p tsconfig.json`) so the command stays a
+        # single source of truth in `apps/mobile/package.json`.
+        # Non-zero exit from `tsc` fails this step (and the job),
+        # yielding a discrete pass/fail signal in the Actions UI.
+        run: pnpm --filter mobile run typecheck
+
+      - name: Run vitest (core-ts)
+        run: pnpm --filter core-ts run test
+
+      - name: Run vitest (mobile)
+        # Mobile vitest covers the PostHogProvider singleton, vendor-keys
+        # accessor, and app.config dotenv loading paths. Kept as a sibling
+        # step so CI logs surface the 2 .env-gated mobile skips alongside
+        # the core-ts and core-python skips (1 + 2 + 3 = 6 total per the
+        # Seed AC 8 "skipped_test_count: 6" expectation).
+        run: pnpm --filter mobile run test
+
+      - name: Run pytest (core-python)
+        working-directory: packages/core-python
+        run: python -m pytest -q
