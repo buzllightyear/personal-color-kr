@@ -82,6 +82,14 @@ jobs:
       - name: Run vitest (core-ts)
         run: pnpm --filter core-ts run test
 
+      - name: Run vitest (mobile)
+        # Mobile vitest covers the PostHogProvider singleton, vendor-keys
+        # accessor, and app.config dotenv loading paths. Kept as a sibling
+        # step so CI logs surface the 2 .env-gated mobile skips alongside
+        # the core-ts and core-python skips (1 + 2 + 3 = 6 total per the
+        # Seed AC 8 "skipped_test_count: 6" expectation).
+        run: pnpm --filter mobile run test
+
       - name: Run pytest (core-python)
         working-directory: packages/core-python
         run: python -m pytest -q
