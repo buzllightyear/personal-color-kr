@@ -9,10 +9,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "build": "pnpm --filter core-ts run typecheck && pnpm --filter mobile exec tsc --noEmit -p tsconfig.json",
+    "test": "pnpm --filter core-ts run test && (cd packages/core-python && python3 -m pytest -q)",
+    "test:coverage": "pnpm --filter core-ts run test:coverage && (cd packages/core-python && python3 -m pytest -q)"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
