@@ -20,7 +20,7 @@
 | 1.1 | ✅ Expo RN 앱 셸 + pnpm monorepo + 기본 라우팅 | TS/RN |
 | 1.2 | ✅ vendor 계정·키 setup (Fal.ai·PostHog·Superwall) + smoke-tests | secrets |
 | 1.3 | ⊂1.2 환경변수·secrets 관리 — 1.2에 흡수 (app.config.ts + .env + python-dotenv) | — |
-| 1.4 | CI 최소 (pytest + vitest in GitHub Actions) | yaml |
+| 1.4 | ✅ CI 최소 (GitHub Actions · ubuntu/Node 20/Python 3.12 · typecheck + vitest + pytest) | yaml |
 
 ### Phase 2 — 12단계 깔때기 wiring (acquisition vehicle)
 | ID | 작업 | 비고 |
@@ -106,8 +106,8 @@
 | 1.1 | 2026-05-17 | 2026-05-17 | `orch_7cb5e676e782` | `39f125a` | APPROVED · Stage 2 · 0.82 |
 | 1.2 | 2026-05-17 | 2026-05-18 | `orch_2e32f14a3b34` | `7d844f3` | APPROVED · Stage 2 · 0.92 |
 | 1.3 | — | — | — | — | ⊂1.2 흡수 (skipped) |
-| 1.4 | — | — | | | 다음 단계 |
-| 2.x | — | — | | | |
+| 1.4 | 2026-05-18 | 2026-05-18 | `orch_b6c7e29cc70a` | `d27410e` | APPROVED · Stage 2 · 0.88 |
+| 2.1 | — | — | | | 다음 단계 (Phase 2 시작) |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -178,6 +178,50 @@
 - Isolated worktree (`~/.ouroboros/worktrees/.../orch_2e32f14a3b34`)에서 작업물 보존됨을 발견
 - main worktree로 cherry-pick → 테스트가 `.env` 의존이라 fail → `describe.skipIf` 패턴으로 fix
 - 이후 evaluate에서 APPROVED
+
+### Phase 1.4 결과 요약 (2026-05-18)
+
+**GitHub Actions CI** (`.github/workflows/ci.yml`, 95 lines):
+- 1 cell: ubuntu-latest · Node 20.x · Python 3.12 · pnpm 9
+- 5 steps: typecheck (core-ts + mobile) · vitest (core-ts + mobile) · pytest (core-python)
+- Triggers: `pull_request` (target main) + `push` (모든 브랜치)
+- Concurrency group `ci-${{github.ref}}` — in-progress run 취소로 무료 분 절약
+- Caching: `setup-node cache=pnpm` + `setup-python cache=pip` (built-in only)
+- `.env`-gated 테스트는 `describe.skipIf` / `pytest.skip`으로 graceful skip
+
+**GitHub repo + branch protection**:
+- Remote: `https://github.com/buzllightyear/personal-color-kr` (private)
+- 4 branches pushed: main · ooo/run/1.1-monorepo-shell · ooo/run/1.2-vendor-setup · ooo/run/1.4-ci-minimal (auto-deleted on merge)
+- `main` protected with required status check `Test (Node 20 / Python 3.12)`
+- `enforce_admins=false` (solo dev emergency override) · `allow_force_pushes=false` · `allow_deletions=false`
+
+**CI run record** (모두 GREEN):
+- `#25998747710` (initial workflow) 39s
+- `#25999002604` (mobile vitest 추가 후) 38s
+- `#25999579256` (PR #1 trigger) ~45s
+- `#25999609335` (post-merge main) 41s
+
+**Ouroboros workflow**:
+- Interview: `interview_20260517_173623` (ambiguity 0.05)
+- Seed: `seed_b2255fa91b90` (QA PASS iter 1 · score 0.92)
+- Run: `orch_b6c7e29cc70a` (9/9 ACs · 4/4 Sub-ACs)
+- Evaluate: APPROVED Stage 2 · score 0.88 · drift 0.05
+
+**Git**:
+- Feature branch: `ooo/run/1.4-ci-minimal` (auto-deleted post-merge)
+- 핵심 commit: `75b99be` (initial CI) · `18a1382` (typecheck split) · `25ee7b2` (mobile vitest)
+- PR #1 merge commit: `d27410e`
+
+**검증** (CI logs):
+- core-ts vitest: 802 pass / 1 skip
+- apps/mobile vitest: 42 pass / 2 skip
+- core-python pytest: 949 pass / 3 skip
+- typecheck (core-ts + mobile): clean
+- 전체: 1,793 pass / 6 skip — AC 8 `skipped_test_count=6` 정확히 일치
+
+**이슈 + 해결**:
+- Orchestrator가 strict reading으로 apps/mobile vitest를 CI에 안 넣음 (Seed AC 5에 명시 안 됨)
+- AC 8의 "6 skipped" 일치 안 됨을 발견 → cherry-pick 후 mobile vitest step 추가 → 6 skip 가시화
 
 각 work unit 완료 시 이 표에 session_id·commit hash·QA 결과 기록.
 
