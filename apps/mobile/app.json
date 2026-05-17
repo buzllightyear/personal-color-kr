@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "personal-color-kr",
+    "slug": "personal-color-kr",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "personal-color-kr",
+    "platforms": ["ios", "android", "web"],
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

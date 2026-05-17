@@ -4,11 +4,14 @@
   "private": true,
   "description": "한국 시장 셀피 user 트렌드 맞춤 사진 편집/생성 앱 — 퍼스널 컬러 진단 hook + Glam Up 12단계 결제 깔때기 (한국 변형)",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "build": "pnpm --filter core-ts run typecheck && pnpm --filter mobile exec tsc --noEmit -p tsconfig.json",
+    "test": "pnpm --filter core-ts run test && (cd packages/core-python && python3 -m pytest -q)",
+    "test:coverage": "pnpm --filter core-ts run test:coverage && (cd packages/core-python && python3 -m pytest -q)"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
