@@ -1,0 +1,30 @@
+# Node
+node_modules/
+dist/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Coverage
+coverage/
+.coverage
+.coverage.*
+
+# Editor / OS
+*.log
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Local tool state
+.openchrome/
+.ouroboros/
+.ouroboros_eval_artifact.md

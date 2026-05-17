@@ -1,0 +1,21 @@
+[project]
+name = "personal-color-kr"
+version = "0.1.0"
+description = "Korean-market personal-color hook + trend-based selfie editor"
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "unit: fast, no I/O",
+    "integration: cross-module / external I/O",
+]
