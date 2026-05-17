@@ -17,7 +17,7 @@
 ### Phase 1 — Foundation (인프라 셋업)
 | ID | 작업 | 비고 |
 |----|------|------|
-| 1.1 | Expo RN 앱 셸 + 디렉토리 구조 + 기본 라우팅 | TS/RN |
+| 1.1 | ✅ Expo RN 앱 셸 + pnpm monorepo + 기본 라우팅 | TS/RN |
 | 1.2 | vendor 계정·키 setup (Replicate, PostHog, Superwall) | secrets |
 | 1.3 | 환경변수·secrets 관리 (`expo config`, `app.config.ts`) | TS |
 | 1.4 | CI 최소 (pytest + vitest in GitHub Actions) | yaml |
@@ -101,20 +101,44 @@
 
 ## 진척 추적
 
-| Phase | 시작 | 완료 | 비고 |
-|-------|------|------|------|
-| 1.1 | — | — | 다음 단계 |
-| 1.2 | — | — | |
-| 1.3 | — | — | |
-| 1.4 | — | — | |
-| 2.x | — | — | |
-| 3.x | — | — | |
-| 4.x | — | — | |
-| 5.x | — | — | |
-| 6.x | — | — | |
-| 7.x | — | — | |
+| Phase | 시작 | 완료 | Session | Commit | QA |
+|-------|------|------|---------|--------|-----|
+| 1.1 | 2026-05-17 | 2026-05-17 | `orch_7cb5e676e782` | `39f125a` | APPROVED · Stage 2 · 0.82 |
+| 1.2 | — | — | | | 다음 단계 |
+| 1.3 | — | — | | | |
+| 1.4 | — | — | | | |
+| 2.x | — | — | | | |
+| 3.x | — | — | | | |
+| 4.x | — | — | | | |
+| 5.x | — | — | | | |
+| 6.x | — | — | | | |
+| 7.x | — | — | | | |
 
-각 work unit 완료 시 이 표에 session_id·commit hash 기록.
+### Phase 1.1 결과 요약 (2026-05-17)
+
+**구조**:
+- `apps/mobile/` — Expo Router shell (12 funnel + 4 post-payment + magazine[month]) + ScreenState/DataHook contracts + useDummy hook + core-ts workspace dep
+- `packages/core-ts/` — 27 TS source files, 23 vitest test files (770 tests), 80% coverage threshold
+- `packages/core-python/` — 30 pytest test files (940 tests)
+- `pnpm-workspace.yaml`, root scripts delegate to `pnpm --filter`
+
+**Ouroboros workflow**:
+- Interview: `interview_20260517_063555` (ambiguity 0.07)
+- Seed: `seed_fade244183c6` (QA score 0.91 at iter 2)
+- Run: `orch_7cb5e676e782` (19/19 ACs)
+- Evaluate: APPROVED Stage 2, score 0.82, drift 0.10
+
+**Git**:
+- Feature branch: `ooo/run/1.1-monorepo-shell`
+- Merge commit: `39f125a` (no-ff)
+- 162 files changed, +11,708 / -40
+
+**검증**:
+- `pnpm run test` → 940 pytest + 770 vitest pass
+- `pnpm run build` → typecheck silent pass
+- `pnpm expo start` → Metro Bundler on localhost:8081
+
+각 work unit 완료 시 이 표에 session_id·commit hash·QA 결과 기록.
 
 ## 참고
 
