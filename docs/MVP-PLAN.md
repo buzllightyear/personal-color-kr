@@ -19,7 +19,7 @@
 |----|------|------|
 | 1.1 | ✅ Expo RN 앱 셸 + pnpm monorepo + 기본 라우팅 | TS/RN |
 | 1.2 | ✅ vendor 계정·키 setup (Fal.ai·PostHog·Superwall) + smoke-tests | secrets |
-| 1.3 | 환경변수·secrets 관리 (`expo config`, `app.config.ts`) | TS |
+| 1.3 | ⊂1.2 환경변수·secrets 관리 — 1.2에 흡수 (app.config.ts + .env + python-dotenv) | — |
 | 1.4 | CI 최소 (pytest + vitest in GitHub Actions) | yaml |
 
 ### Phase 2 — 12단계 깔때기 wiring (acquisition vehicle)
@@ -75,8 +75,8 @@
 ## 의존 그래프
 
 ```
-1.1 → 1.2 → 1.3 ─┐
-                  ├→ 2.1 → 2.2 → 2.3 → 2.4 → 2.5 → 2.6
+1.1 → 1.2 (1.3 흡수) ─┐
+                       ├→ 2.1 → 2.2 → 2.3 → 2.4 → 2.5 → 2.6
                   │                                  │
 4.1 → 4.2 → 4.3 ──┘                                  ├→ 3.1 → 3.2 → 3.3 → 3.4
 4.4 ←─ (depends on 1.3)                              │
@@ -105,8 +105,8 @@
 |-------|------|------|---------|--------|-----|
 | 1.1 | 2026-05-17 | 2026-05-17 | `orch_7cb5e676e782` | `39f125a` | APPROVED · Stage 2 · 0.82 |
 | 1.2 | 2026-05-17 | 2026-05-18 | `orch_2e32f14a3b34` | `7d844f3` | APPROVED · Stage 2 · 0.92 |
-| 1.3 | — | — | | | 다음 단계 |
-| 1.4 | — | — | | | |
+| 1.3 | — | — | — | — | ⊂1.2 흡수 (skipped) |
+| 1.4 | — | — | | | 다음 단계 |
 | 2.x | — | — | | | |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
