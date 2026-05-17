@@ -13,7 +13,7 @@
  * *currently in the repo* meets the contract, not just hypothetical
  * inputs.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -49,13 +49,21 @@ function parseEnvFile(contents: string): Record<string, string> {
   return out;
 }
 
-function loadRootEnv(): Record<string, string> {
+function rootEnvPath(): string {
   // packages/core-ts/tests/superwall/key.test.ts -> repo root is ../../../..
   const here = dirname(fileURLToPath(import.meta.url));
-  const envPath = resolve(here, '..', '..', '..', '..', '.env');
-  const contents = readFileSync(envPath, 'utf8');
+  return resolve(here, '..', '..', '..', '..', '.env');
+}
+
+function loadRootEnv(): Record<string, string> {
+  const contents = readFileSync(rootEnvPath(), 'utf8');
   return parseEnvFile(contents);
 }
+
+// Live smoke skips when no `.env` is present (CI / fresh clone) — keeps the
+// suite green without secrets, matching the Python `tests/config/test_env.py`
+// pattern. The pure regex/validation suites above still run unconditionally.
+const ROOT_ENV_PRESENT = existsSync(rootEnvPath());
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -172,7 +180,7 @@ describe('assertValidSuperwallApiKey', () => {
   });
 });
 
-describe('root .env SUPERWALL_API_KEY (live AC 11 smoke)', () => {
+describe.skipIf(!ROOT_ENV_PRESENT)('root .env SUPERWALL_API_KEY (live AC 11 smoke)', () => {
   it('is present and passes validation', () => {
     const env = loadRootEnv();
     const key = env['SUPERWALL_API_KEY'];

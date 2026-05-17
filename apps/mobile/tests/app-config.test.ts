@@ -25,6 +25,8 @@
  *     so the test does not pollute the process for any later test file in
  *     the same vitest run.
  */
+import { existsSync } from 'node:fs';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -32,6 +34,11 @@ import {
   ROOT_ENV_PATH,
   loadRootEnv,
 } from '../app.config';
+
+// `.env`-content tests skip when no `.env` exists in the checkout — CI and
+// fresh clones lack it by design (the file is gitignored). Pure path-math /
+// loader-contract assertions still run unconditionally.
+const ROOT_ENV_PRESENT = existsSync(ROOT_ENV_PATH);
 
 describe('app.config.ts — root .env loading', () => {
   const originalEnv: Record<string, string | undefined> = {};
@@ -76,7 +83,7 @@ describe('app.config.ts — root .env loading', () => {
     expect(result.path).toBe(ROOT_ENV_PATH);
   });
 
-  it('populates process.env with every required vendor key', () => {
+  it.skipIf(!ROOT_ENV_PRESENT)('populates process.env with every required vendor key', () => {
     // Pre-condition: beforeEach cleared the keys.
     for (const key of REQUIRED_ENV_KEYS) {
       expect(process.env[key]).toBeUndefined();
@@ -91,7 +98,7 @@ describe('app.config.ts — root .env loading', () => {
     }
   });
 
-  it('parses at least one of the required keys from the .env file itself', () => {
+  it.skipIf(!ROOT_ENV_PRESENT)('parses at least one of the required keys from the .env file itself', () => {
     // Defence against a silently-empty .env: ensure dotenv actually parsed
     // content from the file (not just that env was already set elsewhere).
     const result = loadRootEnv();
