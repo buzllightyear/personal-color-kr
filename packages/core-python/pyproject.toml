@@ -3,6 +3,13 @@ name = "core-python"
 version = "0.1.0"
 description = "Core Python modules for personal-color-kr (funnel, scan_option, personal_color, retention, image_edit, content)"
 requires-python = ">=3.11"
+dependencies = [
+    # `python-dotenv` powers the `config.env` helpers that resolve the root
+    # `.env` file via `find_dotenv()`. It is a build-time dependency (not an
+    # optional dev tool) because production smoke scripts such as
+    # `scripts/smoke_fal.py` import the helper at runtime to discover keys.
+    "python-dotenv>=1.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]

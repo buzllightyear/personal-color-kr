@@ -1,0 +1,57 @@
+/**
+ * Vitest configuration for the `mobile` workspace.
+ *
+ * Scope:
+ *   - Config-loading smoke tests that pin the contract "app.config.ts loads
+ *     root .env via dotenv.config() with correct path resolution".
+ *   - Provider-wiring render tests that assert the singleton PostHog client
+ *     is mounted exactly once at the root of the Expo Router tree (Sub-AC
+ *     7.3). These tests use `@testing-library/react-native` (which renders
+ *     via `react-test-renderer`, no DOM required) and live alongside the
+ *     `.ts` config tests in `tests/**\/*.test.{ts,tsx}`.
+ *
+ * Mobile RN screen code (funnel screens, magazine reader, etc.) is NOT
+ * covered here — that surface is exercised by core-ts unit tests and
+ * (later) an E2E harness on top of Expo.
+ *
+ * Environment: `node`. The config-loading tests deliberately mutate and
+ * inspect `process.env` (unavailable in jsdom), and `react-test-renderer`
+ * works in any environment. The provider-wiring test mocks
+ * `posthog-react-native` and `expo-router` so no native module touches the
+ * runtime.
+ */
+import * as path from 'node:path';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['tests/**/*.test.{ts,tsx}'],
+    // Pre-populate Node's CJS `require.cache` with an empty stub for
+    // `react-native` BEFORE any test file imports
+    // `@testing-library/react-native`. The testing library's helper modules
+    // (`fire-event.js`, `host-component-names.js`, ...) eagerly
+    // `require('react-native')` at the top of the file purely to grab
+    // type-only enums and prop shapes; the actual `render()` path uses
+    // `react-test-renderer` and never exercises a native component. The
+    // real `react-native/index.js` ships with Flow's `import typeof`
+    // syntax which Node cannot parse natively (Metro normally strips it at
+    // build time), so without this stub the test suite crashes during
+    // module load. See `tests/__stubs__/setup-rn-stub.ts` for the full
+    // rationale.
+    setupFiles: ['tests/__stubs__/setup-rn-stub.ts'],
+  },
+  resolve: {
+    // Pin a single physical copy of `react` across the test, the source
+    // under test, and the mocked `posthog-react-native` context. Without
+    // this, vitest's resolver can hand back two distinct copies (one for
+    // the test file, one for transitive imports under `apps/mobile`), and
+    // `React.createContext(...)` in one copy is not recognised by
+    // `React.useContext(...)` in the other — silently returning the context
+    // default and breaking the singleton-via-context assertion.
+    alias: {
+      react: path.resolve(__dirname, 'node_modules/react'),
+    },
+  },
+});
