@@ -10,7 +10,9 @@
     ".": "./src/index.ts",
     "./funnel": "./src/funnel/index.ts",
     "./scan_option": "./src/scan_option/index.ts",
-    "./referral": "./src/referral/index.ts"
+    "./referral": "./src/referral/index.ts",
+    "./posthog": "./src/posthog/index.ts",
+    "./superwall": "./src/superwall/index.ts"
   },
   "files": [
     "src"
