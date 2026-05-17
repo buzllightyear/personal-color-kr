@@ -18,7 +18,7 @@
 | ID | 작업 | 비고 |
 |----|------|------|
 | 1.1 | ✅ Expo RN 앱 셸 + pnpm monorepo + 기본 라우팅 | TS/RN |
-| 1.2 | vendor 계정·키 setup (Replicate, PostHog, Superwall) | secrets |
+| 1.2 | ✅ vendor 계정·키 setup (Fal.ai·PostHog·Superwall) + smoke-tests | secrets |
 | 1.3 | 환경변수·secrets 관리 (`expo config`, `app.config.ts`) | TS |
 | 1.4 | CI 최소 (pytest + vitest in GitHub Actions) | yaml |
 
@@ -35,7 +35,7 @@
 ### Phase 3 — Post-payment delivery (첫 패키지 4종 실연동)
 | ID | 작업 | 비고 |
 |----|------|------|
-| 3.1 | Replicate / Nano Banana 실제 API call wiring | TS or Py |
+| 3.1 | Fal.ai 실제 API call wiring (Replicate에서 변경됨, 1.2 결정) | Py |
 | 3.2 | Personal color diagnosis 런타임 wiring (Python invoke) | Py |
 | 3.3 | ContentPackage 4종 화면 (진단·편집·가이드·큐레이션) | TS/RN |
 | 3.4 | result_wording 톤 혼합 화면 적용 | TS/RN |
@@ -104,8 +104,8 @@
 | Phase | 시작 | 완료 | Session | Commit | QA |
 |-------|------|------|---------|--------|-----|
 | 1.1 | 2026-05-17 | 2026-05-17 | `orch_7cb5e676e782` | `39f125a` | APPROVED · Stage 2 · 0.82 |
-| 1.2 | — | — | | | 다음 단계 |
-| 1.3 | — | — | | | |
+| 1.2 | 2026-05-17 | 2026-05-18 | `orch_2e32f14a3b34` | `7d844f3` | APPROVED · Stage 2 · 0.92 |
+| 1.3 | — | — | | | 다음 단계 |
 | 1.4 | — | — | | | |
 | 2.x | — | — | | | |
 | 3.x | — | — | | | |
@@ -137,6 +137,47 @@
 - `pnpm run test` → 940 pytest + 770 vitest pass
 - `pnpm run build` → typecheck silent pass
 - `pnpm expo start` → Metro Bundler on localhost:8081
+
+### Phase 1.2 결과 요약 (2026-05-18)
+
+**Vendor 결정** (Replicate → **Fal.ai** 교체):
+- Fal.ai: 이미지 생성. core-python 독립 smoke 스크립트로 호출 (FastAPI 서버는 Phase 4)
+- PostHog: 모바일 클라이언트만 (`posthog-react-native`) + core-ts에 `PostHogClient` wrapper
+- Superwall: 키 발급 + regex validation만 (SDK 설치는 Phase 2.5 custom dev client 전환 때)
+
+**구조** (31 files, +4200 / -26):
+- `.env.example` — 4 keys (FAL/POSTHOG/POSTHOG_HOST/SUPERWALL) + format spec + security notes
+- `apps/mobile/app.config.ts` — Expo dynamic config가 dotenv로 root .env 로드, `ExpoExtraVendorKeys` 타입에서 FAL_API_KEY 의도적 제외
+- `apps/mobile/src/providers/PostHogProvider.tsx` — singleton + `__resetPostHogProviderForTests` 훅
+- `apps/mobile/src/providers/postHogConfig.ts` — Constants.expoConfig.extra 리더 + validation
+- `apps/mobile/src/config/vendor-keys.ts` — runtime accessor, falApiKey "INTENTIONALLY ABSENT"
+- `packages/core-ts/src/posthog/client.ts` — capture(event, props) wrapper, shallow-clone + freeze
+- `packages/core-ts/src/superwall/key.ts` — `/^pk_[A-Za-z0-9_-]+$/` + branded `SuperwallApiKey` 타입
+- `packages/core-python/src/config/env.py` — `find_dotenv()` opt-in 로더 (import-time side effect 없음)
+- `packages/core-python/scripts/smoke_fal.py` — queue-status endpoint + all-zero UUID로 ZERO API cost auth probe
+
+**Ouroboros workflow**:
+- Interview: `interview_20260517_112603` (ambiguity 0.07)
+- Seed: `seed_45e7a2d0cdf3` (QA 0.88, user-accepted below threshold — ontology over-modeling 회피)
+- Run: `orch_2e32f14a3b34` (13/13 ACs · 6/6 Sub-ACs; MCP 끊김 후 isolated worktree에서 작업 회수)
+- Evaluate: APPROVED Stage 2, score 0.92, drift 0.05
+
+**Git**:
+- Feature branch: `ooo/run/1.2-vendor-setup`
+- 핵심 commit: `ce4d394` (vendor-setup feat) · `adaeb20` (test skip fix) · `6dc0817` (mobile typecheck)
+- Merge commit: `7d844f3` (no-ff)
+
+**검증**:
+- core-ts: 803 tests (802 pass, 1 .env-gated skip)
+- apps/mobile: 44 tests (42 pass, 2 .env-gated skip)
+- core-python: 952 tests (949 pass, 3 .env-gated skip)
+- 전체: 1,793 pass / 6 skip · typecheck clean
+
+**MCP 끊김 → worktree 복구 경험**:
+- 실행 중 MCP 연결 disconnect, orchestrator는 13/13 완료 보고
+- Isolated worktree (`~/.ouroboros/worktrees/.../orch_2e32f14a3b34`)에서 작업물 보존됨을 발견
+- main worktree로 cherry-pick → 테스트가 `.env` 의존이라 fail → `describe.skipIf` 패턴으로 fix
+- 이후 evaluate에서 APPROVED
 
 각 work unit 완료 시 이 표에 session_id·commit hash·QA 결과 기록.
 
