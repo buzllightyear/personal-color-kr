@@ -1,29 +1,20 @@
 /**
- * Funnel Step 7 — diagnosis_input (v0.2)
+ * Funnel placeholder — diagnosis_input (Phase 2.1, step 7 of 12)
  *
- * v0.2 change: selfie upload only — the onboarding questions previously
- * bundled here move out, leaving the step focused exclusively on the selfie
- * input.  Placeholder Expo Router file — richer dev-info UI is added by
- * subsequent acceptance criteria.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.diagnosis_input
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * v0.2: 셀카 단독 (온보딩 질문은 step 3 onboarding_priming으로 분리).
+ * Internal-only; advances to fake_scan_animation (the visual 24-point
+ * scan companion to step 5's text loader).
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function DiagnosisInputScreen(): JSX.Element {
+  const router = useRouter();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 7 of 12</Text>
-      <Text style={styles.subtitle}>diagnosis_input</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="diagnosis_input"
+      onNext={() => router.push('/(funnel)/fake-scan-animation')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

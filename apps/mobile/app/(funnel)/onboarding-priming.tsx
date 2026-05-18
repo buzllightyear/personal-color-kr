@@ -1,28 +1,20 @@
 /**
- * Funnel Step 3 — onboarding_priming (v0.2)
+ * Funnel placeholder — onboarding_priming (Phase 2.1, step 3 of 12)
  *
- * v0.2 change: replaces the deprecated `social_proof_intro` step with a
- * pre-diagnosis onboarding-priming screen.  Placeholder Expo Router file —
- * richer dev-info UI is added by subsequent acceptance criteria.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.onboarding_priming
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * v0.2 신설 (replaces social_proof_intro). Internal-only; advances to
+ * the rating_gate step that uses these priming answers as the
+ * consistency-lever anchor.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function OnboardingPrimingScreen(): JSX.Element {
+  const router = useRouter();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 3 of 12</Text>
-      <Text style={styles.subtitle}>onboarding_priming</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="onboarding_priming"
+      onNext={() => router.push('/(funnel)/rating-gate')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

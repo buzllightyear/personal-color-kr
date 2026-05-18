@@ -1,28 +1,21 @@
 /**
- * Funnel Step 5 — fake_loader (v0.2)
+ * Funnel placeholder — fake_loader (Phase 2.1, step 5 of 12)
  *
- * v0.2 change: moved from the former step-8 slot into step-5, replacing the
- * deprecated `price_anchoring` step.  Placeholder Expo Router file — richer
- * dev-info UI is added by subsequent acceptance criteria.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.fake_loader
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * v0.2 이동 (구 step 8 → step 5; price_anchoring 자리). Internal-only;
+ * the 5-second auto-advance behaviour is intentionally left out of the
+ * placeholder so a manual smoke test can still inspect the dev-info row.
+ * Real auto-advance lands in subsequent units.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function FakeLoaderScreen(): JSX.Element {
+  const router = useRouter();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 5 of 12</Text>
-      <Text style={styles.subtitle}>fake_loader</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="fake_loader"
+      onNext={() => router.push('/(funnel)/scan-option-select')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

@@ -1,29 +1,20 @@
 /**
- * Funnel Step 11 — social_evolution (KR variant, v0.2)
+ * Funnel placeholder — social_evolution (Phase 2.1, step 11 of 12, KR variant)
  *
- * v0.2 change: absorbs the former `social_proof` step into the KR-variant
- * social-evolution screen (Phase-2 real proof: UGC + influencer quotes).
- * Placeholder Expo Router file — richer dev-info UI is added by subsequent
- * acceptance criteria.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.social_evolution
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * v0.2 — social_proof_intro 흡수. Internal-only; advances to
+ * payment_model. Real UGC + influencer + aggregate proof rendering
+ * lands in a subsequent unit.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function SocialEvolutionScreen(): JSX.Element {
+  const router = useRouter();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 11 of 12</Text>
-      <Text style={styles.subtitle}>social_evolution (kr_variant)</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="social_evolution"
+      onNext={() => router.push('/(funnel)/payment-model')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

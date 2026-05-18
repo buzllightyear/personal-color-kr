@@ -1,5 +1,5 @@
 /**
- * Per-step screen renderer for the Glam Up 12단계 결제 깔때기 (한국 변형).
+ * Per-step screen renderer for the Glam Up 12단계 결제 깔때기 (한국 변형, v0.2).
  *
  * Single source of truth for what each of the 12 funnel steps displays
  * to a Korean-market user.  Each entry in `FUNNEL_SCREENS` is a frozen
@@ -7,19 +7,26 @@
  * step-specific metadata for one step ID.
  *
  * Seed-derived invariants enforced here (verified by tests):
- *   - All 12 step IDs from `FUNNEL_STEPS_ORDERED` are represented exactly once.
+ *   - All 12 step IDs from `FUNNEL_STEPS_ORDERED` (v0.2) are represented
+ *     exactly once.
  *   - `stepNumber` always matches the canonical 1..12 index + 1.
  *   - Steps 10 / 11 / 12 carry `variantTag: 'kr_variant'` (Korean variants).
+ *   - Step 3 (`onboarding_priming`) carries `onboardingQuestionCount: 2`
+ *     (일관성 lever priming, v0.2 신설; replaces social_proof_intro).
  *   - Step 4 (`rating_gate`) exposes a `dismiss`-variant CTA → `action: 'skip'`
  *     because the iOS native dialog is dismissable.
- *   - Step 5 (`price_anchoring`) carries the high anchor + display price
- *     metadata used to drive 손실회피 (loss-aversion).
+ *   - Step 5 (`fake_loader`) carries `durationMs: 5000` (가짜 5초 로더; v0.2
+ *     에서 step 8 → step 5 이동, price_anchoring 자리).
  *   - Step 6 (`scan_option_select`) lists exactly 3 scan options with the
  *     personal-color scan as the primary CTA.
- *   - Step 8 (`fake_loader`) carries `durationMs: 5000` (가짜 5초 로더).
+ *   - Step 7 (`diagnosis_input`) is 셀카만 단독 (온보딩 질문은 step 3로 이동).
+ *   - Step 8 (`fake_scan_animation`) carries `analysisPoints: 24` 시각
+ *     애니메이션 (v0.2 신설).
  *   - Step 9 (`result_reveal`) is `locked: true` (paywalled tease).
  *   - Step 10 (`referral_gate`) requires exactly 1 referral (한국 변형 — 50%
  *     할인 게이트 폐기, 1명 추천만).
+ *   - Step 11 (`social_evolution`, v0.2) absorbs social_proof_intro:
+ *     `proofSources` includes UGC + influencer + aggregate user count.
  *   - Step 12 (`payment_model`) carries pricing in USD ($12/월, $59/연) and
  *     free-trial breakdown (baseTrialDays: 7 + annualBonusDays: 30 = 37).
  *
@@ -155,16 +162,22 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       },
     }),
 
-    // Step 3 — 초기 사회적 증거 ---------------------------------------------
-    social_proof_intro: buildScreen('social_proof_intro', {
-      headline: '이미 12만+ 유저가 자기 컬러를 찾았어요',
-      subhead: '셀카·뷰티 인플루언서들이 직접 쓰는 진단 + 맞춤 편집',
+    // Step 3 — 온보딩 priming (v0.2 신설, social_proof_intro 교체) -----------
+    // 결과에 영향 없는 온보딩 질문 2개로 "나는 ~한 사람" declare를 유도,
+    // 일관성 lever를 활성화해 step 4 별점 게이트 priming 역할 수행.
+    onboarding_priming: buildScreen('onboarding_priming', {
+      headline: '나에 대해 짧게 알려주세요',
+      subhead: '결과에 영향을 주지 않는 2개 질문 · 더 정확한 가이드를 위해',
       bodyCopy: null,
       ctas: [
         { label: '계속', action: 'advance', variant: 'primary' },
       ],
       variantTag: null,
-      metadata: { proofType: 'aggregate_user_count', userCountClaim: 120_000 },
+      metadata: {
+        primingMechanism: 'consistency_lever',
+        onboardingQuestionCount: 2,
+        replaces: 'social_proof_intro_v0_1',
+      },
     }),
 
     // Step 4 — iOS native 별점 dialog (dismissable) -------------------------
@@ -180,20 +193,24 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       metadata: { dialogType: 'ios_native', dismissable: true },
     }),
 
-    // Step 5 — 가격 anchoring (손실 회피) -----------------------------------
-    price_anchoring: buildScreen('price_anchoring', {
-      headline: '오프라인 퍼스널 컬러 컨설팅 30만원, 우리는 한 달 $12',
-      subhead: '진단 + 맞춤 편집 + 매월 큐레이션 매거진, 전부 포함',
+    // Step 5 — 가짜 5초 로더 (v0.2 이동, 구 step 8) ------------------------
+    // 텍스트 노력 정당화 priming. price_anchoring(v0.1 step 5)은 폐기되어
+    // 가격 노출은 step 12 payment_model 단일화. 시각 노력 정당화는 step 8
+    // fake_scan_animation에서 별도 강화.
+    fake_loader: buildScreen('fake_loader', {
+      headline: 'AI가 24개 포인트로 분석 중...',
+      subhead: '피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요',
       bodyCopy: null,
       ctas: [
-        { label: '다음', action: 'advance', variant: 'primary' },
+        // No user CTA; the loader auto-advances after durationMs.
+        { label: '잠시만요', action: 'auto_advance', variant: 'tertiary' },
       ],
       variantTag: null,
       metadata: {
-        anchorPriceKrw: 300_000,
-        anchorLabel: '오프라인 컨설팅',
-        displayPriceUsdMonthly: 12,
-        displayPriceUsdAnnual: 59,
+        durationMs: 5_000,
+        autoAdvance: true,
+        analysisPoints: 24,
+        movedFromStep: 8,
       },
     }),
 
@@ -230,9 +247,9 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       },
     }),
 
-    // Step 7 — 셀카 업로드 + 온보딩 질문 ------------------------------------
+    // Step 7 — 셀카 업로드 단독 (v0.2: 온보딩 질문은 step 3로 분리) ---------
     diagnosis_input: buildScreen('diagnosis_input', {
-      headline: '셀카 1장 + 짧은 질문 2개',
+      headline: '셀카 1장만 올려주세요',
       subhead: '정면 · 자연광 · 민낯에 가까울수록 결과가 정확해요',
       bodyCopy: null,
       ctas: [
@@ -240,25 +257,29 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       ],
       variantTag: null,
       metadata: {
-        requiredInputs: ['selfie_image', 'onboarding_answers'],
-        onboardingQuestionCount: 2,
+        requiredInputs: ['selfie_image'],
+        onboardingMovedToStep: 3,
       },
     }),
 
-    // Step 8 — 가짜 5초 로더 (앵커링 강화) -----------------------------------
-    fake_loader: buildScreen('fake_loader', {
-      headline: 'AI가 24개 포인트로 분석 중...',
-      subhead: '피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요',
+    // Step 8 — 가짜 스캔 애니메이션 (v0.2 신설) ------------------------------
+    // 시각 노력 정당화 priming. step 5 fake_loader (텍스트) + step 8
+    // fake_scan_animation (시각) 이중 mechanism으로 sunk-cost 누적 확장.
+    fake_scan_animation: buildScreen('fake_scan_animation', {
+      headline: '얼굴 24개 포인트 스캔 중',
+      subhead: '셀카 위에서 스캔 라인이 24개 포인트를 짚어내고 있어요',
       bodyCopy: null,
       ctas: [
-        // No user CTA; the loader auto-advances after durationMs.
-        { label: '잠시만요', action: 'auto_advance', variant: 'tertiary' },
+        // No user CTA; the visual animation auto-advances after durationMs.
+        { label: '스캔 중...', action: 'auto_advance', variant: 'tertiary' },
       ],
       variantTag: null,
       metadata: {
         durationMs: 5_000,
         autoAdvance: true,
         analysisPoints: 24,
+        animationMechanism: 'face_scan_overlay',
+        complementsTextLoaderAtStep: 5,
       },
     }),
 
@@ -295,20 +316,29 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       },
     }),
 
-    // Step 11 (KR variant) — UGC + 인플루언서 인용 ---------------------------
+    // Step 11 (KR variant, v0.2 — social_proof_intro 흡수) ------------------
+    // social_evolution이 12만+ 유저 aggregate proof를 흡수해 UGC + 인플루언서 +
+    // 사용자 수까지 한 화면에서 단계 진화 사회 증명 단일화.
     social_evolution: buildScreen('social_evolution', {
       headline: '@user_kim · @beautymee 가 직접 쓴 후기',
-      subhead: '한국 시장 변형: Figma 가짜 리뷰 폐기 → 실제 UGC + 인플루언서 인용',
+      subhead: '실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적',
       bodyCopy:
         '한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, ' +
-        '실제 사용자 게시물과 인플루언서 인용으로 사회 증명을 단계 진화시켰어요.',
+        '실제 사용자 게시물 · 인플루언서 인용 · 12만+ 누적 진단으로 ' +
+        '사회 증명을 단계 진화시켰어요.',
       ctas: [
         { label: '계속', action: 'advance', variant: 'primary' },
       ],
       variantTag: 'kr_variant',
       metadata: {
         replaces: 'standard_fake_figma_reviews',
-        proofSources: ['user_generated_content', 'influencer_quotes'],
+        proofSources: [
+          'user_generated_content',
+          'influencer_quotes',
+          'aggregate_user_count',
+        ],
+        userCountClaim: 120_000,
+        absorbs: 'social_proof_intro_v0_1',
         evolutionStage: 'phase_2_real_proof',
       },
     }),

@@ -1,31 +1,39 @@
 import { Stack, Redirect } from 'expo-router';
 import { useState } from 'react';
 
+import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../../src/linking.config';
+import { shouldSkipFunnelSubscribed } from './_guards';
+
 /**
- * Funnel group layout for the 12-step onboarding funnel.
+ * Funnel group layout for the 12-step onboarding funnel (v0.2).
+ *
+ * Stack.Screen registry is derived from `FUNNEL_KEBAB_SLUGS_ORDERED`
+ * (the single source of truth, computed from
+ * `packages/core-ts/funnel/types.ts`'s `FUNNEL_STEPS_ORDERED`).  This
+ * encodes the 4중 정합 cross-check at the layout layer: core-ts
+ * snake_case constant → kebab slug map → file routes → Stack.Screen
+ * declarations.  Drift in any of the four is caught at runtime by the
+ * sibling unit test (`tests/funnel-layout-screens.test.tsx`).
  *
  * Conditional redirect scaffold:
  * - Resume gate: if the funnel state machine has a persisted current step,
- *   resume the user at that step instead of always entering at step-1.
- * - Completion gate: if the user has already completed the funnel
- *   (e.g. previously paid or restored a subscription), bounce them out
- *   of the funnel group into the post-payment area.
+ *   resume the user at that step instead of always entering at welcome-hook.
+ *   Real implementation reads from AsyncStorage (`shouldResumeFunnel` stub
+ *   currently `false`).
+ * - Subscription completion gate: returning users with an active subscription
+ *   bypass the entire funnel and land in the post-payment area.  Decision is
+ *   delegated to `shouldSkipFunnelSubscribed()` from `_guards.ts` which
+ *   currently returns a fail-loud `false`.
  *
- * Real gating logic will be wired in Phase 3/4 by reading from
- * `packages/core-ts/funnel` state machine and async `DataHook<T>` consumers
- * (`useDummy<T>` for the shell, `usePython<T>` for the Python-backed flows).
- * For the shell, both gates are disabled (`false`) so the default Stack
- * renders all child step routes without redirection.
- *
- * Step routes (step-1.tsx ... step-12.tsx) are siblings of this file inside
- * the `(funnel)` route group, which keeps URLs flat (`/step-1`) while sharing
- * this layout.
+ * Real gating logic lands in Phase 3/4. For now, both gates resolve to
+ * `false` so the default Stack renders all 12 kebab routes without
+ * redirection.
  */
 export default function FunnelLayout(): JSX.Element {
   // Placeholder gate state — real implementations will read from
   // packages/core-ts/funnel state machines and async data hooks (DataHook<T>).
   const [shouldResumeFunnel] = useState<boolean>(false);
-  const [hasCompletedFunnel] = useState<boolean>(false);
+  const hasCompletedFunnel = shouldSkipFunnelSubscribed();
 
   if (hasCompletedFunnel) {
     return <Redirect href="/(post-payment)/diagnosis" />;
@@ -33,8 +41,8 @@ export default function FunnelLayout(): JSX.Element {
 
   if (shouldResumeFunnel) {
     // In Phase 3/4 this will redirect to the persisted current step
-    // (e.g. `/step-${currentStep}`) sourced from the funnel state machine.
-    return <Redirect href="/(funnel)/step-1" />;
+    // (e.g. `/welcome-hook`) sourced from the funnel state machine.
+    return <Redirect href="/(funnel)/welcome-hook" />;
   }
 
   return (
@@ -43,18 +51,9 @@ export default function FunnelLayout(): JSX.Element {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="step-1" />
-      <Stack.Screen name="step-2" />
-      <Stack.Screen name="step-3" />
-      <Stack.Screen name="step-4" />
-      <Stack.Screen name="step-5" />
-      <Stack.Screen name="step-6" />
-      <Stack.Screen name="step-7" />
-      <Stack.Screen name="step-8" />
-      <Stack.Screen name="step-9" />
-      <Stack.Screen name="step-10" />
-      <Stack.Screen name="step-11" />
-      <Stack.Screen name="step-12" />
+      {FUNNEL_KEBAB_SLUGS_ORDERED.map((slug) => (
+        <Stack.Screen key={slug} name={slug} />
+      ))}
     </Stack>
   );
 }

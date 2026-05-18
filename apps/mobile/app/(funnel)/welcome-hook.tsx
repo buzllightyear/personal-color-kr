@@ -1,31 +1,25 @@
 /**
- * Funnel Step 1 — welcome_hook
+ * Funnel placeholder — welcome_hook (Phase 2.1, step 1 of 12)
  *
- * Placeholder Expo Router screen.  This file establishes the route surface
- * for the v0.2 semantic-kebab funnel registry; richer placeholder UI
- * (dev-info, route params dump, guard-stub status, Next button) is added
- * by subsequent acceptance criteria in the same work unit.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.welcome_hook
- *
- * Route-params contract (validated by Zod in a sibling AC):
- *   - utm_source, utm_medium, utm_campaign, utm_term, utm_content
- *   - referrer_code, referrer_channel
+ * The single external campaign-landing entry point. The seed contract
+ * surfaces UTM bundle + referrer attribution as route params (utm_source,
+ * utm_medium, utm_campaign, utm_term, utm_content, referrer_code,
+ * referrer_channel). The placeholder forwards the live params verbatim
+ * so the dev-info dump shows what the deep-link handler actually parsed
+ * for the user's session.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function WelcomeHookScreen(): JSX.Element {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 1 of 12</Text>
-      <Text style={styles.subtitle}>welcome_hook</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="welcome_hook"
+      routeParams={params as Record<string, unknown>}
+      onNext={() => router.push('/(funnel)/value-props')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

@@ -1,28 +1,13 @@
 /**
- * Funnel Step 12 — payment_model (KR variant)
+ * Funnel placeholder — payment_model (Phase 2.1, step 12 of 12, KR variant)
  *
- * Korean-market pricing variant: $12/mo or $59/yr (annual = 7-day base trial
- * + 30-day bonus = 37-day free trial total).  Placeholder Expo Router file —
- * richer dev-info UI is added by subsequent acceptance criteria.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.payment_model
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * Internal-only terminal step. The placeholder omits `onNext` because
+ * the real screen transitions to the post-payment area (`/(post-payment)/diagnosis`)
+ * only after a successful Superwall + StoreKit charge, which lands in
+ * Phase 2.5.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function PaymentModelScreen(): JSX.Element {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 12 of 12</Text>
-      <Text style={styles.subtitle}>payment_model (kr_variant)</Text>
-    </View>
-  );
+  return <FunnelPlaceholder stepId="payment_model" />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

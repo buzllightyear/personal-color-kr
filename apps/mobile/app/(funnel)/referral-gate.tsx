@@ -1,29 +1,27 @@
 /**
- * Funnel Step 10 — referral_gate (KR variant)
+ * Funnel placeholder — referral_gate (Phase 2.1, step 10 of 12, KR variant)
  *
- * Korean-market variant: 1-friend referral gate (replaces the standard 50%
- * discount gate).  Placeholder Expo Router file — richer dev-info UI and
- * the `shouldBypassReferral()` guard wiring are added by subsequent
- * acceptance criteria in the same work unit.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.referral_gate
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * Externally-allowed: reachable via `/r/<code>` deep link. The
+ * `shouldBypassReferral()` guard from `_guards.ts` controls whether the
+ * funnel skips this step for invited users. The placeholder surfaces
+ * the guard's current value in the dev-info row so the fail-loud
+ * stub status is visible during manual QA.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { shouldBypassReferral } from './_guards';
 
 export default function ReferralGateScreen(): JSX.Element {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const bypass = shouldBypassReferral();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 10 of 12</Text>
-      <Text style={styles.subtitle}>referral_gate (kr_variant)</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="referral_gate"
+      routeParams={params as Record<string, unknown>}
+      guardStatus={{ name: 'shouldBypassReferral', value: bypass }}
+      onNext={() => router.push('/(funnel)/social-evolution')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

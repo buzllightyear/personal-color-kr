@@ -1,30 +1,39 @@
 /**
- * Funnel Step 9 — result_reveal (locked paywalled tease)
+ * Funnel placeholder — result_reveal (Phase 2.1, step 9 of 12)
  *
- * Placeholder Expo Router screen.  This file establishes the route surface
- * for the v0.2 semantic-kebab funnel registry; richer placeholder UI is
- * added by subsequent acceptance criteria in the same work unit.
+ * Externally-allowed: reachable via `/s/<token>` and `/result-reveal`
+ * deep links carrying `share_token`. When the token is present the
+ * screen activates `isPreviewMode` and renders a read-only preview
+ * placeholder (a recipient-view branch) — Sub-AC 12.
  *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.result_reveal
- *
- * Route-params contract (validated by Zod in a sibling AC):
- *   - share_token (optional) — when present, activates read-only preview mode
- *     for shared links (`/s/<token>` deep link target).
+ * Real preview UI lands in a subsequent unit. For now the dev-info
+ * row surfaces the `preview` boolean so the smoke test can pin both
+ * branches at the placeholder layer.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function ResultRevealScreen(): JSX.Element {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const shareToken = typeof params['share_token'] === 'string' ? params['share_token'] : undefined;
+  const isPreviewMode = shareToken !== undefined;
+  if (isPreviewMode) {
+    return (
+      <FunnelPlaceholder
+        stepId="result_reveal"
+        routeParams={params as Record<string, unknown>}
+        isPreviewMode
+      />
+    );
+  }
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 9 of 12</Text>
-      <Text style={styles.subtitle}>result_reveal</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="result_reveal"
+      routeParams={params as Record<string, unknown>}
+      isPreviewMode={false}
+      onNext={() => router.push('/(funnel)/referral-gate')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

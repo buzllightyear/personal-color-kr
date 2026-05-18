@@ -1,28 +1,21 @@
 /**
- * Funnel Step 6 — scan_option_select
+ * Funnel placeholder — scan_option_select (Phase 2.1, step 6 of 12)
  *
- * 3-option scan selector (main = personal-color, secondaries = Phase-N).
- * Placeholder Expo Router file — richer dev-info UI is added by subsequent
- * acceptance criteria in the same work unit.
- *
- * Step config lives in
- *   packages/core-ts/src/funnel/screens.ts → FUNNEL_SCREENS.scan_option_select
- *
- * Route-params contract: none (empty params; internal-only screen).
+ * Internal-only. The real screen presents 3 scan options (퍼스널 컬러 as
+ * the primary CTA + 2 Phase-N secondary scans). The placeholder advances
+ * to diagnosis-input — selecting personal-color is the only path the
+ * funnel currently models.
  */
-import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { FunnelPlaceholder } from '../../src/funnel-placeholder';
 
 export default function ScanOptionSelectScreen(): JSX.Element {
+  const router = useRouter();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Funnel Step 6 of 12</Text>
-      <Text style={styles.subtitle}>scan_option_select</Text>
-    </View>
+    <FunnelPlaceholder
+      stepId="scan_option_select"
+      onNext={() => router.push('/(funnel)/diagnosis-input')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});
