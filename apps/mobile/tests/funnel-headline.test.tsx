@@ -86,8 +86,13 @@ function findAllByTestId(
   tree: TestRenderer.ReactTestRenderer,
   testID: string,
 ): readonly TestInstance[] {
+  // Filter for host elements only (where `type` is a string like 'View'/'Text').
+  // The mocked react-native components wrap their host element in a function
+  // component, so `findAll` would otherwise return two matches per testID
+  // (the wrapper FC + the rendered host); we want the host node only.
   return tree.root.findAll(
-    (node) => node.props?.testID === testID,
+    (node) =>
+      typeof node.type === 'string' && node.props?.testID === testID,
   ) as unknown as readonly TestInstance[];
 }
 
@@ -305,6 +310,7 @@ describe('FunnelHeadline — DOM shape & visible order', () => {
     // order via test-renderer's depth-first traversal.
     const textRows = tree.root.findAll(
       (node) =>
+        typeof node.type === 'string' &&
         typeof node.props?.testID === 'string' &&
         (node.props.testID === 'welcome-hook-headline' ||
           node.props.testID === 'welcome-hook-subhead'),

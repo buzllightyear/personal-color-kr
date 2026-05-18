@@ -1,90 +1,61 @@
 /**
- * Funnel Step 4 — `rating_gate`
+ * Funnel Step 4 — `rating_gate` route file.
  *
- * Platform.select branching (Sub-AC 5):
- *   The seed pins `rating-gate` to a single source file with internal
- *   Platform.select branching (NOT a `rating-gate.ios.tsx` / `.android.tsx`
- *   filename split) — see Seed constraint:
- *     "rating-gate는 단일 파일 + Platform.select 내부 분기
- *      (platform-specific 파일 분리 아님)".
+ * Platform.select branching (preserved from Phase 2.1, Sub-AC 5):
+ *   The seed pinned `rating-gate` to a single source file with internal
+ *   Platform.select branching (NOT a `.ios.tsx` / `.android.tsx` filename
+ *   split). The branching maps platforms to two presentational variants:
+ *     - iOS      → **default**  variant: SKStoreReviewController stand-in
+ *     - Android  → **secondary** variant: Play In-App Review stand-in
+ *     - Other    → **default**  variant (web / native fallback)
  *
- *   The branching maps platforms to two presentational variants:
- *     - iOS      → **default**  variant: stands in for the iOS-native
- *                                       `SKStoreReviewController` dialog
- *                                       (dismissable). Chosen as the default
- *                                       because Glam Up's verbatim step-4
- *                                       targets iOS first.
- *     - Android  → **secondary** variant: stands in for the Google Play
- *                                       In-App Review API surface.
- *     - Other    → **default**  variant: web / native fallback resolves to
- *                                       the iOS-style component so the funnel
- *                                       renders something sane on every
- *                                       platform.
+ *   Phase 2.2 fills in the variants with real Korean copy + CTAs via the
+ *   shared `RatingGateContent` component. Both variants share the same
+ *   submit + skip CTAs (per FUNNEL_SCREENS.rating_gate metadata); the
+ *   variant split exists so the Phase 3+ native bridge can swap in
+ *   platform-specific rating dialog wiring without touching the funnel
+ *   navigation surface.
  *
- *   The variants are presentational placeholders only — the real native
- *   bridge (rating prompt + skip-count persistence) lands in Phase 3/4 and
- *   will be reached through `shouldDismissRating()` in `_guards.ts`.
- *
- * Testability shape:
- *   `selectRatingGateVariant()` is a pure, parameter-free function that
- *   re-reads `Platform.OS` on every call. This makes Sub-AC 5.1's iOS unit
- *   test trivial: mock `react-native` with `Platform.OS = 'ios'`, call the
- *   function, assert the returned component is `RatingGateDefaultVariant`
- *   by reference. The two variant components are also named exports so the
- *   test can compare references directly without rendering.
- *
- * Route-params contract: none (internal-only screen; not reachable via
- * external deep link).
+ *   Both CTAs (submit_rating + skip) navigate forward to fake-loader.
+ *   dismissable:true is satisfied by the always-allowed skip path.
  */
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 
-// ---------------------------------------------------------------------------
-// Variant components
-//
-// Each variant is a tiny placeholder that renders its own identifier in the
-// dev-info subtitle so a manual smoke test on a device makes the active
-// branch obvious without needing dev-tools. The components are exported by
-// name so the unit test can identity-check the Platform.select result.
-// ---------------------------------------------------------------------------
+import { RatingGateContent } from '../../src/screens/funnel/RatingGateContent';
+
+export type RatingGateVariantId = 'default' | 'secondary';
 
 /**
  * iOS-targeted **default** variant — placeholder for the iOS native
- * `SKStoreReviewController` rating dialog (dismissable). Sub-AC 5.1's iOS
- * test asserts `selectRatingGateVariant()` returns this exact reference.
+ * `SKStoreReviewController` rating dialog (dismissable). Renders the same
+ * shared `RatingGateContent` but tagged with `variant="default"` for
+ * downstream testID + analytics distinction.
  */
-export function RatingGateDefaultVariant(): JSX.Element {
+export function RatingGateDefaultVariant(props: {
+  readonly onSubmit: () => void;
+  readonly onSkip: () => void;
+}): JSX.Element {
+  const { onSubmit, onSkip } = props;
   return (
-    <View style={styles.container} testID="rating-gate-default-variant">
-      <Text style={styles.title}>Funnel Step 4 of 12</Text>
-      <Text style={styles.subtitle}>rating_gate · iOS default variant</Text>
-    </View>
+    <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="default" />
   );
 }
 
 /**
  * Android-targeted **secondary** variant — placeholder for the Google Play
- * In-App Review API surface. Wired to `Platform.OS === 'android'` via
- * `Platform.select` below.
+ * In-App Review API surface.
  */
-export function RatingGateSecondaryVariant(): JSX.Element {
+export function RatingGateSecondaryVariant(props: {
+  readonly onSubmit: () => void;
+  readonly onSkip: () => void;
+}): JSX.Element {
+  const { onSubmit, onSkip } = props;
   return (
-    <View style={styles.container} testID="rating-gate-secondary-variant">
-      <Text style={styles.title}>Funnel Step 4 of 12</Text>
-      <Text style={styles.subtitle}>rating_gate · Android secondary variant</Text>
-    </View>
+    <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="secondary" />
   );
 }
 
-// ---------------------------------------------------------------------------
-// Platform.select branching
-// ---------------------------------------------------------------------------
-
-/**
- * Discriminated component type — both variants are JSX-component functions
- * with no required props. Encoding the union explicitly (rather than as a
- * loose `ComponentType`) makes the unit test's reference comparison
- * type-safe end-to-end.
- */
 export type RatingGateVariantComponent =
   | typeof RatingGateDefaultVariant
   | typeof RatingGateSecondaryVariant;
@@ -92,20 +63,9 @@ export type RatingGateVariantComponent =
 /**
  * Resolve the active rating-gate variant for the current platform.
  *
- * Why a function and not a top-level constant:
- *   Capturing `Platform.select(...)` in a module-scope constant would freeze
- *   the choice at module-load time, defeating the unit test (which needs to
- *   exercise both iOS and Android paths). A parameter-free function re-reads
- *   `Platform.OS` on every call, so `vi.mock('react-native', ...)` can
- *   substitute different values per test without `vi.resetModules()` churn.
- *
- * Fallback:
- *   `Platform.select` returns `T | undefined` when no key matches — the
- *   `??` nullish-coalescing on `RatingGateDefaultVariant` makes the fallback
- *   explicit so this function NEVER returns `undefined`. The `default` key
- *   already covers non-ios/android platforms in practice; the `??` is
- *   defence-in-depth for environments where `Platform.select` is itself
- *   mocked without a `default` slot.
+ * Why a function and not a top-level constant: capturing `Platform.select(...)`
+ * in a module-scope constant would freeze the choice at module-load time,
+ * defeating unit tests that mock `Platform.OS` per case.
  */
 export function selectRatingGateVariant(): RatingGateVariantComponent {
   return (
@@ -117,22 +77,11 @@ export function selectRatingGateVariant(): RatingGateVariantComponent {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Default Expo Router screen entry
-// ---------------------------------------------------------------------------
-
-/**
- * Screen entry point — resolves the platform-specific variant on each render
- * and delegates to it. Expo Router picks this up via the file's default
- * export.
- */
-export default function RatingGateScreen(): JSX.Element {
+export default function RatingGateRoute(): JSX.Element {
+  const router = useRouter();
   const Variant = selectRatingGateVariant();
-  return <Variant />;
+  const handleAdvance = (): void => {
+    router.push('/(funnel)/fake-loader');
+  };
+  return <Variant onSubmit={handleAdvance} onSkip={handleAdvance} />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  title: { fontSize: 20, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
-});

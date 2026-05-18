@@ -1,18 +1,17 @@
 /**
- * Funnel placeholder — value_props (Phase 2.1, step 2 of 12)
+ * Route — funnel step 2 (`value_props`).
  *
- * Internal-only step: no external deep link reaches here. The `onNext`
- * advances linearly to step 3 (onboarding-priming).
+ * Thin wrapper: expo-router hooks → onNext handler → delegate to
+ * `ValuePropsScreen` presentational component.
  */
 import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { ValuePropsScreen } from '../../src/screens/funnel/ValuePropsScreen';
 
-export default function ValuePropsScreen(): JSX.Element {
+export default function ValuePropsRoute(): JSX.Element {
   const router = useRouter();
   return (
-    <FunnelPlaceholder
-      stepId="value_props"
+    <ValuePropsScreen
       onNext={() => router.push('/(funnel)/onboarding-priming')}
     />
   );

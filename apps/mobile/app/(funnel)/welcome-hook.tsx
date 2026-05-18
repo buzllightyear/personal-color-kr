@@ -1,25 +1,16 @@
 /**
- * Funnel placeholder — welcome_hook (Phase 2.1, step 1 of 12)
+ * Route — funnel step 1 (`welcome_hook`).
  *
- * The single external campaign-landing entry point. The seed contract
- * surfaces UTM bundle + referrer attribution as route params (utm_source,
- * utm_medium, utm_campaign, utm_term, utm_content, referrer_code,
- * referrer_channel). The placeholder forwards the live params verbatim
- * so the dev-info dump shows what the deep-link handler actually parsed
- * for the user's session.
+ * Thin wrapper per Phase 2.1 pattern: expo-router hooks → onNext handler →
+ * delegate to `WelcomeHookScreen` presentational component.
  */
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { WelcomeHookScreen } from '../../src/screens/funnel/WelcomeHookScreen';
 
-export default function WelcomeHookScreen(): JSX.Element {
+export default function WelcomeHookRoute(): JSX.Element {
   const router = useRouter();
-  const params = useLocalSearchParams();
   return (
-    <FunnelPlaceholder
-      stepId="welcome_hook"
-      routeParams={params as Record<string, unknown>}
-      onNext={() => router.push('/(funnel)/value-props')}
-    />
+    <WelcomeHookScreen onNext={() => router.push('/(funnel)/value-props')} />
   );
 }

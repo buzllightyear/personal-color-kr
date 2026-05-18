@@ -77,7 +77,15 @@ interface TestInstance {
 function makeQuery(tree: TestRenderer.ReactTestRenderer) {
   const root = tree.root;
   const findOne = (testID: string): TestInstance | null => {
-    const matches = root.findAll((node) => node.props?.testID === testID);
+    // Filter for host elements only (where `type` is a string). The mocked
+    // react-native components wrap their host element in a function
+    // component, so findAll would otherwise return two matches per testID
+    // (the wrapper FC + the rendered host); the host node carries the
+    // real onPress/disabled props we want to assert against.
+    const matches = root.findAll(
+      (node) =>
+        typeof node.type === 'string' && node.props?.testID === testID,
+    );
     return (matches[0] as unknown as TestInstance) ?? null;
   };
   return {
