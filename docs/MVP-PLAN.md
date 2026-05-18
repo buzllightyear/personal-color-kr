@@ -25,7 +25,7 @@
 ### Phase 2 — 12단계 깔때기 wiring (acquisition vehicle)
 | ID | 작업 | 비고 |
 |----|------|------|
-| 2.1 | RN navigation stack (12 funnel screens 껍데기) | TS/RN |
+| 2.1 | ✅ RN navigation stack (semantic-kebab 12 placeholder + 4중 정합 + deep-link 6-path + guards + funnel_step_entered) | TS/RN |
 | 2.2 | 1~5단계 screens (welcome → fake Analyzing 5초) | TS/RN |
 | 2.3 | 6~9단계 screens (scan_option → paywall 앞) | TS/RN |
 | 2.4 | 10~12단계 한국 변형 (referral·social·payment) | TS/RN |
@@ -107,7 +107,8 @@
 | 1.2 | 2026-05-17 | 2026-05-18 | `orch_2e32f14a3b34` | `7d844f3` | APPROVED · Stage 2 · 0.92 |
 | 1.3 | — | — | — | — | ⊂1.2 흡수 (skipped) |
 | 1.4 | 2026-05-18 | 2026-05-18 | `orch_b6c7e29cc70a` | `d27410e` | APPROVED · Stage 2 · 0.88 |
-| 2.1 | — | — | | | 다음 단계 (Phase 2 시작) |
+| 2.1 | 2026-05-18 | 2026-05-18 | `orch_d14ea24993ef` | `8f8928f` | APPROVED · Stage 2 · 0.92 |
+| 2.2 | — | — | | | 다음 단계 |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -222,6 +223,58 @@
 **이슈 + 해결**:
 - Orchestrator가 strict reading으로 apps/mobile vitest를 CI에 안 넣음 (Seed AC 5에 명시 안 됨)
 - AC 8의 "6 skipped" 일치 안 됨을 발견 → cherry-pick 후 mobile vitest step 추가 → 6 skip 가시화
+
+### Phase 2.1 결과 요약 (2026-05-18)
+
+**core-ts funnel v0.2 재정의** (3 step ID 교체 + 1 신설 + 1 흡수):
+- step 3: `social_proof_intro` 폐기 → `onboarding_priming` 신설 (일관성 lever priming, step 4 별점 게이트 직전 자기-declaration 유도)
+- step 5: `price_anchoring` 폐기 → `fake_loader` 이동 (구 step 8 → step 5, 가격 노출은 step 12로 단일화)
+- step 7: `diagnosis_input`을 셀카 단독으로 단순화 (온보딩 질문은 step 3로 분리)
+- step 8: `fake_scan_animation` 신설 (얼굴 위 24-point 시각 스캔, step 5 텍스트 로더와 이중 sunk-cost mechanism)
+- step 11: `social_evolution`이 `social_proof_intro` 흡수 (UGC + 인플루언서 + 12만+ aggregate proof 단일 화면)
+
+**Mobile (funnel) 구조** (51 files, +4667 / -504):
+- `apps/mobile/app/(funnel)/<kebab>.tsx` × 12 (semantic-kebab, 구 `step-N.tsx` × 12 삭제)
+- `(funnel)/_guards.ts` — 3 fail-loud guard stub (`shouldDismissRating`, `shouldBypassReferral`, `shouldSkipFunnelSubscribed`), conservative default `false` + `console.warn` (silent regression 방지, underscore prefix로 Expo Router route 제외)
+- `(funnel)/_layout.tsx` — `FUNNEL_KEBAB_SLUGS_ORDERED` 기반 Stack.Screen 자동 생성 (4중 정합 source-of-truth)
+- `(funnel)/rating-gate.tsx` — 단일 파일 + `Platform.select` 내부 분기 (iOS `RatingGateDefaultVariant`, Android `RatingGateSecondaryVariant`; 파일 split 없음)
+- `(funnel)/result-reveal.tsx` — `share_token` param → `isPreviewMode=true` → bypass + read-only branch (AC 12)
+- `(funnel)/referral-gate.tsx` — `shouldBypassReferral()` guard 상태를 dev-info에 surface
+
+**Deep-link infrastructure** (`apps/mobile/src/`):
+- `deep-link-paths.ts` — 6-path scheme constants (`<kebab>?utm`, `/r/:code`, `/s/:token`, `/result-reveal`, `/magazine/:month`, universal-link), `UNIVERSAL_LINK_DOMAINS = ['pcolor.invalid', 'personalcolor-kr.invalid']` (.invalid TLD 단일 지점 상수)
+- `linking.config.ts` — `FUNNEL_KEBAB_SLUGS`, `LINKING_CONFIG` (filename ↔ URL parity, frozen at every level)
+- `internal-only-routes.ts` — 9 internal-only blocklist (12 전체 \ 3 external-allowed 집합 차) — security invariant
+- `deep-link-parser.ts` — `parseDeepLink(url)` pure classifier, closed-set `DeepLinkBlockReason` union (`malformed_url`/`unknown_scheme`/`unknown_path`/`internal_only_funnel`)
+- `funnel-placeholder.tsx` — 공통 dev-info UI (Step N of 12, screenId, route params dump, Next 버튼, guard 상태, preview flag) — 12 placeholder 파일이 이 컴포넌트 사용
+
+**Root layout** (`apps/mobile/app/_layout.tsx`):
+- `RootLayoutInner`를 `PostHogProvider` 아래에 분리 (singleton 유지)
+- `useEffect(usePathname)` 기반 `funnel_step_entered` PostHog auto-capture — kebab pathname만 capture, 비-funnel 경로는 no-op, PostHog degraded일 때도 graceful no-op
+
+**Ouroboros workflow**:
+- Interview: `interview_20260518_064016` (ambiguity 0.06)
+- Seed: `seed_129432ff5704` (QA PASS iter 1 · score 0.90 · threshold 0.90 정확히 일치)
+- Run: `orch_d14ea24993ef` (Sub-AC 13/14 시점에 MCP disconnect로 failed)
+- Recovery: worktree `ooo/orch_d14ea24993ef` commit `a083f1c` → main feature branch에 cherry-pick (`99539a2`) → 나머지 8개 AC + screens.ts v0.2 마이그레이션 + (funnel) 재배선을 수동 완성 (`e37646e`)
+- Evaluate: APPROVED Stage 2 · score 0.92 · goal alignment 0.93 · drift 0.05 · uncertainty 0.12
+
+**Git**:
+- Feature branch: `ooo/run/2.1-rn-navigation` (auto-deleted post-merge)
+- 핵심 commit: `99539a2` (cherry-pick partial) · `e37646e` (manual completion)
+- PR #3 merge commit: `8f8928f` (no-ff)
+
+**검증** (CI logs):
+- core-ts typecheck + 809 vitest (1 skip)
+- apps/mobile typecheck + 264 vitest (2 .env-gated skip) — 신규 테스트 4개 (`funnel-registry-cross-check`, `funnel-placeholder-smoke`, `funnel-step-entered-capture`, `root-layout` mock 추가)
+- core-python 949 pytest (3 .env-gated skip)
+- 전체: 2,022 pass / 6 skip — 13 AC 모두 커버
+- CI green on PR #3 (push + pull_request 양쪽)
+
+**MCP 끊김 → worktree 복구 패턴 (Phase 1.2 재현)**:
+- Orchestrator가 AC 5/13 + Sub-AC 13/14 시점에 disconnect (`job_7fd523765ea0` failed)
+- Isolated worktree에서 5/13 AC + 12 kebab 파일 + _guards.ts + deep-link infra 4개 + test 7개 보존 확인
+- 사용자 승인 후 cherry-pick + 나머지 수동 완성 (screens.ts v0.2 마이그레이션, 구 step-N 12개 제거, _layout.tsx 2개 갱신, FunnelPlaceholder 공통 컴포넌트, 11개 placeholder 재작성, 4중 정합 + smoke + auto-capture 테스트 추가)
 
 각 work unit 완료 시 이 표에 session_id·commit hash·QA 결과 기록.
 
