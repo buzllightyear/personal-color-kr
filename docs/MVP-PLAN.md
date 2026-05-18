@@ -26,7 +26,7 @@
 | ID | 작업 | 비고 |
 |----|------|------|
 | 2.1 | ✅ RN navigation stack (semantic-kebab 12 placeholder + 4중 정합 + deep-link 6-path + guards + funnel_step_entered) | TS/RN |
-| 2.2 | 1~5단계 screens (welcome → fake Analyzing 5초) | TS/RN |
+| 2.2 | ✅ 1~5단계 screens (welcome → fake Analyzing 5초; 한국어 카피·디자인 토큰·FunnelStateContext·rating-gate modal·5s autoAdvance) | TS/RN |
 | 2.3 | 6~9단계 screens (scan_option → paywall 앞) | TS/RN |
 | 2.4 | 10~12단계 한국 변형 (referral·social·payment) | TS/RN |
 | 2.5 | Superwall paywall + StoreKit 구독 결제 통합 | iOS |
@@ -108,7 +108,8 @@
 | 1.3 | — | — | — | — | ⊂1.2 흡수 (skipped) |
 | 1.4 | 2026-05-18 | 2026-05-18 | `orch_b6c7e29cc70a` | `d27410e` | APPROVED · Stage 2 · 0.88 |
 | 2.1 | 2026-05-18 | 2026-05-18 | `orch_d14ea24993ef` | `8f8928f` | APPROVED · Stage 2 · 0.92 |
-| 2.2 | — | — | | | 다음 단계 |
+| 2.2 | 2026-05-18 | 2026-05-19 | `orch_f9fd2fbeb451` | `eaadaa2` | APPROVED · Stage 2 · 0.93 |
+| 2.3 | — | — | | | 다음 단계 |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -277,6 +278,73 @@
 - 사용자 승인 후 cherry-pick + 나머지 수동 완성 (screens.ts v0.2 마이그레이션, 구 step-N 12개 제거, _layout.tsx 2개 갱신, FunnelPlaceholder 공통 컴포넌트, 11개 placeholder 재작성, 4중 정합 + smoke + auto-capture 테스트 추가)
 
 각 work unit 완료 시 이 표에 session_id·commit hash·QA 결과 기록.
+
+### Phase 2.2 결과 요약 (2026-05-19)
+
+**Funnel 1~5단계 실 UI** (PR #5, merge `eaadaa2`, +6,169 / −149, 41 files):
+
+**Foundation layer** (Level 1 of 5 — orchestrator가 MCP 끊김 전에 완료):
+- `apps/mobile/src/theme/{colors,typography,spacing,index}.ts` — design tokens `as const` 패턴 (soft pink/coral base + 4-season accent + 4-level grayscale; 5×3 typography matrix; 7-step t-shirt spacing 모두 4의 배수)
+- `apps/mobile/src/contracts/funnel-state.ts` — `FunnelOnboardingAnswers` (selfieEditStyle ∈ {natural,subtle,expressive} | null, priorDiagnosis ∈ {never,self_test,professional} | null) readonly contract
+- `apps/mobile/src/providers/FunnelStateProvider.tsx` — useMemo'd value + immutable spread-merge updater + fail-loud `FunnelStateProviderMissingError`
+- `apps/mobile/src/hooks/{use-funnel-state.ts,use-auto-advance-timer.ts}` — Context consumer + 5초 timer with cleanup
+- `apps/mobile/src/components/FunnelHeadline.tsx`, `apps/mobile/src/components/funnel/FunnelPrimaryButton.tsx`, `apps/mobile/src/funnel/FunnelScreenLayout.tsx` — 3 shared funnel UI primitives
+
+**Screen + route layer** (Level 2 of 5 — manual completion):
+- `apps/mobile/src/screens/funnel/WelcomeHookScreen.tsx` — headline "내 퍼스널 컬러로 셀카가 한 장 더 빛나도록" + CTA "1분 진단 시작" → value-props
+- `apps/mobile/src/screens/funnel/ValuePropsScreen.tsx` — 3 cards (`trend_matched_editing` 🎨 spring, `monthly_curated_magazine` 📖 summer, `personal_color_preset_library` 🎭 autumn) ScrollView 수직 스택 → onboarding-priming
+- `apps/mobile/src/screens/funnel/OnboardingPrimingScreen.tsx` — Q1 (4 selfie-edit options) + Q2 (3 prior-diagnosis options) segmented controls; submit `disabled` until 둘 다 non-null → rating-gate
+- `apps/mobile/src/screens/funnel/RatingGateContent.tsx` — shared submit + dismissable skip CTAs; iOS default + Android secondary variants 둘 다 같은 content 렌더
+- `apps/mobile/src/screens/funnel/FakeLoaderScreen.tsx` — `ActivityIndicator` + 5,000ms `useAutoAdvanceTimer` → scan-option-select (zero user-interactive buttons)
+- `apps/mobile/app/(funnel)/<kebab>.tsx` × 5 — thin route wrappers (useRouter + onNext + delegation to screen component)
+
+**`_layout.tsx` rewire**:
+- 전체 `Stack`을 `<FunnelStateProvider>`로 감쌈 (funnel group scope 격리)
+- `rating-gate` Stack.Screen에 `presentation: 'modal'` 적용 (dismissable: true 시맨틱); 나머지 11개는 default card presentation 유지
+- `RATING_GATE_KEBAB_SLUG = toKebabSlug('rating_gate')` — 4중 정합 cross-check에 반영
+
+**Tests** (5 신규 screen tests + 1 cross-check 확장):
+- `welcome-hook-screen.test.tsx` (4), `value-props-screen.test.tsx` (7), `onboarding-priming-screen.test.tsx` (11 — gating + a11y state), `rating-gate-screen.test.tsx` (5), `fake-loader-screen.test.tsx` (6 — `vi.useFakeTimers` + advance(5000) + cleanup + custom duration)
+- `funnel-registry-cross-check.test.ts` — 7개 → 8개 (rating-gate modal presentation source-level 검증)
+- 테스트 helper fix: `funnel-headline` + `funnel-primary-button`이 `findAll`에서 host element만 필터 (`typeof type === 'string'`) — mocked react-native component wrapper가 testID를 중복 매치하던 이슈 해결
+- 플랫폼 테스트 mock 확장 (`rating-gate-platform-{ios,android}`): `react-native-safe-area-context` + `expo-router` vi.mock 추가 — Phase 2.2가 추가한 transitive import 체인 대응
+
+**Ouroboros workflow**:
+- Interview: `interview_20260518_124757` (ambiguity 0.10)
+- Seed: `seed_26e273c0ec9f` (QA PASS iter 1 · score 0.91 · threshold 0.90)
+- Run: `orch_f9fd2fbeb451` (Level 1 of 5 완료 시점에 MCP disconnect — AC 4/20, Sub-AC 7/7)
+- Recovery: worktree commit `a64a56a` (4 ACs foundation) → main feature branch cherry-pick (`afe430a`) → 나머지 16 ACs 수동 완성 (`bc7c89c`) — Phase 2.1 패턴 재현
+- Evaluate: APPROVED Stage 2 · score **0.93** · goal alignment 0.92 · drift 0.05 · uncertainty 0.12 (Phase 2.1의 0.92 초과)
+
+**Git**:
+- Feature branch: `ooo/run/2.2-funnel-screens-1-5` (auto-deleted post-merge)
+- 핵심 commit: `afe430a` (foundation cherry-pick) · `bc7c89c` (screens + routes + _layout + tests 수동 완성)
+- PR #5 merge commit: `eaadaa2`
+
+**검증**:
+- apps/mobile: 33 test files · 518 pass · 2 skip · typecheck clean
+- packages/core-ts: 25 test files · 809 pass · 1 skip · typecheck clean
+- 4중 정합 cross-check: 8/8 pass (rating-gate modal presentation 포함)
+- CI green on PR #5 (push + pull_request 양쪽)
+- Zero new npm dependencies — RN built-ins + React Context + 기존 `react-native-safe-area-context` 사용
+
+**Constraint compliance (all preserved)**:
+- StyleSheet.create only (no NativeWind/Tamagui/Unistyles)
+- System fonts only (no Pretendard/expo-font)
+- React Context only (no Zustand/jotai/redux)
+- `useState` for forms (no react-hook-form/formik)
+- `ActivityIndicator` only (no Reanimated/Moti animation libs)
+- Emoji icons only (no `@expo/vector-icons`)
+- `ScrollView` vertical stack (no carousel libs)
+- Korean hardcoded (no i18n infra)
+- PII never in route params (PostHog context only)
+- `FAL_API_KEY` not exposed in `app.config.ts extra` (Phase 1.2 invariant)
+
+**MCP 끊김 → 복구 패턴 (3회째 일관 적용)**:
+- Phase 1.2 (`orch_2e32f14a3b34`) — worktree에서 13/13 보존
+- Phase 2.1 (`orch_d14ea24993ef`) — worktree commit `a083f1c` cherry-pick + 8 AC 수동 완성
+- Phase 2.2 (`orch_f9fd2fbeb451`) — worktree commit `a64a56a` cherry-pick + 16 AC 수동 완성
+- 패턴 안정화: orchestrator가 어디서 멈추든 (a) worktree 작업 보존 → (b) commit → (c) feature branch cherry-pick → (d) test/typecheck 안정화 후 manual completion
 
 ## 참고
 
