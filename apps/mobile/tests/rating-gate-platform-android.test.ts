@@ -77,6 +77,16 @@ import { describe, expect, it, vi } from 'vitest';
 // The function is generic so the call-site at `selectRatingGateVariant()`
 // retains its component-type narrowing.
 // ---------------------------------------------------------------------------
+// Phase 2.2: rating-gate.tsx now imports RatingGateContent (which transitively
+// pulls in react-native-safe-area-context via FunnelScreenLayout) and
+// `useRouter` from expo-router. Stub both.
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: (): null => null,
+}));
+vi.mock('expo-router', () => ({
+  useRouter: () => ({ push: () => undefined, replace: () => undefined }),
+}));
+
 vi.mock('react-native', () => {
   type PlatformSelectSpec<T> = {
     ios?: T;
@@ -110,6 +120,9 @@ vi.mock('react-native', () => {
     },
     View: noopComponent,
     Text: noopComponent,
+    Pressable: noopComponent,
+    ScrollView: noopComponent,
+    ActivityIndicator: noopComponent,
     StyleSheet: {
       create: <T,>(stylesheet: T): T => stylesheet,
     },

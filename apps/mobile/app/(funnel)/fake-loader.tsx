@@ -1,21 +1,19 @@
 /**
- * Funnel placeholder — fake_loader (Phase 2.1, step 5 of 12)
+ * Route — funnel step 5 (`fake_loader`).
  *
- * v0.2 이동 (구 step 8 → step 5; price_anchoring 자리). Internal-only;
- * the 5-second auto-advance behaviour is intentionally left out of the
- * placeholder so a manual smoke test can still inspect the dev-info row.
- * Real auto-advance lands in subsequent units.
+ * Thin wrapper: expo-router hook → onElapsed handler → delegate to
+ * `FakeLoaderScreen`. The screen owns the 5-second timer via
+ * `useAutoAdvanceTimer`; the route only navigates when the timer fires.
  */
 import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { FakeLoaderScreen } from '../../src/screens/funnel/FakeLoaderScreen';
 
-export default function FakeLoaderScreen(): JSX.Element {
+export default function FakeLoaderRoute(): JSX.Element {
   const router = useRouter();
   return (
-    <FunnelPlaceholder
-      stepId="fake_loader"
-      onNext={() => router.push('/(funnel)/scan-option-select')}
+    <FakeLoaderScreen
+      onElapsed={() => router.push('/(funnel)/scan-option-select')}
     />
   );
 }

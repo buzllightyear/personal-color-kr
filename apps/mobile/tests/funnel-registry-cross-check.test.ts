@@ -85,4 +85,16 @@ describe('funnel registry — 4중 정합 cross-check (AC 2 + AC 4)', () => {
     const legacy = entries.filter((name) => /^step-\d+\.tsx$/.test(name));
     expect(legacy).toEqual([]);
   });
+
+  it('_layout.tsx applies presentation:"modal" to the rating-gate Stack.Screen (Phase 2.2)', () => {
+    const layoutPath = path.resolve(FUNNEL_ROUTE_DIR, '_layout.tsx');
+    const source = fs.readFileSync(layoutPath, 'utf8');
+    // The layout must register rating-gate with modal presentation; other
+    // 11 screens use the default card presentation. We assert both invariants
+    // via source-level checks since react-test-renderer can't observe the
+    // Stack.Screen options at runtime in a unit-test environment.
+    expect(source).toMatch(/RATING_GATE_KEBAB_SLUG/);
+    expect(source).toMatch(/presentation:\s*'modal'/);
+    expect(source).toMatch(/toKebabSlug\(['"]rating_gate['"]\)/);
+  });
 });

@@ -1,19 +1,23 @@
 /**
- * Funnel placeholder — onboarding_priming (Phase 2.1, step 3 of 12)
+ * Route — funnel step 3 (`onboarding_priming`).
  *
- * v0.2 신설 (replaces social_proof_intro). Internal-only; advances to
- * the rating_gate step that uses these priming answers as the
- * consistency-lever anchor.
+ * Thin wrapper: expo-router hooks + FunnelStateContext → onNext + onSelect
+ * handlers → delegate to `OnboardingPrimingScreen`. The route owns the
+ * navigation push and the context write; the screen is pure props.
  */
 import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { OnboardingPrimingScreen } from '../../src/screens/funnel/OnboardingPrimingScreen';
+import { useFunnelState } from '../../src/hooks/use-funnel-state';
 
-export default function OnboardingPrimingScreen(): JSX.Element {
+export default function OnboardingPrimingRoute(): JSX.Element {
   const router = useRouter();
+  const { onboarding, setOnboarding } = useFunnelState();
   return (
-    <FunnelPlaceholder
-      stepId="onboarding_priming"
+    <OnboardingPrimingScreen
+      onboarding={onboarding}
+      onSelectSelfieEditStyle={(value) => setOnboarding({ selfieEditStyle: value })}
+      onSelectPriorDiagnosis={(value) => setOnboarding({ priorDiagnosis: value })}
       onNext={() => router.push('/(funnel)/rating-gate')}
     />
   );
