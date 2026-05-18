@@ -1,8 +1,10 @@
-import { Stack, Redirect } from 'expo-router';
+import { Stack, Redirect, usePathname } from 'expo-router';
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePostHog } from 'posthog-react-native';
 
 import { PostHogProvider } from '../src/providers/PostHogProvider';
+import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
 
 /**
  * Root layout for the personal-color-kr Expo Router app shell.
@@ -44,35 +46,65 @@ import { PostHogProvider } from '../src/providers/PostHogProvider';
  *     exposed to descendants via the `posthog-react-native` context, so any
  *     screen / hook can read it with `usePostHog()`.
  */
-export default function RootLayout(): JSX.Element {
+/**
+ * Inner shell mounted INSIDE `<PostHogProvider>` so it can call `usePostHog()`
+ * for the funnel_step_entered auto-capture (the hook is only valid below the
+ * provider).  Kept as a sibling component rather than inlined into
+ * `RootLayout` because the provider's graceful-degradation fragment must wrap
+ * exactly one child, and a separate component makes the hook ordering
+ * trivially auditable.
+ */
+function RootLayoutInner(): React.ReactElement {
   // Placeholder gate state — real implementations will read from
   // packages/core-ts state machines and async data hooks (DataHook<T>).
   const [shouldShowPaywall] = useState<boolean>(false);
   const [shouldShowReferral] = useState<boolean>(false);
 
-  // Select the route-tree subtree first, then wrap it with the provider at a
-  // single point below. This keeps the singleton wrap site invariant across
-  // all gate-branch combinations (paywall, referral, default) — see the
-  // module-level docstring for rationale.
-  let content: React.ReactElement;
-  if (shouldShowPaywall) {
-    content = <Redirect href="/(funnel)/step-12" />;
-  } else if (shouldShowReferral) {
-    content = <Redirect href="/" />;
-  } else {
-    content = (
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(funnel)" />
-        <Stack.Screen name="(post-payment)" />
-        <Stack.Screen name="magazine/[month]" />
-      </Stack>
-    );
-  }
+  // funnel_step_entered auto-capture:
+  //   When the active pathname is one of the 12 funnel kebab slugs, fire a
+  //   PostHog event with `step_id` so the entire navigation tree is logged
+  //   from one place rather than per-screen.  Active route → event mapping
+  //   is exhaustive over `FUNNEL_KEBAB_SLUGS_ORDERED` (the 4중 정합 source
+  //   of truth) so a kebab rename surfaces both as a layout-level test
+  //   failure AND as zero-events in PostHog rather than as a silent miss.
+  const pathname = usePathname();
+  const posthog = usePostHog();
+  useEffect(() => {
+    if (!posthog || !pathname) return;
+    const lastSegment = pathname.replace(/^\/+/, '').split('/').pop() ?? '';
+    if (FUNNEL_KEBAB_SLUGS_ORDERED.includes(lastSegment)) {
+      posthog.capture('funnel_step_entered', { step_kebab: lastSegment });
+    }
+  }, [pathname, posthog]);
 
-  return <PostHogProvider>{content}</PostHogProvider>;
+  // Select the route-tree subtree first, then wrap it with the provider at a
+  // single point in `RootLayout` below.  This keeps the singleton wrap site
+  // invariant across all gate-branch combinations (paywall, referral,
+  // default) — see the module-level docstring for rationale.
+  if (shouldShowPaywall) {
+    return <Redirect href="/(funnel)/payment-model" />;
+  }
+  if (shouldShowReferral) {
+    return <Redirect href="/" />;
+  }
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(funnel)" />
+      <Stack.Screen name="(post-payment)" />
+      <Stack.Screen name="magazine/[month]" />
+    </Stack>
+  );
+}
+
+export default function RootLayout(): JSX.Element {
+  return (
+    <PostHogProvider>
+      <RootLayoutInner />
+    </PostHogProvider>
+  );
 }

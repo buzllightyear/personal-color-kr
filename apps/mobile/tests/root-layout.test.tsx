@@ -146,9 +146,20 @@ vi.mock('expo-router', async () => {
     return null;
   }
 
+  // `usePathname` is consumed by `RootLayoutInner` for the
+  // `funnel_step_entered` auto-capture useEffect.  The test renders the
+  // layout in isolation (no router context) so we return a non-funnel
+  // pathname — the auto-capture useEffect intentionally no-ops when the
+  // last URL segment is not one of the 12 kebab slugs.  This keeps the
+  // PostHog wiring assertions clean (no spurious capture() calls).
+  function mockUsePathname() {
+    return '/';
+  }
+
   return {
     Stack: StackSpy,
     Redirect: MockRedirect,
+    usePathname: mockUsePathname,
   };
 });
 

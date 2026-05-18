@@ -38,16 +38,16 @@ describe('FUNNEL_STEPS_ORDERED', () => {
     expect(FUNNEL_STEPS_ORDERED).toEqual([
       'welcome_hook',
       'value_props',
-      'social_proof_intro',
+      'onboarding_priming', // v0.2: replaces social_proof_intro (priming for step 4)
       'rating_gate',
-      'price_anchoring',
+      'fake_loader',        // v0.2: moved from step 8; price_anchoring 폐기
       'scan_option_select',
-      'diagnosis_input',
-      'fake_loader',
+      'diagnosis_input',    // v0.2: 셀카만 단독 (온보딩은 step 3로 분리)
+      'fake_scan_animation',// v0.2: NEW — 24-point 시각 스캔 애니메이션
       'result_reveal',
-      'referral_gate',     // KR variant: 1명 추천
-      'social_evolution',  // KR variant: UGC + 인플루언서 인용
-      'payment_model',     // KR variant: $12/월 or $59/연, 37일 무료체험
+      'referral_gate',      // KR variant: 1명 추천
+      'social_evolution',   // KR variant (v0.2): UGC + 인플루언서 + social_proof 흡수
+      'payment_model',      // KR variant: $12/월 or $59/연, 37일 무료체험
     ]);
   });
 
@@ -185,18 +185,18 @@ describe('skipStep — only allowed for rating_gate (step 4)', () => {
     const m = fastForwardTo(3);
     expect(m.state).toBe('rating_gate');
     const skipped = skipStep(m);
-    expect(skipped.state).toBe('price_anchoring'); // step 5
+    expect(skipped.state).toBe('fake_loader'); // v0.2 step 5
     expect(skipped.history.at(-2)?.type).toBe('step_skipped');
     expect(skipped.history.at(-2)?.state).toBe('rating_gate');
     expect(skipped.history.at(-1)?.type).toBe('step_entered');
-    expect(skipped.history.at(-1)?.state).toBe('price_anchoring');
+    expect(skipped.history.at(-1)?.state).toBe('fake_loader');
   });
 
   it('does NOT add rating_gate to completedSteps when skipped (it was skipped, not completed)', () => {
     const m = fastForwardTo(3);
     const skipped = skipStep(m);
     expect(skipped.completedSteps).not.toContain('rating_gate');
-    expect(skipped.completedSteps).toEqual(['welcome_hook', 'value_props', 'social_proof_intro']);
+    expect(skipped.completedSteps).toEqual(['welcome_hook', 'value_props', 'onboarding_priming']);
   });
 
   it('rejects skipping any step other than rating_gate', () => {
@@ -247,8 +247,8 @@ describe('isTransitionAllowed', () => {
     expect(isTransitionAllowed('payment_model', 'completed')).toBe(true);
   });
 
-  it('allows rating_gate → price_anchoring (skip path)', () => {
-    expect(isTransitionAllowed('rating_gate', 'price_anchoring')).toBe(true);
+  it('allows rating_gate → fake_loader (skip path, v0.2 step 5)', () => {
+    expect(isTransitionAllowed('rating_gate', 'fake_loader')).toBe(true);
   });
 
   it('allows any active step → abandoned', () => {
@@ -258,7 +258,7 @@ describe('isTransitionAllowed', () => {
   });
 
   it('rejects skipping steps (e.g. step 1 → step 3)', () => {
-    expect(isTransitionAllowed('welcome_hook', 'social_proof_intro')).toBe(false);
+    expect(isTransitionAllowed('welcome_hook', 'onboarding_priming')).toBe(false);
     expect(isTransitionAllowed('welcome_hook', 'payment_model')).toBe(false);
   });
 

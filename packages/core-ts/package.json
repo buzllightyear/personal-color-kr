@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./funnel": "./src/funnel/index.ts",
+    "./funnel/types": "./src/funnel/types.ts",
     "./scan_option": "./src/scan_option/index.ts",
     "./referral": "./src/referral/index.ts",
     "./posthog": "./src/posthog/index.ts",

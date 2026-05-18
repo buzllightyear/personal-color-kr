@@ -275,7 +275,7 @@ describe('emitStepDrop — payload assertion', () => {
     const expected: StepDropEvent = {
       type: 'step_drop',
       stepId: 'fake_loader',
-      stepNumber: 8,
+      stepNumber: 5, // v0.2: fake_loader moved from step 8 → step 5
       timestamp: FIXED_NOW,
       sessionId: SESSION_ID,
       variantTag: null,
@@ -339,7 +339,7 @@ describe('sink contract', () => {
     });
     analytics.emitStepView('welcome_hook');
     analytics.emitStepView('value_props');
-    analytics.emitStepView('social_proof_intro');
+    analytics.emitStepView('onboarding_priming');
     expect(sink.captured.map((e) => e.timestamp)).toEqual([1000, 1001, 1002]);
   });
 

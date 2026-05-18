@@ -51,14 +51,15 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
         "variant": "primary",
       },
     ],
-    "headline": "이미 12만+ 유저가 자기 컬러를 찾았어요",
+    "headline": "나에 대해 짧게 알려주세요",
     "metadata": {
-      "proofType": "aggregate_user_count",
-      "userCountClaim": 120000,
+      "onboardingQuestionCount": 2,
+      "primingMechanism": "consistency_lever",
+      "replaces": "social_proof_intro_v0_1",
     },
-    "stepId": "social_proof_intro",
+    "stepId": "onboarding_priming",
     "stepNumber": 3,
-    "subhead": "셀카·뷰티 인플루언서들이 직접 쓰는 진단 + 맞춤 편집",
+    "subhead": "결과에 영향을 주지 않는 2개 질문 · 더 정확한 가이드를 위해",
     "variantTag": null,
   },
   {
@@ -89,21 +90,21 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
     "bodyCopy": null,
     "ctas": [
       {
-        "action": "advance",
-        "label": "다음",
-        "variant": "primary",
+        "action": "auto_advance",
+        "label": "잠시만요",
+        "variant": "tertiary",
       },
     ],
-    "headline": "오프라인 퍼스널 컬러 컨설팅 30만원, 우리는 한 달 $12",
+    "headline": "AI가 24개 포인트로 분석 중...",
     "metadata": {
-      "anchorLabel": "오프라인 컨설팅",
-      "anchorPriceKrw": 300000,
-      "displayPriceUsdAnnual": 59,
-      "displayPriceUsdMonthly": 12,
+      "analysisPoints": 24,
+      "autoAdvance": true,
+      "durationMs": 5000,
+      "movedFromStep": 8,
     },
-    "stepId": "price_anchoring",
+    "stepId": "fake_loader",
     "stepNumber": 5,
-    "subhead": "진단 + 맞춤 편집 + 매월 큐레이션 매거진, 전부 포함",
+    "subhead": "피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요",
     "variantTag": null,
   },
   {
@@ -154,12 +155,11 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
         "variant": "primary",
       },
     ],
-    "headline": "셀카 1장 + 짧은 질문 2개",
+    "headline": "셀카 1장만 올려주세요",
     "metadata": {
-      "onboardingQuestionCount": 2,
+      "onboardingMovedToStep": 3,
       "requiredInputs": [
         "selfie_image",
-        "onboarding_answers",
       ],
     },
     "stepId": "diagnosis_input",
@@ -172,19 +172,21 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
     "ctas": [
       {
         "action": "auto_advance",
-        "label": "잠시만요",
+        "label": "스캔 중...",
         "variant": "tertiary",
       },
     ],
-    "headline": "AI가 24개 포인트로 분석 중...",
+    "headline": "얼굴 24개 포인트 스캔 중",
     "metadata": {
       "analysisPoints": 24,
+      "animationMechanism": "face_scan_overlay",
       "autoAdvance": true,
+      "complementsTextLoaderAtStep": 5,
       "durationMs": 5000,
     },
-    "stepId": "fake_loader",
+    "stepId": "fake_scan_animation",
     "stepNumber": 8,
-    "subhead": "피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요",
+    "subhead": "셀카 위에서 스캔 라인이 24개 포인트를 짚어내고 있어요",
     "variantTag": null,
   },
   {
@@ -232,7 +234,7 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
     "variantTag": "kr_variant",
   },
   {
-    "bodyCopy": "한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, 실제 사용자 게시물과 인플루언서 인용으로 사회 증명을 단계 진화시켰어요.",
+    "bodyCopy": "한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, 실제 사용자 게시물 · 인플루언서 인용 · 12만+ 누적 진단으로 사회 증명을 단계 진화시켰어요.",
     "ctas": [
       {
         "action": "advance",
@@ -242,16 +244,19 @@ exports[`per-step rendering snapshots (one per funnel step) > matches the full F
     ],
     "headline": "@user_kim · @beautymee 가 직접 쓴 후기",
     "metadata": {
+      "absorbs": "social_proof_intro_v0_1",
       "evolutionStage": "phase_2_real_proof",
       "proofSources": [
         "user_generated_content",
         "influencer_quotes",
+        "aggregate_user_count",
       ],
       "replaces": "standard_fake_figma_reviews",
+      "userCountClaim": 120000,
     },
     "stepId": "social_evolution",
     "stepNumber": 11,
-    "subhead": "한국 시장 변형: Figma 가짜 리뷰 폐기 → 실제 UGC + 인플루언서 인용",
+    "subhead": "실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적",
     "variantTag": "kr_variant",
   },
   {
@@ -297,12 +302,11 @@ exports[`per-step rendering snapshots (one per funnel step) > renders step "diag
       "variant": "primary",
     },
   ],
-  "headline": "셀카 1장 + 짧은 질문 2개",
+  "headline": "셀카 1장만 올려주세요",
   "metadata": {
-    "onboardingQuestionCount": 2,
+    "onboardingMovedToStep": 3,
     "requiredInputs": [
       "selfie_image",
-      "onboarding_answers",
     ],
   },
   "stepId": "diagnosis_input",
@@ -327,10 +331,59 @@ exports[`per-step rendering snapshots (one per funnel step) > renders step "fake
     "analysisPoints": 24,
     "autoAdvance": true,
     "durationMs": 5000,
+    "movedFromStep": 8,
   },
   "stepId": "fake_loader",
-  "stepNumber": 8,
+  "stepNumber": 5,
   "subhead": "피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요",
+  "variantTag": null,
+}
+`;
+
+exports[`per-step rendering snapshots (one per funnel step) > renders step "fake_scan_animation" with the expected Korean-variant configuration 1`] = `
+{
+  "bodyCopy": null,
+  "ctas": [
+    {
+      "action": "auto_advance",
+      "label": "스캔 중...",
+      "variant": "tertiary",
+    },
+  ],
+  "headline": "얼굴 24개 포인트 스캔 중",
+  "metadata": {
+    "analysisPoints": 24,
+    "animationMechanism": "face_scan_overlay",
+    "autoAdvance": true,
+    "complementsTextLoaderAtStep": 5,
+    "durationMs": 5000,
+  },
+  "stepId": "fake_scan_animation",
+  "stepNumber": 8,
+  "subhead": "셀카 위에서 스캔 라인이 24개 포인트를 짚어내고 있어요",
+  "variantTag": null,
+}
+`;
+
+exports[`per-step rendering snapshots (one per funnel step) > renders step "onboarding_priming" with the expected Korean-variant configuration 1`] = `
+{
+  "bodyCopy": null,
+  "ctas": [
+    {
+      "action": "advance",
+      "label": "계속",
+      "variant": "primary",
+    },
+  ],
+  "headline": "나에 대해 짧게 알려주세요",
+  "metadata": {
+    "onboardingQuestionCount": 2,
+    "primingMechanism": "consistency_lever",
+    "replaces": "social_proof_intro_v0_1",
+  },
+  "stepId": "onboarding_priming",
+  "stepNumber": 3,
+  "subhead": "결과에 영향을 주지 않는 2개 질문 · 더 정확한 가이드를 위해",
   "variantTag": null,
 }
 `;
@@ -365,30 +418,6 @@ exports[`per-step rendering snapshots (one per funnel step) > renders step "paym
   "stepNumber": 12,
   "subhead": "월 $12 · 연 $59 (연결제 시 7일 + 30일 = 37일 무료체험)",
   "variantTag": "kr_variant",
-}
-`;
-
-exports[`per-step rendering snapshots (one per funnel step) > renders step "price_anchoring" with the expected Korean-variant configuration 1`] = `
-{
-  "bodyCopy": null,
-  "ctas": [
-    {
-      "action": "advance",
-      "label": "다음",
-      "variant": "primary",
-    },
-  ],
-  "headline": "오프라인 퍼스널 컬러 컨설팅 30만원, 우리는 한 달 $12",
-  "metadata": {
-    "anchorLabel": "오프라인 컨설팅",
-    "anchorPriceKrw": 300000,
-    "displayPriceUsdAnnual": 59,
-    "displayPriceUsdMonthly": 12,
-  },
-  "stepId": "price_anchoring",
-  "stepNumber": 5,
-  "subhead": "진단 + 맞춤 편집 + 매월 큐레이션 매거진, 전부 포함",
-  "variantTag": null,
 }
 `;
 
@@ -513,7 +542,7 @@ exports[`per-step rendering snapshots (one per funnel step) > renders step "scan
 
 exports[`per-step rendering snapshots (one per funnel step) > renders step "social_evolution" with the expected Korean-variant configuration 1`] = `
 {
-  "bodyCopy": "한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, 실제 사용자 게시물과 인플루언서 인용으로 사회 증명을 단계 진화시켰어요.",
+  "bodyCopy": "한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, 실제 사용자 게시물 · 인플루언서 인용 · 12만+ 누적 진단으로 사회 증명을 단계 진화시켰어요.",
   "ctas": [
     {
       "action": "advance",
@@ -523,39 +552,20 @@ exports[`per-step rendering snapshots (one per funnel step) > renders step "soci
   ],
   "headline": "@user_kim · @beautymee 가 직접 쓴 후기",
   "metadata": {
+    "absorbs": "social_proof_intro_v0_1",
     "evolutionStage": "phase_2_real_proof",
     "proofSources": [
       "user_generated_content",
       "influencer_quotes",
+      "aggregate_user_count",
     ],
     "replaces": "standard_fake_figma_reviews",
+    "userCountClaim": 120000,
   },
   "stepId": "social_evolution",
   "stepNumber": 11,
-  "subhead": "한국 시장 변형: Figma 가짜 리뷰 폐기 → 실제 UGC + 인플루언서 인용",
+  "subhead": "실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적",
   "variantTag": "kr_variant",
-}
-`;
-
-exports[`per-step rendering snapshots (one per funnel step) > renders step "social_proof_intro" with the expected Korean-variant configuration 1`] = `
-{
-  "bodyCopy": null,
-  "ctas": [
-    {
-      "action": "advance",
-      "label": "계속",
-      "variant": "primary",
-    },
-  ],
-  "headline": "이미 12만+ 유저가 자기 컬러를 찾았어요",
-  "metadata": {
-    "proofType": "aggregate_user_count",
-    "userCountClaim": 120000,
-  },
-  "stepId": "social_proof_intro",
-  "stepNumber": 3,
-  "subhead": "셀카·뷰티 인플루언서들이 직접 쓰는 진단 + 맞춤 편집",
-  "variantTag": null,
 }
 `;
 

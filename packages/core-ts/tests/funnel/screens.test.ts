@@ -169,13 +169,20 @@ describe('Step 4 — rating_gate (iOS native dialog, dismissable)', () => {
   });
 });
 
-describe('Step 5 — price_anchoring (손실 회피)', () => {
-  const s = FUNNEL_SCREENS.price_anchoring;
+describe('Step 5 — fake_loader (v0.2: 가짜 5초 텍스트 로더, 구 step 8에서 이동)', () => {
+  const s = FUNNEL_SCREENS.fake_loader;
 
-  it('exposes the high-anchor price (30만원) and Seed-canonical $12/$59 display prices', () => {
-    expect(s.metadata.anchorPriceKrw).toBe(300_000);
-    expect(s.metadata.displayPriceUsdMonthly).toBe(12);
-    expect(s.metadata.displayPriceUsdAnnual).toBe(59);
+  it('runs for exactly 5000 ms and auto-advances', () => {
+    expect(s.metadata.durationMs).toBe(5_000);
+    expect(s.metadata.autoAdvance).toBe(true);
+  });
+
+  it('declares 24 analysis points (matches step 8 fake_scan_animation)', () => {
+    expect(s.metadata.analysisPoints).toBe(24);
+  });
+
+  it('tags v0.2 step-8→step-5 migration via metadata.movedFromStep', () => {
+    expect(s.metadata.movedFromStep).toBe(8);
   });
 });
 
@@ -196,12 +203,34 @@ describe('Step 6 — scan_option_select (3 options, personal_color primary)', ()
   });
 });
 
-describe('Step 8 — fake_loader (가짜 5초 로더, 앵커링 강화)', () => {
-  const s = FUNNEL_SCREENS.fake_loader;
+describe('Step 8 — fake_scan_animation (v0.2 신설: 시각 24-point 스캔 애니메이션)', () => {
+  const s = FUNNEL_SCREENS.fake_scan_animation;
 
   it('runs for exactly 5000 ms and auto-advances', () => {
     expect(s.metadata.durationMs).toBe(5_000);
     expect(s.metadata.autoAdvance).toBe(true);
+  });
+
+  it('declares the visual face-scan animation mechanism', () => {
+    expect(s.metadata.animationMechanism).toBe('face_scan_overlay');
+    expect(s.metadata.analysisPoints).toBe(24);
+  });
+
+  it('declares the complementary text-loader at step 5 (dual sunk-cost mechanism)', () => {
+    expect(s.metadata.complementsTextLoaderAtStep).toBe(5);
+  });
+});
+
+describe('Step 3 — onboarding_priming (v0.2 신설: 일관성 lever priming)', () => {
+  const s = FUNNEL_SCREENS.onboarding_priming;
+
+  it('asks 2 onboarding questions for self-declaration priming', () => {
+    expect(s.metadata.onboardingQuestionCount).toBe(2);
+    expect(s.metadata.primingMechanism).toBe('consistency_lever');
+  });
+
+  it('replaces social_proof_intro (v0.1 step 3)', () => {
+    expect(s.metadata.replaces).toBe('social_proof_intro_v0_1');
   });
 });
 
@@ -232,15 +261,21 @@ describe('Step 10 — referral_gate (KR variant: 1명 추천만)', () => {
   });
 });
 
-describe('Step 11 — social_evolution (KR variant: UGC + 인플루언서 인용)', () => {
+describe('Step 11 — social_evolution (KR variant, v0.2: UGC + 인플루언서 + social_proof 흡수)', () => {
   const s = FUNNEL_SCREENS.social_evolution;
 
-  it('replaces fake Figma reviews with real UGC + influencer quotes', () => {
+  it('replaces fake Figma reviews with real UGC + influencer + aggregate proof', () => {
     expect(s.metadata.replaces).toBe('standard_fake_figma_reviews');
     expect(s.metadata.proofSources).toEqual([
       'user_generated_content',
       'influencer_quotes',
+      'aggregate_user_count',
     ]);
+  });
+
+  it('absorbs the v0.1 social_proof_intro 12만+ user count', () => {
+    expect(s.metadata.userCountClaim).toBe(120_000);
+    expect(s.metadata.absorbs).toBe('social_proof_intro_v0_1');
   });
 });
 
