@@ -27,7 +27,7 @@
 |----|------|------|
 | 2.1 | ✅ RN navigation stack (semantic-kebab 12 placeholder + 4중 정합 + deep-link 6-path + guards + funnel_step_entered) | TS/RN |
 | 2.2 | ✅ 1~5단계 screens (welcome → fake Analyzing 5초; 한국어 카피·디자인 토큰·FunnelStateContext·rating-gate modal·5s autoAdvance) | TS/RN |
-| 2.3 | 6~9단계 screens (scan_option → paywall 앞) | TS/RN |
+| 2.3 | ✅ 6~9단계 screens (scan_option → result_reveal; 24-point face scan animation + locked assets + diagnosisInput Context slice + Phase 2.1 isPreviewMode 보존) | TS/RN |
 | 2.4 | 10~12단계 한국 변형 (referral·social·payment) | TS/RN |
 | 2.5 | Superwall paywall + StoreKit 구독 결제 통합 | iOS |
 | 2.6 | PostHog 12단계 이벤트 emit wire-up | TS |
@@ -109,7 +109,8 @@
 | 1.4 | 2026-05-18 | 2026-05-18 | `orch_b6c7e29cc70a` | `d27410e` | APPROVED · Stage 2 · 0.88 |
 | 2.1 | 2026-05-18 | 2026-05-18 | `orch_d14ea24993ef` | `8f8928f` | APPROVED · Stage 2 · 0.92 |
 | 2.2 | 2026-05-18 | 2026-05-19 | `orch_f9fd2fbeb451` | `eaadaa2` | APPROVED · Stage 2 · 0.93 |
-| 2.3 | — | — | | | 다음 단계 |
+| 2.3 | 2026-05-18 | 2026-05-19 | `orch_cd33a0972630` | `8be0230` | APPROVED · Stage 2 · 0.92 |
+| 2.4 | — | — | | | 다음 단계 |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -345,6 +346,76 @@
 - Phase 2.1 (`orch_d14ea24993ef`) — worktree commit `a083f1c` cherry-pick + 8 AC 수동 완성
 - Phase 2.2 (`orch_f9fd2fbeb451`) — worktree commit `a64a56a` cherry-pick + 16 AC 수동 완성
 - 패턴 안정화: orchestrator가 어디서 멈추든 (a) worktree 작업 보존 → (b) commit → (c) feature branch cherry-pick → (d) test/typecheck 안정화 후 manual completion
+
+### Phase 2.3 결과 요약 (2026-05-19)
+
+**Funnel 6~9단계 실 UI** (PR #7, merge `8be0230`, +5,326 / −42, 27 files):
+
+**Context extension** (Phase 2.2 패턴 재적용 — 두번째 nested 슬라이스):
+- `apps/mobile/src/contracts/funnel-state.ts` — `FunnelDiagnosisInput {selfieUri: string | null}` + `INITIAL_FUNNEL_DIAGNOSIS_INPUT` Object.freeze + `FunnelDiagnosisInputPatch` + `SetDiagnosisInput`; `FunnelStateValue`는 onboarding과 diagnosisInput 두 슬라이스 + 각 setter 모두 readonly
+- `apps/mobile/src/providers/FunnelStateProvider.tsx` — parallel useState + useCallback + useMemo (deps 양쪽 슬라이스 모두 포함)
+
+**Helpers** (3 신규 컴포넌트 + 1 selector):
+- `src/funnel/scan-options.ts` — `getScanOptions()` selector returning 3 frozen options (primary "퍼스널 컬러 진단" + 2 disabled "곧 오픈")
+- `src/components/funnel/ScanOptionItem.tsx` — 단일 옵션 + disabled state + accessibilityState.disabled + "곧 오픈" badge
+- `src/components/funnel/GuideList.tsx` — 정면/자연광/민낯 가이드 리스트
+- `src/components/funnel/SelfieUploadPressable.tsx` — stub Pressable + `onCapture(stub://selfie/<timestamp>)` 콜백
+
+**Screen components** (4 in `src/screens/funnel/`):
+- `ScanOptionSelectScreen.tsx` (114줄) — 3개 ScanOptionItem 인스턴스; 오직 primary가 funnel advance
+- `DiagnosisInputScreen.tsx` (202줄) — GuideList + SelfieUploadPressable; 첫 탭에 stub URI를 setDiagnosisInput으로 저장 → "셀카 등록됨" 인디케이터 → primary CTA enabled
+- `FakeScanAnimationScreen.tsx` (405줄) — **단일 Animated.Value** lazy useRef + sweep line + 24 face-landmark dots (color interpolation per progress) + `<Animated.Text>` counter "n / 24 포인트 분석 완료"; `useNativeDriver: false`; 5초 useAutoAdvanceTimer 병행; oval face outline은 borderRadius (SVG 없음); unmount cleanup 검증
+- `ResultRevealScreen.tsx` (437줄) — teaser "가을 웜톤" 풀-fidelity + 3 distinct locked assets (`full_category_card` 16:9 hero / `guide_text` 3-text-line stack / `first_curation` 2×2 grid); 각 placeholder opacity 0.2 + overlay opacity 0.85 + centered 🔒 (accessibilityLabel="잠김"); Phase 2.1 `isPreviewMode` 분기 보존
+
+**Route thin-wrappers** (4 in `app/(funnel)/`, all delegate to matching screen component):
+- `scan-option-select.tsx`, `diagnosis-input.tsx`, `fake-scan-animation.tsx`, `result-reveal.tsx`
+- `result-reveal.tsx`: `share_token` route param에서 `isPreviewMode` 도출 → preview 모드는 CTA 미렌더, normal 모드는 `onUnlock` → referral-gate
+- `_layout.tsx` untouched (acceptance criterion 준수)
+
+**Tests** (12 신규 파일):
+- screens × 4: `scan-option-select-screen.test.tsx` (7), `diagnosis-input-screen.test.tsx`, `fake-scan-animation-screen.test.tsx` (12 — animation init + sweep line + counter + autoAdvance + unmount), `result-reveal-screen.test.tsx` (12 — 3 locked assets + 🔒 + isPreviewMode)
+- routes × 4: `scan-option-select-route.test.tsx` (3), `diagnosis-input-route.test.tsx` (4), `fake-scan-animation-route.test.tsx` (5), `result-reveal-route.test.tsx` (4 — Phase 2.1 isPreviewMode 보존 검증)
+- helpers × 3: `scan-option-item.test.tsx`, `guide-list.test.tsx`, `selfie-upload-pressable.test.tsx`
+- selector: `scan-options.test.ts` (7)
+- contract 확장: `funnel-state-contract.test.ts` — diagnosisInput 타입 + 런타임 assertions 추가
+
+**Ouroboros workflow**:
+- Interview: `interview_20260518_193715` (ambiguity 0.09)
+- Seed: `seed_961277b04b5f` (QA 0.92 at iter 3/5; iter 1: 0.35 truncated artifact / iter 2: 0.87 / iter 3: 0.92 PASS)
+- Run: `orch_cd33a0972630` (MCP disconnect at AC 2/22 + Sub-AC 12/16)
+- Recovery: 4th application of the worktree cherry-pick + manual completion pattern
+  - `f33d1da` (worktree commit) → `930fb55` (cherry-pick to feature branch)
+  - `cdacab8` (typecheck fix — FunnelStateValue contract test diagnosisInput 누락 보완)
+  - `cc5512d` (Stage 2 fix — result-reveal route file이 ResultRevealScreen 대신 FunnelPlaceholder 사용하던 결함을 evaluator가 보고 → 라우트 wire-up + 4 신규 route test)
+- Evaluate: 첫번째 0.82 REJECTED (result-reveal 라우트 결함) → fix 후 두번째 0.92 APPROVED (AC compliance YES, goal alignment 0.93, drift 0.05)
+
+**Git**:
+- Feature branch: `ooo/run/2.3-funnel-screens-6-9` (auto-deleted post-merge)
+- 핵심 commit: `930fb55` (foundation + screens cherry-pick) · `cdacab8` (contract test fix) · `cc5512d` (result-reveal route fix)
+- PR #7 merge commit: `8be0230` (no-ff)
+
+**검증** (final):
+- apps/mobile: 45 test files · 627 pass · 2 skip · typecheck clean
+- packages/core-ts: 25 test files · 809 pass · 1 skip · typecheck clean
+- CI green on PR #7 (push + pull_request 양쪽)
+- Zero new npm dependencies — pure RN Animated + React Context + 기존 패키지
+
+**Constraint compliance (all preserved)**:
+- StyleSheet.create + RN built-ins only (no Reanimated/Moti/expo-image-picker/expo-vector-icons/expo-blur)
+- Single Animated.Value (useNativeDriver: false) for all step 8 visuals
+- 24 dot positions hardcoded as normalised {x,y} array (no SVG)
+- Animation fires once over 5,000ms then holds (no loop)
+- selfieUri: string | null (not undefined) per Phase 2.2 convention
+- Locked assets internal to ResultRevealScreen (not extracted — only used in step 9)
+- Step 7 stub Pressable only (real ImagePicker는 Phase 3.1)
+- PII never in route params — selfieUri는 in-memory Context만
+- 4중 정합 유지 (_layout.tsx 변경 없음, 12 kebab routes 보존)
+- Phase 2.1 isPreviewMode share_token 분기 result-reveal 라우트에서 그대로 작동
+
+**Stage 2 evaluator's recursive value**:
+- 첫번째 evaluation이 'result-reveal.tsx still imports FunnelPlaceholder'를 정확히 잡아냄 → cherry-pick 후 typecheck/vitest 통과에도 불구하고 evaluator가 라우트 wire-up 결함 발견
+- evaluator가 발견 → 1줄 import 변경 + 4 route test 추가 → 두번째 evaluation 0.92 APPROVED
+- Stage 2의 진짜 가치: mechanical (lint/build/test) 통과해도 의도 alignment 결함은 잡힐 수 있음
 
 ## 참고
 
