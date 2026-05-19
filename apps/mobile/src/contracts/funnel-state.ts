@@ -26,15 +26,22 @@
  *      "onboarding answers are string literal union types only — no free
  *      text input").
  *
- *   2. `FunnelStateValue.onboarding` is `readonly` so consumers cannot mutate
- *      it in place (Seed constraint: "Context value types must be immutable
- *      readonly").
+ *   2. `FunnelStateValue.onboarding` and `FunnelStateValue.diagnosisInput`
+ *      are both `readonly` so consumers cannot mutate them in place (Seed
+ *      constraint: "Context value types must be immutable readonly").
  *
  *   3. `setOnboarding` takes a partial update keyed on the same field names
  *      and returns `void`. The signature accepts a partial so a single field
  *      can be updated without re-sending unrelated answers, and the partial
  *      values are still constrained to the same union-or-null types so a
  *      caller cannot widen the domain with a free-text string.
+ *
+ *   4. `FunnelDiagnosisInput` is a `readonly` record holding the step-7
+ *      diagnosis-input answers. Phase 2.3 ships with a single field —
+ *      `selfieUri: string | null` — and a dedicated `setDiagnosisInput`
+ *      updater symmetric to `setOnboarding`. The slice lives parallel to
+ *      `onboarding` rather than nested inside it so future phases can add
+ *      additional state slices following the same template.
  *
  * Why string literal unions (and why `null` rather than `undefined`):
  *   - `exactOptionalPropertyTypes: true` is enabled at the workspace root
@@ -155,22 +162,118 @@ export type FunnelOnboardingPatch = {
 export type SetOnboarding = (patch: FunnelOnboardingPatch) => void;
 
 // ---------------------------------------------------------------------------
+// Diagnosis input record (step 7 — diagnosis_input)
+// ---------------------------------------------------------------------------
+
+/**
+ * Immutable record of the diagnosis-input answers collected on step 7
+ * (diagnosis_input). Phase 2.3 introduces a single field — `selfieUri` —
+ * mirroring the shape pattern established for {@link FunnelOnboardingAnswers}
+ * in Phase 2.2 so the two state slices stay structurally parallel.
+ *
+ * Phase 2.3 semantics:
+ *   - `selfieUri` is `null` while the user has not yet "captured" a selfie.
+ *   - First tap of the capture Pressable on step 7 stores a stub URI of the
+ *     form `stub://selfie/<timestamp>` so the UI can flip to the "셀카
+ *     등록됨" indicator state. No real image picker runs in Phase 2.3 —
+ *     the actual `expo-image-picker` wiring is deferred to Phase 3.1 (the
+ *     ban on `expo-image-picker` in this phase's constraint set codifies
+ *     that boundary).
+ *   - The Phase 3.1 swap to real device file URIs requires no contract
+ *     change: `string` covers both `stub://...` and `file://...` URIs.
+ *
+ * Why `string | null` rather than `string | undefined`:
+ *   The workspace enables `exactOptionalPropertyTypes: true` at the root
+ *   `tsconfig.base.json`, which forbids passing an explicit `undefined`
+ *   into an `?:`-marked field. Using `| null` with an always-present key
+ *   keeps "not yet captured" representable without colliding with that
+ *   rule, matching the precedent set by
+ *   {@link FunnelOnboardingAnswers.selfieEditStyle} (Phase 2.2) and by
+ *   `FunnelScreen.bodyCopy: string | null` in
+ *   `packages/core-ts/src/funnel/screens.ts`.
+ *
+ * Why no PII concerns are violated:
+ *   The Seed constraint "PII never in route params (PostHog context only)"
+ *   is about route-param surfaces (expo-router `useLocalSearchParams`),
+ *   not about in-memory React Context. `selfieUri` lives only inside the
+ *   funnel-scoped `FunnelStateContext`, is never serialized, and never
+ *   crosses the expo-router boundary — it stays in memory for the duration
+ *   of the (funnel) layout subtree and is discarded when the user leaves
+ *   the funnel.
+ */
+export type FunnelDiagnosisInput = {
+  readonly selfieUri: string | null;
+};
+
+/**
+ * Canonical "no selfie captured yet" value. Suitable as the React Context
+ * default for the diagnosisInput slice and as the initial state for any
+ * synthetic test provider. Frozen so a test that accidentally tries to
+ * mutate it fails loud rather than corrupting other tests via shared
+ * reference — same pattern as {@link INITIAL_FUNNEL_ONBOARDING_ANSWERS}.
+ */
+export const INITIAL_FUNNEL_DIAGNOSIS_INPUT: FunnelDiagnosisInput =
+  Object.freeze({
+    selfieUri: null,
+  });
+
+/**
+ * Partial update accepted by `setDiagnosisInput`.
+ *
+ * Each field is optional (so a caller can update one input at a time) but
+ * still constrained to the same `string | null` type declared above —
+ * there is no escape hatch to other primitive shapes. Combined with
+ * `exactOptionalPropertyTypes: true`, passing `{ selfieUri: undefined }`
+ * is a *compile* error: callers must either omit the key or pass a valid
+ * `string` value (or `null` to explicitly clear).
+ */
+export type FunnelDiagnosisInputPatch = {
+  readonly [K in keyof FunnelDiagnosisInput]?: FunnelDiagnosisInput[K];
+};
+
+/**
+ * Updater function injected through the React Context for the
+ * diagnosisInput slice. Implementations MUST treat the previous
+ * `diagnosisInput` value as immutable and return (via `setState`) a fresh
+ * object that merges the patch — same contract as {@link SetOnboarding}.
+ */
+export type SetDiagnosisInput = (patch: FunnelDiagnosisInputPatch) => void;
+
+// ---------------------------------------------------------------------------
 // Public context value
 // ---------------------------------------------------------------------------
 
 /**
  * Full value carried by the React Context that wraps `app/(funnel)/_layout.tsx`.
  *
- * Both fields are `readonly`:
- *   - `onboarding` is the immutable current snapshot of the two answers.
- *   - `setOnboarding` is the updater handle exposed to write sites
+ * All fields are `readonly`:
+ *   - `onboarding` is the immutable current snapshot of the step-3
+ *     onboarding answers (Phase 2.2).
+ *   - `setOnboarding` is the updater handle exposed to step-3 write sites
  *     (currently only `onboarding_priming`).
+ *   - `diagnosisInput` is the immutable current snapshot of the step-7
+ *     diagnosis-input answers (Phase 2.3) — currently a single `selfieUri`
+ *     field that captures whether the user has tapped the stub capture
+ *     control on `diagnosis_input`.
+ *   - `setDiagnosisInput` is the updater handle exposed to step-7 write
+ *     sites (currently only `diagnosis_input`).
  *
- * The `readonly` on `setOnboarding` prevents a consumer from doing
- * `value.setOnboarding = noop` and silently disabling the writes — the
- * function reference itself is fixed for the lifetime of the provider.
+ * The two state slices (`onboarding` / `diagnosisInput`) are deliberately
+ * kept structurally parallel — each has its own immutable record type, its
+ * own `INITIAL_*` frozen constant, and its own dedicated patch-shaped
+ * updater. This keeps the provider's `useState` wiring symmetric and lets
+ * future phases add additional slices (e.g. `payment`, `magazine`) by
+ * following the same template without needing to refactor either existing
+ * slice.
+ *
+ * The `readonly` on `setOnboarding` and `setDiagnosisInput` prevents a
+ * consumer from doing `value.setOnboarding = noop` and silently disabling
+ * the writes — the function references themselves are fixed for the
+ * lifetime of the provider.
  */
 export type FunnelStateValue = {
   readonly onboarding: FunnelOnboardingAnswers;
   readonly setOnboarding: SetOnboarding;
+  readonly diagnosisInput: FunnelDiagnosisInput;
+  readonly setDiagnosisInput: SetDiagnosisInput;
 };

@@ -2,11 +2,11 @@
  * `FunnelStateProvider` — React Context provider for the personal-color-kr
  * funnel screens (steps 1–5 in MVP, expanded in later phases).
  *
- * Sub-AC 7.2 responsibilities:
+ * Sub-AC 7.2 responsibilities (Phase 2.2) — onboarding slice:
  *   1. Expose a `FunnelStateContext` keyed on the typed contract from
  *      `src/contracts/funnel-state.ts` (`FunnelStateValue`). All consumers
  *      read this same Context via the `useFunnelState()` hook so there is a
- *      single source of truth for the in-flight onboarding answers.
+ *      single source of truth for the in-flight funnel state.
  *   2. Initialise the onboarding answers to the canonical "no answers yet"
  *      sentinel from the contract module
  *      (`INITIAL_FUNNEL_ONBOARDING_ANSWERS`), in which both
@@ -18,6 +18,19 @@
  *      The previous state is never mutated in place — `useState`'s functional
  *      updater always returns a brand-new object so React's reference-equality
  *      check can detect the change and re-render downstream consumers.
+ *
+ * Phase 2.3 responsibilities — diagnosisInput slice (new):
+ *   4. Maintain a parallel `useState` cell for the `diagnosisInput`
+ *      contract slice, seeded from `INITIAL_FUNNEL_DIAGNOSIS_INPUT` so
+ *      `selfieUri` is `null` before the user taps the step-7 capture
+ *      Pressable.
+ *   5. Provide a `setDiagnosisInput(patch)` updater symmetric to
+ *      `setOnboarding`, using the same immutable spread-merge so the
+ *      previous snapshot is never mutated in place.
+ *   6. Keep the two slices on independent `useState` cells (not nested in
+ *      one object) so a write to one slice does not invalidate the
+ *      reference identity of the other — consumers that only subscribe to
+ *      one slice will not re-render on writes to the other.
  *
  * Scoping (Seed constraint):
  *   This provider is intended to be mounted at `app/(funnel)/_layout.tsx`,
@@ -66,10 +79,14 @@
 import * as React from 'react';
 
 import {
+  INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
+  type FunnelDiagnosisInput,
+  type FunnelDiagnosisInputPatch,
   type FunnelOnboardingAnswers,
   type FunnelOnboardingPatch,
   type FunnelStateValue,
+  type SetDiagnosisInput,
   type SetOnboarding,
 } from '../contracts/funnel-state';
 
@@ -129,6 +146,15 @@ export interface FunnelStateProviderProps {
    * `INITIAL_FUNNEL_ONBOARDING_ANSWERS` so both answers are `null`.
    */
   readonly initialOnboarding?: FunnelOnboardingAnswers;
+  /**
+   * Optional seed value for the diagnosis-input slice (Phase 2.3 / step 7).
+   * When omitted (the production path), the provider initialises with
+   * `INITIAL_FUNNEL_DIAGNOSIS_INPUT` so `selfieUri` is `null`. Tests use
+   * this prop to spin up the provider with a pre-captured selfie URI so
+   * `result_reveal` rendering can be exercised without simulating the
+   * step-7 tap sequence first.
+   */
+  readonly initialDiagnosisInput?: FunnelDiagnosisInput;
 }
 
 /**
@@ -156,7 +182,7 @@ export interface FunnelStateProviderProps {
 export function FunnelStateProvider(
   props: FunnelStateProviderProps,
 ): React.ReactElement {
-  const { children, initialOnboarding } = props;
+  const { children, initialOnboarding, initialDiagnosisInput } = props;
 
   // `useState` is the entire engine here — no reducer, no external store,
   // no AsyncStorage (Phase 3). The initial value is computed lazily via the
@@ -165,6 +191,16 @@ export function FunnelStateProvider(
   const [onboarding, setOnboardingState] =
     React.useState<FunnelOnboardingAnswers>(
       () => initialOnboarding ?? INITIAL_FUNNEL_ONBOARDING_ANSWERS,
+    );
+
+  // Parallel useState for the Phase 2.3 diagnosisInput slice. Kept on a
+  // separate state cell (rather than nested inside `onboarding`) so React's
+  // bailout-on-equal-reference path treats writes to one slice independently
+  // of the other — a `setOnboarding(...)` call does not invalidate the
+  // `diagnosisInput` reference, and vice versa.
+  const [diagnosisInput, setDiagnosisInputState] =
+    React.useState<FunnelDiagnosisInput>(
+      () => initialDiagnosisInput ?? INITIAL_FUNNEL_DIAGNOSIS_INPUT,
     );
 
   // `setOnboarding` is wrapped in `useCallback` so its identity is stable
@@ -187,14 +223,32 @@ export function FunnelStateProvider(
     [],
   );
 
-  // Stable context value reference — only rebuilt when `onboarding` actually
-  // changes (since `setOnboarding` is itself stable via useCallback).
+  // `setDiagnosisInput` mirrors `setOnboarding` exactly — same immutable
+  // spread-merge, same stable identity via `useCallback`. Keeping the two
+  // updaters structurally identical preserves the "parallel slices"
+  // invariant declared on `FunnelStateValue`.
+  const setDiagnosisInput = React.useCallback<SetDiagnosisInput>(
+    (patch: FunnelDiagnosisInputPatch) => {
+      setDiagnosisInputState((prev: FunnelDiagnosisInput) => {
+        const next: FunnelDiagnosisInput = { ...prev, ...patch };
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Stable context value reference — only rebuilt when one of the state
+  // slices actually changes (both `setOnboarding` and `setDiagnosisInput`
+  // are themselves stable via useCallback, so they never trigger a rebuild
+  // on their own).
   const value = React.useMemo<FunnelStateValue>(
     () => ({
       onboarding,
       setOnboarding,
+      diagnosisInput,
+      setDiagnosisInput,
     }),
-    [onboarding, setOnboarding],
+    [onboarding, setOnboarding, diagnosisInput, setDiagnosisInput],
   );
 
   return React.createElement(

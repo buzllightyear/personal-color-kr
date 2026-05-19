@@ -1,19 +1,29 @@
 /**
- * Funnel placeholder — diagnosis_input (Phase 2.1, step 7 of 12)
+ * Funnel route — diagnosis_input (Phase 2.3, step 7 of 12).
  *
- * v0.2: 셀카 단독 (온보딩 질문은 step 3 onboarding_priming으로 분리).
- * Internal-only; advances to fake_scan_animation (the visual 24-point
- * scan companion to step 5's text loader).
+ * Thin expo-router wrapper. Resolves the `useRouter` push handler and the
+ * `useFunnelState` hook here so the presentational `DiagnosisInputScreen`
+ * stays pure props-in / callbacks-out (and unit-tests without any
+ * provider or router context).
+ *
+ *   - `selfieUri` is read from `FunnelStateContext.diagnosisInput`.
+ *   - `onCaptureSelfie(uri)` writes the stub URI via `setDiagnosisInput`.
+ *   - `onNext()` navigates to the next funnel step
+ *     (`/(funnel)/fake-scan-animation`).
  */
+import * as React from 'react';
 import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { DiagnosisInputScreen } from '../../src/screens/funnel/DiagnosisInputScreen';
+import { useFunnelState } from '../../src/hooks/use-funnel-state';
 
-export default function DiagnosisInputScreen(): JSX.Element {
+export default function DiagnosisInputRoute(): React.ReactElement {
   const router = useRouter();
+  const { diagnosisInput, setDiagnosisInput } = useFunnelState();
   return (
-    <FunnelPlaceholder
-      stepId="diagnosis_input"
+    <DiagnosisInputScreen
+      selfieUri={diagnosisInput.selfieUri}
+      onCaptureSelfie={(uri) => setDiagnosisInput({ selfieUri: uri })}
       onNext={() => router.push('/(funnel)/fake-scan-animation')}
     />
   );

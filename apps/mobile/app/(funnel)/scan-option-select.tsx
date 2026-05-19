@@ -1,21 +1,22 @@
 /**
- * Funnel placeholder — scan_option_select (Phase 2.1, step 6 of 12)
+ * Funnel route — scan_option_select (Phase 2.3, step 6 of 12).
  *
- * Internal-only. The real screen presents 3 scan options (퍼스널 컬러 as
- * the primary CTA + 2 Phase-N secondary scans). The placeholder advances
- * to diagnosis-input — selecting personal-color is the only path the
- * funnel currently models.
+ * Thin expo-router route wrapper. Resolves the `useRouter` push handler and
+ * forwards it as `onSelectPersonalColor` to the presentational screen.
+ * The screen owns all the visual / accessibility decisions; this file only
+ * wires navigation. Per the Seed constraint, selecting `퍼스널 컬러` is the
+ * only path the funnel currently models — secondary slots are Phase-N TBD.
  */
+import * as React from 'react';
 import { useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { ScanOptionSelectScreen } from '../../src/screens/funnel/ScanOptionSelectScreen';
 
-export default function ScanOptionSelectScreen(): JSX.Element {
+export default function ScanOptionSelectRoute(): React.ReactElement {
   const router = useRouter();
   return (
-    <FunnelPlaceholder
-      stepId="scan_option_select"
-      onNext={() => router.push('/(funnel)/diagnosis-input')}
+    <ScanOptionSelectScreen
+      onSelectPersonalColor={() => router.push('/(funnel)/diagnosis-input')}
     />
   );
 }
