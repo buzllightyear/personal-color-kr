@@ -13,9 +13,11 @@
  *     a "나중에 할게요" skip CTA that `router.push`es forward to
  *     `payment_model` so the soft-gate invariant holds.
  *
- *   - `shared === true` — renders the empty-state share-confirmation
- *     branch (handled by the sibling AC; placeholder retained here until
- *     that branch component lands).
+ *   - `shared === true` — renders the `SocialEvolutionSharedTrueBranch`
+ *     empty-state share-confirmation surface with a "다음으로" continue CTA
+ *     that `router.push`es forward to `payment_model`. The branch never
+ *     re-renders a share control (Seed: "no duplicate share functionality
+ *     on social_evolution"); it acknowledges the prior share and forwards.
  *
  * Navigation contract (per Seed):
  *   - `router.push('/(funnel)/referral-gate')` on shared=false "share again"
@@ -24,8 +26,8 @@
  *   - `router.push('/(funnel)/payment-model')` on shared=false skip CTA.
  *     Push (not replace) so the back-swipe path back to social_evolution
  *     remains intact for the same reason.
- *   - `router.push('/(funnel)/payment-model')` on the eventual shared=true
- *     forward CTA (handled by sibling AC).
+ *   - `router.push('/(funnel)/payment-model')` on the shared=true forward
+ *     CTA. Same push semantics for back-swipe symmetry.
  *
  * What this route is NOT:
  *   - Not a state writer. The route only READS `referral.shared` from the
@@ -45,27 +47,23 @@
  *   invariant preserved).
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
+import { trackSocialEvolutionSkipped } from '../../src/analytics/track-social-evolution-skipped';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
 import { SocialEvolutionSharedFalseBranch } from '../../src/screens/funnel/SocialEvolutionSharedFalseBranch';
+import { SocialEvolutionSharedTrueBranch } from '../../src/screens/funnel/SocialEvolutionSharedTrueBranch';
 
 export default function SocialEvolutionRoute(): React.ReactElement {
   const router = useRouter();
-  // `useLocalSearchParams` is called for parity with the rest of the funnel
-  // route surface; Phase 2.4 does not yet consume any params here (the
-  // branch selection comes from the context, not the URL).
-  useLocalSearchParams();
   const { referral } = useFunnelState();
 
-  // shared=false branch — the default initial state. Renders the
-  // upsell-to-share card with the CTA that routes BACK to `referral_gate`.
   if (!referral.shared) {
     const handleShareAgain = (): void => {
       router.push('/(funnel)/referral-gate');
     };
     const handleSkip = (): void => {
+      trackSocialEvolutionSkipped({});
       router.push('/(funnel)/payment-model');
     };
     return (
@@ -76,26 +74,9 @@ export default function SocialEvolutionRoute(): React.ReactElement {
     );
   }
 
-  // shared=true branch — empty-state share-confirmation surface. Handled
-  // by the sibling AC; this placeholder retains the original
-  // `social-evolution-screen` testID so the existing route-level smoke
-  // test still passes until the real branch component lands.
-  return (
-    <View style={styles.container} testID="social-evolution-screen">
-      <Text style={styles.title}>social_evolution</Text>
-    </View>
-  );
+  const handleContinue = (): void => {
+    trackSocialEvolutionSkipped({});
+    router.push('/(funnel)/payment-model');
+  };
+  return <SocialEvolutionSharedTrueBranch onContinue={handleContinue} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});

@@ -147,14 +147,16 @@ describe('social-evolution route file — render smoke', () => {
     ).toBeTruthy();
   });
 
-  it('renders the shared=true placeholder when referral.shared === true', () => {
-    // shared=true branch lands in a sibling AC; until that component is
-    // wired the route retains the original `social-evolution-screen`
-    // testID as a stable anchor.
+  it('renders the shared=true branch when referral.shared === true', () => {
+    // shared=true branch delegates to the
+    // `SocialEvolutionSharedTrueBranch` component which mounts the
+    // `social-evolution-shared-true-screen` testID at its layout root.
     pushSpy.mockClear();
     replaceSpy.mockClear();
     const tree = renderRoute(true);
-    expect(findHostByTestId(tree, 'social-evolution-screen')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'social-evolution-shared-true-screen'),
+    ).toBeTruthy();
   });
 
   it('does not invoke router.push or router.replace on mount (either branch)', () => {

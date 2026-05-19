@@ -1,83 +1,209 @@
 /**
  * Funnel route — `payment_model` (Phase 2.4, step 12 of 12, KR variant).
  *
- * Sub-AC 17.3 scope (this file, minimum viable surface):
- *   - Default-exports an Expo Router screen component (the route contract).
- *   - Renders a stable root testID (`payment-model-screen`) so subsequent
- *     sub-ACs can layer the payment-method radio selection (kakao | toss),
- *     the hardcoded `PAYMENT_AMOUNT_KRW` price line, the primary "unlock"
- *     CTA, and the soft-gate skip control onto a known anchor without
- *     re-bootstrapping the surface.
- *   - Acquires `useRouter()` and `useLocalSearchParams()` at module
- *     evaluation time so the import / mount path is exercised by the
- *     route-level smoke test. Navigation side effects (router.replace to
- *     `result-reveal?premium=true` on a successful 250ms payment
- *     placeholder, router.replace to `result-reveal` on skip) are
- *     intentionally NOT wired here — those land in later sub-ACs along
- *     with the real UI and the FunnelStateProvider payment-slice writes.
+ * Composition contract:
+ *   - Renders `PriceCard` (hardcoded `PAYMENT_AMOUNT_KRW` from
+ *     `payment-model-ctas.ts`).
+ *   - Renders `PaymentMethodRadio` bound to `payment.selectedMethod` from
+ *     `FunnelStateProvider` and `setSelectedPaymentMethod` for writes.
+ *   - Renders a "결제하기" primary CTA (label sourced from
+ *     `formatUnlockCtaLabel()`) that is `disabled` until a method has
+ *     been selected.
+ *   - Renders a subdued "나중에 할게요" soft-gate skip control matching
+ *     the rhythm of step-4 `rating_gate` and step-10 `referral_gate`.
  *
- * What this route is NOT (yet):
- *   - It does NOT contain KakaoPay or Toss SDK imports, network calls, or
- *     real payment intents. Per the seed contract every external payment
- *     SDK interaction is a `console.log` + `TODO(phase-2.5)` placeholder
- *     introduced by later sub-ACs (with the 250ms `setTimeout` placeholder
- *     that simulates the in-flight transaction, and a `useEffect` cleanup
- *     to neutralise the timer on unmount).
- *   - It does NOT render the payment-method radio selection, the
- *     `PAYMENT_AMOUNT_KRW` price line, the "unlock premium" primary CTA,
- *     or the soft-gate skip control. Those land in later sub-ACs on top
- *     of the testID anchor established here.
- *   - It does NOT write to the FunnelStateProvider payment slice
- *     (`isProcessing`, `isPremium`, `selectedMethod`). The slice exists
- *     in a sibling sub-AC; the writes land in the payment-action sub-AC
- *     that also wires the SDK placeholders.
- *   - It does NOT pass `payment_token`, `transaction_id`, or any payment
- *     PII through route params. `useLocalSearchParams()` is called for
- *     parity with the sibling route files (so the import surface is real)
- *     but the params are not yet consumed; future sub-ACs adding
- *     entry-source telemetry will introduce consumption explicitly.
- *   - It does NOT manage `isPremium` via route params. Per the seed
- *     contract `isPremium` is owned solely by the FunnelStateProvider
- *     payment slice; `?premium=true` on the result-reveal target is a
- *     navigation trigger only, never a source of truth.
+ * Payment placeholder flow (Seed:
+ *   "payment_model CTA triggers 250ms setTimeout noop + sets
+ *    payment.isPremium=true + router.replace to result-reveal"):
+ *   1. Tap "결제하기" → set `payment.isProcessing = true` (locks the radio
+ *      and disables both CTAs).
+ *   2. After a 250ms `setTimeout` placeholder:
+ *      - `trackPaymentCompleted({ method })` (console.log placeholder).
+ *      - `setIsPremium(true)`.
+ *      - `setPaymentProcessing(false)`.
+ *      - `router.replace('/(funnel)/result-reveal?premium=true')`. The
+ *        `?premium=true` query param is a navigation TRIGGER only; the
+ *        actual `isPremium` source-of-truth lives in the
+ *        `FunnelStateProvider` payment slice per the Seed contract.
+ *   3. The `setTimeout` handle is captured in a `useRef` and cleared in
+ *      the effect cleanup so an early unmount (back-swipe, route
+ *      change) does NOT later trigger state writes against an unmounted
+ *      component.
+ *
+ * Skip flow:
+ *   "나중에 할게요" → `router.replace('/(funnel)/result-reveal')`
+ *   (locked state — `isPremium` stays `false`).
+ *   Replace (not push) so back-swipe from `result-reveal` cannot
+ *   re-enter payment_model (the Seed names this the soft-gate exit).
+ *
+ * What this route is NOT:
+ *   - It does NOT import KakaoPay or Toss SDKs, make network calls,
+ *     or process real transactions. Every external SDK touch is a
+ *     `console.log` + `TODO(phase-2.5)` placeholder.
+ *   - It does NOT manage `isPremium` via route params. The
+ *     `?premium=true` on the result-reveal target is a navigation
+ *     trigger only — `payment.isPremium` lives in the
+ *     FunnelStateProvider.
+ *   - It does NOT block hardware back. Per the Seed: "payment_model
+ *     back button naturally returns to social_evolution (no
+ *     BackHandler blocking)". The only BackHandler in Phase 2.4 lives
+ *     on the premium branch of `result-reveal`.
  *
  * External deep-link invariant:
  *   `payment-model` is one of the 9 INTERNAL-ONLY funnel kebab slugs.
- *   External deep links to this slug must be redirected to `welcome-hook`
- *   per the `src/internal-only-routes.ts` allowlist (Phase 2.1 security
- *   invariant preserved — payment-related routes especially must not be
- *   reachable cold from a URL).
+ *   External deep links to this slug must be redirected to
+ *   `welcome-hook` per the `src/internal-only-routes.ts` allowlist
+ *   (Phase 2.1 security invariant preserved — payment-related routes
+ *   especially must not be reachable cold from a URL).
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { trackPaymentCompleted } from '../../src/analytics/track-payment-completed';
+import { PaymentMethodRadio } from '../../src/components/funnel/PaymentMethodRadio';
+import { PriceCard } from '../../src/components/funnel/PriceCard';
+import { FunnelPrimaryButton } from '../../src/components/funnel/FunnelPrimaryButton';
+import { FunnelHeadline } from '../../src/components/FunnelHeadline';
+import { FunnelScreenLayout } from '../../src/funnel/FunnelScreenLayout';
+import {
+  PAYMENT_AMOUNT_KRW,
+  PAYMENT_MODEL_SKIP_CTA_LABEL,
+  formatUnlockCtaLabel,
+} from '../../src/funnel/payment-model-ctas';
+import { useFunnelState } from '../../src/hooks/use-funnel-state';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../src/theme';
+import { FUNNEL_SCREENS } from 'core-ts/funnel';
+
+const SCREEN = FUNNEL_SCREENS.payment_model;
+
+const PAYMENT_PLACEHOLDER_TIMEOUT_MS = 250;
 
 export default function PaymentModelRoute(): React.ReactElement {
-  // Acquire the expo-router hooks at module evaluation time so the route
-  // file's import surface is exercised by the route-level smoke test. The
-  // returned values are intentionally not consumed yet — sub-ACs adding
-  // the "unlock premium" success path (router.replace →
-  // `result-reveal?premium=true`) and the soft-gate skip path
-  // (router.replace → `result-reveal`) will wire navigation explicitly.
-  useRouter();
-  useLocalSearchParams();
+  const router = useRouter();
+  const {
+    payment,
+    setSelectedPaymentMethod,
+    setPaymentProcessing,
+    setIsPremium,
+  } = useFunnelState();
+  const { selectedMethod, isProcessing } = payment;
+
+  // Capture the in-flight placeholder timer so an unmount (back-swipe,
+  // route change) clears it before the deferred state writes fire — per
+  // the Seed constraint "setTimeout(250ms) payment placeholder must
+  // have useEffect cleanup for unmount safety".
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleUnlock = React.useCallback((): void => {
+    if (selectedMethod === null || isProcessing) {
+      return;
+    }
+    setPaymentProcessing(true);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      trackPaymentCompleted({
+        method: selectedMethod,
+        amountKrw: PAYMENT_AMOUNT_KRW,
+      });
+      setIsPremium(true);
+      setPaymentProcessing(false);
+      router.replace('/(funnel)/result-reveal?premium=true');
+    }, PAYMENT_PLACEHOLDER_TIMEOUT_MS);
+  }, [
+    selectedMethod,
+    isProcessing,
+    setPaymentProcessing,
+    setIsPremium,
+    router,
+  ]);
+
+  const handleSkip = React.useCallback((): void => {
+    if (isProcessing) {
+      return;
+    }
+    router.replace('/(funnel)/result-reveal');
+  }, [isProcessing, router]);
+
+  const unlockDisabled = selectedMethod === null || isProcessing;
 
   return (
-    <View style={styles.container} testID="payment-model-screen">
-      <Text style={styles.title}>payment_model</Text>
-    </View>
+    <FunnelScreenLayout
+      testID="payment-model-screen"
+      accessibilityLabel="결제로 잠금 해제"
+    >
+      <View style={styles.body}>
+        <FunnelHeadline
+          headline={SCREEN.headline}
+          subhead={SCREEN.subhead}
+          testIDPrefix="payment-model"
+        />
+        <View style={styles.priceWrapper}>
+          <PriceCard />
+        </View>
+        <View style={styles.radioWrapper}>
+          <PaymentMethodRadio
+            value={selectedMethod}
+            onChange={setSelectedPaymentMethod}
+            disabled={isProcessing}
+          />
+        </View>
+      </View>
+      <View style={styles.ctaStack}>
+        <FunnelPrimaryButton
+          label={formatUnlockCtaLabel()}
+          onPress={handleUnlock}
+          disabled={unlockDisabled}
+          testID="payment-model-unlock-cta"
+          accessibilityLabel={formatUnlockCtaLabel()}
+        />
+        <Pressable
+          onPress={handleSkip}
+          style={styles.skipButton}
+          testID="payment-model-skip-cta"
+          accessibilityRole="button"
+          accessibilityLabel={PAYMENT_MODEL_SKIP_CTA_LABEL}
+          disabled={isProcessing}
+        >
+          <Text style={styles.skipLabel}>{PAYMENT_MODEL_SKIP_CTA_LABEL}</Text>
+        </Pressable>
+      </View>
+    </FunnelScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  body: {
     flex: 1,
+    justifyContent: 'center',
+    gap: SPACING.lg,
+  },
+  priceWrapper: {
+    alignItems: 'stretch',
+  },
+  radioWrapper: {
+    alignItems: 'stretch',
+  },
+  ctaStack: {
+    gap: SPACING.md,
+    paddingBottom: SPACING.xl,
+  },
+  skipButton: {
+    paddingVertical: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
+  skipLabel: {
+    ...TYPOGRAPHY.button.medium,
+    color: COLORS.grayscale.disabled,
   },
 });

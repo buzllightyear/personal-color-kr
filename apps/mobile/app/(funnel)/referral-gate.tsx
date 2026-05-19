@@ -1,35 +1,36 @@
 /**
  * Funnel route — `referral_gate` (Phase 2.4, step 10 of 12, KR variant).
  *
- * Sub-AC 17.1 scope (this file, minimum viable surface):
- *   - Default-exports an Expo Router screen component (the route contract).
- *   - Renders a stable root testID (`referral-gate-screen`) so subsequent
- *     sub-ACs can layer kakao-share / copy-link / skip controls onto a
- *     known anchor without re-bootstrapping the surface.
- *   - Acquires `useRouter()` and `useLocalSearchParams()` at module
- *     evaluation time so the import / mount path is exercised by the
- *     route-level smoke test. Navigation side effects (router.replace to
- *     `social-evolution` on share completion, router.push to
- *     `social-evolution` on skip) are intentionally NOT wired here —
- *     those land in later sub-ACs along with the real share / skip UI.
+ * Thin Expo Router wrapper that:
+ *   1. Acquires `useRouter()` for navigation side effects.
+ *   2. Reads `setReferral` from `FunnelStateProvider` via `useFunnelState()`
+ *      so the share-completion path can flip `referral.shared` to `true`.
+ *      The route writes the slice — the presentational `ReferralGateScreen`
+ *      component stays pure props-in / callbacks-out (matches the pattern
+ *      established by every other funnel route in Phases 2.1–2.3).
+ *   3. Delegates rendering to `ReferralGateScreen` with three handlers wired
+ *      to the seed's navigation contract.
  *
- * What this route is NOT (yet):
- *   - It does NOT call `shouldBypassReferral()` from `_guards.ts`. The
- *     Phase 2.1 placeholder used that guard to surface the bypass flag in
- *     a dev-info row; Phase 2.4 replaces the placeholder with a real
- *     screen UI and the bypass decision moves to the routing layer
- *     (Phase 3/4). Calling the stub on every mount in 2.4 would emit a
- *     spurious `console.warn` for a code path that is no longer the
- *     decision-maker.
- *   - It does NOT contain Kakao SDK calls, share intents, or any payment
- *     SDK references. Per the seed constraint, all SDK interactions are
- *     `console.log` + TODO(phase-2.5) placeholders introduced by later
- *     sub-ACs — never here at the bootstrap layer.
- *   - It does NOT pass `share_token` or any PII through route params.
- *     `useLocalSearchParams()` is called for parity with other route
- *     files (so the import surface is real) but the params are not yet
- *     consumed; sub-ACs adding share-source telemetry will introduce
- *     consumption explicitly.
+ * Navigation contract (per Seed):
+ *   - Share completion (kakao OR copy_link) →
+ *     `router.replace('/(funnel)/social-evolution')`. Replace (not push) so
+ *     the user cannot back-swipe from `social_evolution` into the just-
+ *     completed share gate (would only re-share the same content).
+ *   - Skip CTA → `router.push('/(funnel)/social-evolution')`. Push (not
+ *     replace) so the back-swipe path from `social_evolution` back to
+ *     `referral_gate` remains intact — the `shared=false` upsell branch on
+ *     `social_evolution` links the user BACK here to share.
+ *
+ * Placeholder side effects (Seed constraint:
+ *   "All external SDK interactions are noop placeholders with TODO
+ *   comments"):
+ *   - `trackReferralShared({ method: 'kakao' | 'copy_link' })` and
+ *     `trackReferralSkipped({})` are `console.log` wrappers under
+ *     `src/analytics/` that will swap to `posthog.capture(...)` in
+ *     Phase 2.5.
+ *   - No real Kakao SDK call, no clipboard write — both share buttons
+ *     route through the same `setReferral({ shared: true })` write so the
+ *     funnel-state contract treats them identically.
  *
  * External deep-link allowlist invariant:
  *   `referral-gate` is one of the 3 externally-allowed funnel kebab slugs
@@ -39,34 +40,39 @@
  *   deep-link entry (Phase 2.1 security invariant preserved).
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+
+import { trackReferralShared } from '../../src/analytics/track-referral-shared';
+import { trackReferralSkipped } from '../../src/analytics/track-referral-skipped';
+import { useFunnelState } from '../../src/hooks/use-funnel-state';
+import { ReferralGateScreen } from '../../src/screens/funnel/ReferralGateScreen';
 
 export default function ReferralGateRoute(): React.ReactElement {
-  // Acquire the expo-router hooks at module evaluation time so the route
-  // file's import surface is exercised by the route-level smoke test. The
-  // returned values are intentionally not consumed yet — sub-ACs adding
-  // share / skip handlers will wire `router.push` / `router.replace` and
-  // any param-driven branches explicitly.
-  useRouter();
-  useLocalSearchParams();
+  const router = useRouter();
+  const { setReferral } = useFunnelState();
+
+  const handleShareKakao = React.useCallback((): void => {
+    trackReferralShared({ method: 'kakao' });
+    setReferral({ shared: true });
+    router.replace('/(funnel)/social-evolution');
+  }, [router, setReferral]);
+
+  const handleCopyLink = React.useCallback((): void => {
+    trackReferralShared({ method: 'copy_link' });
+    setReferral({ shared: true });
+    router.replace('/(funnel)/social-evolution');
+  }, [router, setReferral]);
+
+  const handleSkip = React.useCallback((): void => {
+    trackReferralSkipped({});
+    router.push('/(funnel)/social-evolution');
+  }, [router]);
 
   return (
-    <View style={styles.container} testID="referral-gate-screen">
-      <Text style={styles.title}>referral_gate</Text>
-    </View>
+    <ReferralGateScreen
+      onShareKakao={handleShareKakao}
+      onCopyLink={handleCopyLink}
+      onSkip={handleSkip}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});

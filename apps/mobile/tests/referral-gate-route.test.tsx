@@ -90,6 +90,7 @@ vi.mock('expo-router', () => {
 // route module's `import { useRouter } from 'expo-router'` resolves to the
 // mocked surface above.
 import ReferralGateRoute from '../app/(funnel)/referral-gate';
+import { FunnelStateProvider } from '../src/providers/FunnelStateProvider';
 
 interface TestInstance {
   readonly type: unknown;
@@ -109,7 +110,9 @@ function findHostByTestId(
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = TestRenderer.create(element);
+    tree = TestRenderer.create(
+      React.createElement(FunnelStateProvider, null, element),
+    );
   });
   if (!tree) throw new Error('render: tree not created');
   return tree;
