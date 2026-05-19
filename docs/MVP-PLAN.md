@@ -28,7 +28,7 @@
 | 2.1 | ✅ RN navigation stack (semantic-kebab 12 placeholder + 4중 정합 + deep-link 6-path + guards + funnel_step_entered) | TS/RN |
 | 2.2 | ✅ 1~5단계 screens (welcome → fake Analyzing 5초; 한국어 카피·디자인 토큰·FunnelStateContext·rating-gate modal·5s autoAdvance) | TS/RN |
 | 2.3 | ✅ 6~9단계 screens (scan_option → result_reveal; 24-point face scan animation + locked assets + diagnosisInput Context slice + Phase 2.1 isPreviewMode 보존) | TS/RN |
-| 2.4 | 10~12단계 한국 변형 (referral·social·payment) | TS/RN |
+| 2.4 | ✅ 10~12단계 한국 변형 (referral_gate · social_evolution · payment_model 한국 변형 UI shell + state slices + 결제 placeholder + premium unlock BackHandler) | TS/RN |
 | 2.5 | Superwall paywall + StoreKit 구독 결제 통합 | iOS |
 | 2.6 | PostHog 12단계 이벤트 emit wire-up | TS |
 
@@ -110,7 +110,8 @@
 | 2.1 | 2026-05-18 | 2026-05-18 | `orch_d14ea24993ef` | `8f8928f` | APPROVED · Stage 2 · 0.92 |
 | 2.2 | 2026-05-18 | 2026-05-19 | `orch_f9fd2fbeb451` | `eaadaa2` | APPROVED · Stage 2 · 0.93 |
 | 2.3 | 2026-05-18 | 2026-05-19 | `orch_cd33a0972630` | `8be0230` | APPROVED · Stage 2 · 0.92 |
-| 2.4 | — | — | | | 다음 단계 |
+| 2.4 | 2026-05-19 | 2026-05-20 | `orch_a7ebcc674886` | `07132de` | APPROVED · Stage 2 · 0.93 |
+| 2.5 | — | — | | | 다음 단계 |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -416,6 +417,62 @@
 - 첫번째 evaluation이 'result-reveal.tsx still imports FunnelPlaceholder'를 정확히 잡아냄 → cherry-pick 후 typecheck/vitest 통과에도 불구하고 evaluator가 라우트 wire-up 결함 발견
 - evaluator가 발견 → 1줄 import 변경 + 4 route test 추가 → 두번째 evaluation 0.92 APPROVED
 - Stage 2의 진짜 가치: mechanical (lint/build/test) 통과해도 의도 alignment 결함은 잡힐 수 있음
+
+### Phase 2.4 결과 요약 (2026-05-20)
+
+**Funnel 10~12단계 한국 변형 (referral_gate · social_evolution · payment_model)** (PR #9, merge `07132de`, +9,307 / −105, 47 files):
+
+**Context extension** (Phase 2.2/2.3 패턴 세번째 재적용 — 두 슬라이스 동시 추가):
+- `referral: { shared: boolean }` — 단일 boolean 슬라이스, INITIAL_FUNNEL_REFERRAL = { shared: false }
+- `payment: { selectedMethod: 'kakao' | 'toss' | null, isProcessing: boolean, isPremium: boolean }` — discriminated union + 2 flags
+- 5개 setter 추가 (`setReferral`, `setPayment`, `setSelectedPaymentMethod`, `setPaymentProcessing`, `setIsPremium`) — bulk patch + 단일 필드 setter 병행 (mutual-exclusive bailout 포함)
+- 모두 useState + useCallback + useMemo 병렬 슬라이스 패턴 — 한 슬라이스 쓰기가 다른 슬라이스 reference 무효화 안 시킴
+
+**3개 신규 화면 (UI shell + placeholder SDK + state binding)**:
+- `ReferralGateScreen` — 카카오톡 공유 + 링크 복사 + "나중에 할게요" 3-CTA stack (subdued 텍스트 skip)
+- `SocialEvolutionSharedFalseBranch` — upsell 카드 + "친구에게 공유하기" (router.push → referral-gate) + skip (router.push → payment-model). shared=false 분기 단일 source of truth (공유 기능 중복 방지)
+- `SocialEvolutionSharedTrueBranch` — 공유 완료 확인 + 친구 empty state (👥 + "아직 친구가 참여하지 않았어요") + "다음으로" forward CTA
+- `payment-model` route inline composition — `PriceCard` (₩9,900 하드코딩, Intl.NumberFormat ko-KR) + `PaymentMethodRadio` (kakao/toss radio + disabled 상태) + "결제하고 잠금 해제" primary + "나중에 할게요" skip
+
+**Result-reveal premium branch (Phase 2.1 isPreviewMode 보존)**:
+- `ResultRevealScreen` — `isPremium` prop 분기 추가: 3개 placeholder (full_category_card / guide_text / first_curation) lock overlay 제거 + `accessibilityLabel="잠김"` 제거
+- `result-reveal.tsx` route — `BackHandler` via `useFocusEffect` + `useCallback` (deps: isPremium, router) → `router.dismissAll()` on premium-only branch. cleanup `subscription.remove()` 으로 listener 누수 방지
+
+**5개 PostHog placeholder events** (`src/analytics/`):
+- `track-referral-shared` ({ method: 'kakao' | 'copy_link' }), `track-referral-skipped` ({}), `track-social-evolution-skipped` ({}), `track-payment-method-selected` ({ method }), `track-payment-completed` ({ method, amountKrw })
+- 패턴: `console.log('[analytics:placeholder]', EVENT_NAME, payload)` + `// TODO(phase-2.5): posthog.capture(...)` — Phase 2.5 swap 시 한 줄 변경
+
+**Payment placeholder 250ms setTimeout + useRef cleanup**:
+- `payment-model.tsx`의 `handleUnlock`: `setPaymentProcessing(true)` → `setTimeout(250ms)` (`timerRef` 캡처) → trackPaymentCompleted + `setIsPremium(true)` + `setPaymentProcessing(false)` + `router.replace('/(funnel)/result-reveal?premium=true')`
+- `useEffect` cleanup: unmount 시 `clearTimeout(timerRef.current)` — 250ms 도중 라우트 이탈 안전성
+
+**Navigation 계약** (Phase 2.4 첫 분기 도입):
+- `router.replace` — referral_gate 공유 완료 → social-evolution / payment_model success → result-reveal?premium=true / payment_model skip → result-reveal (locked)
+- `router.push` — result_reveal CTA → referral_gate / social_evolution shared=false → referral_gate / social_evolution → payment-model
+
+**테스트 회로 (22+ 신규 파일, ~100 신규 케이스)**:
+- 슬라이스: `funnel-state-payment-slice` (9), `funnel-state-payment-set-{is-premium,processing,selected-method}` (28 total) + `funnel-state-contract` Equal 어설션 확장
+- 컴포넌트: `payment-method-radio` (23), `price-card` (15), `referral-gate-screen` (9), `social-evolution-shared-{true,false}-branch` (9)
+- 라우트: `referral-gate-route` (4), `social-evolution-route` (7), `payment-model-route` (4), `result-reveal-cta-navigation` (3), `result-reveal-route-premium-backhandler` (5)
+- 결과: 787 passed / 2 skipped / 69 files · tsc --noEmit 0 errors
+
+**4중 정합 (4-way consistency cross-check)**:
+- TypeScript types (src/contracts/funnel-state.ts) ↔ vitest type-level `Equal` 어설션 (tests/funnel-state-contract.test.ts) ↔ Route 파일 존재 (app/(funnel)/*.tsx) ↔ Provider slice shape (src/providers/FunnelStateProvider.tsx)
+
+**Security invariants (Phase 2.1 패턴 유지)**:
+- 실제 Kakao / KakaoPay / Toss SDK import 없음 (전부 `console.log` placeholder + TODO 마커)
+- SDK key 가 `app.config.ts` extra block 에 없음 (Phase 2.5 Superwall에서 처리)
+- `isPremium`은 FunnelStateProvider payment 슬라이스에만 — route param 노출 없음
+- `?premium=true`는 navigation trigger only (실제 state는 provider)
+- 9개 internal funnel screen 외부 deep-link 차단 유지
+
+**MCP-disconnect recovery 5번째 적용 (Phase 1.2 / 2.1 / 2.2 / 2.3 / 2.4)**:
+- Orchestrator AC 10/26 도달 시점에 disconnect — 모든 컴포넌트/스크린/슬라이스/분석/테스트 스캐폴딩은 완성, 단 3개 route 파일이 placeholder 상태로 남음
+- Worktree commit (`141b4c4`) → main branch cherry-pick (`76f46fb`)
+- 3개 route 수동 wire-up + 3개 route test FunnelStateProvider wrap 추가 (`ce3e515`)
+- 패턴 재확인: orchestrator는 leaf 컴포넌트는 잘 만들지만 cross-cutting wire-up(route ↔ screen) 단계에서 자주 정지
+
+**Evaluate**: APPROVED Stage 2 · score **0.93** · goal alignment 0.92 · drift 0.05 · uncertainty 0.10 (Phase 2.2와 동률 — 최고점)
 
 ## 참고
 
