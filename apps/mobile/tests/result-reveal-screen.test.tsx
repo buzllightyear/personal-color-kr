@@ -1,6 +1,6 @@
 /**
  * Unit test — `ResultRevealScreen` presentational component (Phase 2.3,
- * Sub-AC 4).
+ * Sub-AC 4; extended for Phase 2.4 Sub-AC 11.1).
  *
  * Asserts:
  *   1. Renders the Korean headline + subhead + body copy sourced from
@@ -17,8 +17,10 @@
  *      lock indicator to a Unicode glyph (no @expo/vector-icons), and the
  *      Korean a11y label means screen-readers announce "잠김" rather than
  *      the raw codepoint.
- *   5. Renders the primary "결과 잠금 해제" CTA when `isPreviewMode === false`
- *      and invokes `onUnlock` exactly once when pressed.
+ *   5. Renders the primary "친구와 공유하고 잠금 해제" CTA when
+ *      `isPreviewMode === false` AND `isPremium === false` (Sub-AC 11.1
+ *      Phase 2.4 share-to-unlock label) and invokes `onUnlock` exactly
+ *      once when pressed.
  *   6. Hides the primary CTA when `isPreviewMode === true` (preserved from
  *      the Phase 2.1 share_token preview branch behaviour).
  */
@@ -58,6 +60,7 @@ import {
   ResultRevealScreen,
   LOCKED_ASSET_PLACEHOLDER_OPACITY,
   LOCKED_ASSET_OVERLAY_OPACITY,
+  SHARE_UNLOCK_CTA_LABEL,
 } from '../src/screens/funnel/ResultRevealScreen';
 
 interface TestInstance {
@@ -106,6 +109,7 @@ describe('ResultRevealScreen — render', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -118,6 +122,7 @@ describe('ResultRevealScreen — render', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -132,6 +137,7 @@ describe('ResultRevealScreen — render', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -148,6 +154,7 @@ describe('ResultRevealScreen — locked assets', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -164,6 +171,7 @@ describe('ResultRevealScreen — locked assets', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -188,6 +196,7 @@ describe('ResultRevealScreen — locked assets', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -212,6 +221,7 @@ describe('ResultRevealScreen — locked assets', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -235,23 +245,69 @@ describe('ResultRevealScreen — locked assets', () => {
 });
 
 describe('ResultRevealScreen — primary CTA', () => {
-  it('renders the "결과 잠금 해제" CTA when isPreviewMode is false', () => {
-    const tree = render(
-      React.createElement(ResultRevealScreen, {
-        isPreviewMode: false,
-        onUnlock: NO_OP,
-      }),
-    );
-    const cta = findHostByTestId(tree, 'result-reveal-unlock-cta');
-    expect(cta).toBeTruthy();
-    expect(cta?.props.accessibilityLabel).toBe('결과 잠금 해제');
-  });
+  // Sub-AC 11.1 — Phase 2.4 share-to-unlock label rendering contract.
+  //
+  // The Phase 2.4 Seed re-frames the unlock CTA on `result_reveal` from the
+  // legacy Phase 2.3 "결과 잠금 해제" copy to "친구와 공유하고 잠금 해제",
+  // advertising the upcoming referral_gate step. The CTA must render with
+  // this new label exactly when `isPreviewMode === false` AND
+  // `isPremium === false` — the two preview/premium branches both hide the
+  // CTA (covered by the dedicated "hides" cases below).
+  //
+  // Asserting both the rendered `label` and the `accessibilityLabel` here
+  // pins the visible-surface contract and the assistive-tech surface in one
+  // place; the screen sources both from the same `SHARE_UNLOCK_CTA_LABEL`
+  // constant exported by the component module.
+  it(
+    'renders the "친구와 공유하고 잠금 해제" CTA when ' +
+      'isPreviewMode=false AND isPremium=false (Sub-AC 11.1)',
+    () => {
+      const tree = render(
+        React.createElement(ResultRevealScreen, {
+          isPreviewMode: false,
+          isPremium: false,
+          onUnlock: NO_OP,
+        }),
+      );
+      const cta = findHostByTestId(tree, 'result-reveal-unlock-cta');
+      expect(cta).toBeTruthy();
+      // FunnelPrimaryButton renders the Korean copy in two distinct
+      // surfaces: (a) a <Text> child inside the Pressable carries the
+      // *visible* label, and (b) the Pressable itself carries
+      // `accessibilityLabel` (which defaults to `label`). Sub-AC 11.1 is a
+      // "renders the CTA with text X" contract — assert both surfaces so a
+      // future refactor cannot quietly diverge them.
+      const cta_a11y = cta?.props.accessibilityLabel as string | undefined;
+      expect(cta_a11y).toBe('친구와 공유하고 잠금 해제');
+      // The screen-exported constant is the single source of truth — assert
+      // identity so any future re-targeting of the constant flows through
+      // the assertion above without divergence.
+      expect(SHARE_UNLOCK_CTA_LABEL).toBe('친구와 공유하고 잠금 해제');
+      expect(cta_a11y).toBe(SHARE_UNLOCK_CTA_LABEL);
+      // The visible label is rendered as a Text child of the Pressable.
+      // Walk the children to verify the Korean copy is on the rendered
+      // surface (not just the a11y surface) — this is the "with text X"
+      // half of the Sub-AC 11.1 contract.
+      const textChildren = tree.root.findAll(
+        (node) =>
+          typeof node.type === 'string' &&
+          node.type === 'Text' &&
+          typeof node.props?.children === 'string' &&
+          node.props.children === '친구와 공유하고 잠금 해제',
+      );
+      expect(
+        textChildren.length,
+        'expected the "친구와 공유하고 잠금 해제" copy to be rendered as a <Text> child',
+      ).toBeGreaterThan(0);
+    },
+  );
 
   it('invokes onUnlock exactly once when the primary CTA is pressed', () => {
     const onUnlock = vi.fn();
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
+        isPremium: false,
         onUnlock,
       }),
     );
@@ -268,6 +324,7 @@ describe('ResultRevealScreen — primary CTA', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: true,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
@@ -278,6 +335,7 @@ describe('ResultRevealScreen — primary CTA', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: true,
+        isPremium: false,
         onUnlock: NO_OP,
       }),
     );
