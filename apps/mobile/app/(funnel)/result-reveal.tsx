@@ -1,39 +1,30 @@
 /**
- * Funnel placeholder — result_reveal (Phase 2.1, step 9 of 12)
+ * Route — funnel step 9 (`result_reveal`).
  *
- * Externally-allowed: reachable via `/s/<token>` and `/result-reveal`
- * deep links carrying `share_token`. When the token is present the
- * screen activates `isPreviewMode` and renders a read-only preview
- * placeholder (a recipient-view branch) — Sub-AC 12.
+ * Thin wrapper: expo-router hooks → derive isPreviewMode from share_token
+ * route param (Phase 2.1 invariant preserved) → delegate to
+ * `ResultRevealScreen` presentational component.
  *
- * Real preview UI lands in a subsequent unit. For now the dev-info
- * row surfaces the `preview` boolean so the smoke test can pin both
- * branches at the placeholder layer.
+ * Externally-allowed: reachable via `/s/<token>` and `/result-reveal` deep
+ * links carrying `share_token`. When the token is present `isPreviewMode`
+ * is true and the screen renders read-only (no "결과 잠금 해제" CTA). When
+ * absent, the unlock CTA navigates to referral-gate (step 10).
  */
+import * as React from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { FunnelPlaceholder } from '../../src/funnel-placeholder';
+import { ResultRevealScreen } from '../../src/screens/funnel/ResultRevealScreen';
 
-export default function ResultRevealScreen(): JSX.Element {
+export default function ResultRevealRoute(): JSX.Element {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const shareToken = typeof params['share_token'] === 'string' ? params['share_token'] : undefined;
+  const shareToken =
+    typeof params['share_token'] === 'string' ? params['share_token'] : undefined;
   const isPreviewMode = shareToken !== undefined;
-  if (isPreviewMode) {
-    return (
-      <FunnelPlaceholder
-        stepId="result_reveal"
-        routeParams={params as Record<string, unknown>}
-        isPreviewMode
-      />
-    );
-  }
   return (
-    <FunnelPlaceholder
-      stepId="result_reveal"
-      routeParams={params as Record<string, unknown>}
-      isPreviewMode={false}
-      onNext={() => router.push('/(funnel)/referral-gate')}
+    <ResultRevealScreen
+      isPreviewMode={isPreviewMode}
+      onUnlock={() => router.push('/(funnel)/referral-gate')}
     />
   );
 }
