@@ -28,11 +28,24 @@
  *     codepoint. No `expo-blur` and no SVG — the Seed constraint pins this
  *     to pure RN built-ins, and the opacity + overlay treatment is what
  *     produces the "you can almost see it" affordance.
- *   - A single primary CTA ("결과 잠금 해제") that advances the funnel to
- *     step 10 (`referral_gate`). The CTA is *hidden* when the screen is
- *     mounted in preview mode (`isPreviewMode === true`) — that branch is
- *     reached via the `/s/<share_token>` recipient deep link and must
- *     remain read-only.
+ *
+ *     Phase 2.4 AC 12 adds a premium branch: when `isPremium === true` the
+ *     overlay (and its 🔒 emoji with `accessibilityLabel="잠김"`) is
+ *     stripped from every asset, the wrapper `accessibilityLabel` no longer
+ *     contains "잠김", and the placeholder shape renders at full opacity.
+ *     The placeholder geometry itself is preserved across both branches
+ *     because Phase 2.5 is where real unlocked content replaces the
+ *     placeholders — AC 12's contract is strictly the removal of the lock
+ *     surface, not content replacement.
+ *   - A single primary CTA ("친구와 공유하고 잠금 해제") that advances the
+ *     funnel to step 10 (`referral_gate`). The CTA is *hidden* when the
+ *     screen is mounted in preview mode (`isPreviewMode === true`) — that
+ *     branch is reached via the `/s/<share_token>` recipient deep link and
+ *     must remain read-only. Phase 2.4 adds a second hidden-branch: when
+ *     `isPremium === true` (the user has completed the placeholder payment
+ *     flow), the share-to-unlock CTA is also omitted because the content
+ *     is no longer locked. The CTA therefore renders exactly when
+ *     `isPreviewMode === false` AND `isPremium === false`.
  *
  * Visual rhythm:
  *
@@ -55,8 +68,9 @@
  *   │ │ ░░░░░░░░░░ │ ░░░░░░░░░░ │           │
  *   │ └────────────┴────────────┘           │
  *   │                                       │
- *   │ [    결과 잠금 해제    ]                 │  ← primary CTA — hidden
- *   └───────────────────────────────────────┘     in preview mode
+ *   │ [ 친구와 공유하고 잠금 해제 ]              │  ← primary CTA — hidden
+ *   └───────────────────────────────────────┘     when isPreviewMode=true
+ *                                                  OR isPremium=true
  *
  * Constraints (Seed) enforced here:
  *   - Pure StyleSheet.create + RN built-ins. No `expo-blur`,
@@ -202,7 +216,42 @@ function requirePrimaryCta(): { readonly label: string } {
   return cta;
 }
 
-const PRIMARY_CTA = requirePrimaryCta();
+// `PRIMARY_CTA` (sourced from `FUNNEL_SCREENS.result_reveal.ctas[0]`) carries
+// the legacy Phase 2.3 label "결과 잠금 해제". It is intentionally retained as
+// a module-level binding so the fail-loud guard for missing CTA metadata still
+// runs at module load and so any future analytics consumer that wants the
+// canonical CTA-action string ("unlock_result") can still read it from the
+// FUNNEL_SCREENS source of truth. The rendered button label, however, is the
+// hardcoded `SHARE_UNLOCK_CTA_LABEL` below — see Phase 2.4 rationale.
+//
+// Note: keeping `requirePrimaryCta()` invoked at module load (rather than
+// inlined into the render path) preserves the build-time invariant: if
+// FUNNEL_SCREENS.result_reveal.ctas[0] ever disappears, the module fails to
+// load instead of silently rendering a button with no analytics action.
+void requirePrimaryCta();
+
+/**
+ * Hardcoded Phase 2.4 CTA label rendered on the primary "share-to-unlock"
+ * button when the screen is in the default (non-preview, non-premium) branch.
+ *
+ * Why this is a module-level constant (and not sourced from FUNNEL_SCREENS):
+ *   - The Seed-derived Phase 2.4 flow re-frames the unlock CTA from a generic
+ *     "결과 잠금 해제" into the *referral-gated* "친구와 공유하고 잠금 해제"
+ *     — the CTA now advertises the upcoming share step rather than the
+ *     abstract unlock. FUNNEL_SCREENS.result_reveal.ctas[0].label still reads
+ *     as the canonical Phase 2.3 label so analytics and other surfaces are
+ *     undisturbed; the UI surface for this screen now renders the new
+ *     Phase 2.4 label.
+ *   - Hardcoding the new label here (instead of editing FUNNEL_SCREENS)
+ *     follows the Seed pattern "Korean text hardcoded (no i18n)" used for
+ *     locked-asset labels and matches the established pattern of
+ *     "screen-local Korean copy that is not part of the shared analytics
+ *     contract".
+ *   - Hoisted as a `const` (not a function) so the value is referentially
+ *     stable across re-renders, which keeps `FunnelPrimaryButton`'s
+ *     `accessibilityLabel` reference comparison cheap and predictable.
+ */
+export const SHARE_UNLOCK_CTA_LABEL = '친구와 공유하고 잠금 해제';
 
 export interface ResultRevealScreenProps {
   /**
@@ -210,13 +259,35 @@ export interface ResultRevealScreenProps {
    * CTA is omitted entirely so the recipient view (`/s/<share_token>`)
    * stays read-only. Other content (headline, locked assets) renders
    * identically in both modes.
+   *
+   * Mutually exclusive with {@link isPremium} at the consumer boundary —
+   * the Phase 2.4 Seed constraint pins this invariant ("isPreviewMode and
+   * isPremium are mutually exclusive — premium entry invalidates preview
+   * branch"). The render logic in this component is defensive: if both
+   * flags are `true` the CTA stays hidden either way, so the
+   * mutual-exclusion violation cannot accidentally surface a clickable
+   * share-to-unlock CTA on a preview-mode session.
    */
   readonly isPreviewMode: boolean;
   /**
-   * Invoked when the user presses the primary "결과 잠금 해제" CTA. Parent
+   * Phase 2.4 premium-unlocked branch flag, sourced from the
+   * `FunnelStateProvider` payment slice (`payment.isPremium`). When `true`,
+   * the user has completed the placeholder payment flow and the
+   * "share-to-unlock" CTA is no longer rendered — the screen instead
+   * shows the unlocked content (lock overlay removal is wired in a sibling
+   * sub-AC). When `false`, the CTA renders with the hardcoded Phase 2.4
+   * label {@link SHARE_UNLOCK_CTA_LABEL} ("친구와 공유하고 잠금 해제").
+   *
+   * Sub-AC 11.1 specifically pins the render contract: CTA renders with
+   * the new label exactly when `isPreviewMode === false` AND
+   * `isPremium === false`.
+   */
+  readonly isPremium: boolean;
+  /**
+   * Invoked when the user presses the primary share-to-unlock CTA. Parent
    * wires this to `router.push('/(funnel)/referral-gate')`. Never fires
-   * when `isPreviewMode === true` because the CTA is not rendered in that
-   * branch.
+   * when `isPreviewMode === true` OR `isPremium === true` because the CTA
+   * is not rendered in either branch.
    */
   readonly onUnlock: () => void;
 }
@@ -224,7 +295,14 @@ export interface ResultRevealScreenProps {
 export function ResultRevealScreen(
   props: ResultRevealScreenProps,
 ): React.ReactElement {
-  const { isPreviewMode, onUnlock } = props;
+  const { isPreviewMode, isPremium, onUnlock } = props;
+
+  // The share-to-unlock CTA is only rendered on the default branch: the user
+  // is neither viewing through a share_token preview link nor has completed
+  // the placeholder payment flow. Combining both flags here keeps the render
+  // contract for Sub-AC 11.1 ("CTA visible only when isPreviewMode=false AND
+  // isPremium=false") in one place.
+  const shouldRenderUnlockCta = !isPreviewMode && !isPremium;
 
   return (
     <FunnelScreenLayout
@@ -243,16 +321,16 @@ export function ResultRevealScreen(
       )}
       <View style={styles.assetStack} testID="result-reveal-locked-asset-list">
         {LOCKED_ASSETS.map((asset) => (
-          <LockedAsset key={asset.assetKey} config={asset} />
+          <LockedAsset key={asset.assetKey} config={asset} isPremium={isPremium} />
         ))}
       </View>
-      {!isPreviewMode && (
+      {shouldRenderUnlockCta && (
         <View style={styles.ctaWrapper}>
           <FunnelPrimaryButton
-            label={PRIMARY_CTA.label}
+            label={SHARE_UNLOCK_CTA_LABEL}
             onPress={onUnlock}
             testID="result-reveal-unlock-cta"
-            accessibilityLabel={PRIMARY_CTA.label}
+            accessibilityLabel={SHARE_UNLOCK_CTA_LABEL}
           />
         </View>
       )}
@@ -268,43 +346,75 @@ export function ResultRevealScreen(
 
 interface LockedAssetProps {
   readonly config: LockedAssetConfig;
+  /**
+   * Phase 2.4 AC 12 premium-unlock branch flag (mirrored from
+   * `ResultRevealScreenProps.isPremium`). When `true`, the lock overlay
+   * (and its 🔒 emoji with `accessibilityLabel="잠김"`) is removed, the
+   * wrapper's `accessibilityLabel` no longer says "잠김", and the
+   * placeholder layer renders at full opacity instead of the suppressed
+   * `LOCKED_ASSET_PLACEHOLDER_OPACITY` value. The placeholder *shape*
+   * itself remains — Phase 2.5 will replace it with the real unlocked
+   * content; AC 12 only strips the locked surface.
+   */
+  readonly isPremium: boolean;
 }
 
 /**
- * Single locked content asset wrapper. Renders the placeholder shape at
- * `LOCKED_ASSET_PLACEHOLDER_OPACITY`, layers the overlay at
- * `LOCKED_ASSET_OVERLAY_OPACITY` on top, and centres the 🔒 lock icon
- * inside the overlay. The wrapper itself carries an `accessibilityLabel`
- * naming what is locked ("전체 진단 카드 잠김") so the screen reader
- * announces the locked state coherently.
+ * Single content-asset wrapper. In the default (locked) branch it renders
+ * the placeholder shape at `LOCKED_ASSET_PLACEHOLDER_OPACITY`, layers the
+ * overlay at `LOCKED_ASSET_OVERLAY_OPACITY` on top, and centres the 🔒
+ * lock icon inside the overlay. The wrapper carries an
+ * `accessibilityLabel` naming what is locked ("전체 진단 카드 잠김") so
+ * the screen reader announces the locked state coherently.
+ *
+ * In the Phase 2.4 premium branch (`isPremium === true`) the locked
+ * surface is stripped per AC 12:
+ *   - The overlay `<View>` (and the nested 🔒 emoji `<Text>` with
+ *     `accessibilityLabel="잠김"`) is omitted from the tree entirely — no
+ *     element on the screen carries `accessibilityLabel="잠김"` anymore.
+ *   - The wrapper's `accessibilityLabel` drops the "잠김" suffix and just
+ *     names the content section (e.g. "전체 진단 카드").
+ *   - The placeholder layer renders at full opacity (1) instead of 0.2,
+ *     because the lock affordance is gone and the suppressed-opacity
+ *     treatment is no longer meaningful.
+ *
+ * The placeholder *shape* (hero card / text stack / 2x2 grid) is preserved
+ * across both branches — Phase 2.5 will replace it with the real unlocked
+ * content; AC 12's contract is strictly about removing the lock surface.
  */
 function LockedAsset(props: LockedAssetProps): React.ReactElement {
-  const { config } = props;
+  const { config, isPremium } = props;
+  const placeholderOpacity = isPremium ? 1 : LOCKED_ASSET_PLACEHOLDER_OPACITY;
+  const wrapperAccessibilityLabel = isPremium
+    ? config.koreanLabel
+    : `${config.koreanLabel} 잠김`;
   return (
     <View
       style={styles.lockedAssetWrapper}
       testID={config.testID}
-      accessibilityLabel={`${config.koreanLabel} 잠김`}
+      accessibilityLabel={wrapperAccessibilityLabel}
     >
       <View
-        style={[styles.lockedAssetPlaceholder, { opacity: LOCKED_ASSET_PLACEHOLDER_OPACITY }]}
+        style={[styles.lockedAssetPlaceholder, { opacity: placeholderOpacity }]}
         testID={`${config.testID}-placeholder`}
       >
         <LockedAssetPlaceholderContent variant={config.variant} testIDPrefix={config.testID} />
       </View>
-      <View
-        style={[styles.lockedAssetOverlay, { opacity: LOCKED_ASSET_OVERLAY_OPACITY }]}
-        testID={`${config.testID}-overlay`}
-      >
-        <Text
-          style={styles.lockIcon}
-          testID={`${config.testID}-lock-icon`}
-          accessibilityLabel="잠김"
+      {!isPremium && (
+        <View
+          style={[styles.lockedAssetOverlay, { opacity: LOCKED_ASSET_OVERLAY_OPACITY }]}
+          testID={`${config.testID}-overlay`}
         >
-          🔒
-        </Text>
-        <Text style={styles.lockedAssetLabel}>{config.koreanLabel}</Text>
-      </View>
+          <Text
+            style={styles.lockIcon}
+            testID={`${config.testID}-lock-icon`}
+            accessibilityLabel="잠김"
+          >
+            🔒
+          </Text>
+          <Text style={styles.lockedAssetLabel}>{config.koreanLabel}</Text>
+        </View>
+      )}
     </View>
   );
 }
