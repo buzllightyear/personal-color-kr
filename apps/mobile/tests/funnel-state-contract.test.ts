@@ -31,12 +31,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
+  type FunnelDiagnosisInput,
   type FunnelOnboardingAnswers,
   type FunnelOnboardingPatch,
   type FunnelStateValue,
   type PriorDiagnosis,
   type SelfieEditStyle,
+  type SetDiagnosisInput,
   type SetOnboarding,
 } from '../src/contracts/funnel-state';
 
@@ -137,6 +140,8 @@ type _FunnelStateValue_IsExactShape = Expect<
     {
       readonly onboarding: FunnelOnboardingAnswers;
       readonly setOnboarding: SetOnboarding;
+      readonly diagnosisInput: FunnelDiagnosisInput;
+      readonly setDiagnosisInput: SetDiagnosisInput;
     }
   >
 >;
@@ -218,9 +223,43 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
       setOnboarding: () => {
         /* noop test impl */
       },
+      diagnosisInput: INITIAL_FUNNEL_DIAGNOSIS_INPUT,
+      setDiagnosisInput: () => {
+        /* noop test impl */
+      },
     };
     expect(value.onboarding.selfieEditStyle).toBeNull();
     expect(value.onboarding.priorDiagnosis).toBeNull();
     expect(typeof value.setOnboarding).toBe('function');
+    expect(value.diagnosisInput.selfieUri).toBeNull();
+    expect(typeof value.setDiagnosisInput).toBe('function');
   });
+
+  it('exposes FunnelDiagnosisInput with selfieUri initialised to null', () => {
+    expect(INITIAL_FUNNEL_DIAGNOSIS_INPUT).toEqual({ selfieUri: null });
+    expect(Object.isFrozen(INITIAL_FUNNEL_DIAGNOSIS_INPUT)).toBe(true);
+  });
+
+  it('accepts SetDiagnosisInput patches with selfieUri string or null', () => {
+    let last: { selfieUri?: string | null } | null = null;
+    const setDiagnosisInput: SetDiagnosisInput = (patch) => {
+      last = patch;
+    };
+
+    setDiagnosisInput({ selfieUri: 'stub://selfie/12345' });
+    expect(last).toEqual({ selfieUri: 'stub://selfie/12345' });
+
+    setDiagnosisInput({ selfieUri: null });
+    expect(last).toEqual({ selfieUri: null });
+
+    setDiagnosisInput({});
+    expect(last).toEqual({});
+  });
+
+  // Type-level: FunnelDiagnosisInput must have exactly one readonly field
+  type _FunnelDiagnosisInput_ExactShape = Expect<
+    Equal<FunnelDiagnosisInput, { readonly selfieUri: string | null }>
+  >;
+  const _diagnosisAssertion: _FunnelDiagnosisInput_ExactShape = true;
+  void _diagnosisAssertion;
 });
