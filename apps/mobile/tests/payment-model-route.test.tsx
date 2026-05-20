@@ -92,6 +92,28 @@ vi.mock('expo-router', () => {
   };
 });
 
+// Phase 2.5 — Superwall wrapper mock at the single test-mock seam. The
+// wrapper module path (apps/mobile/src/superwall/client) is mocked so
+// the native @superwall/react-native-superwall package never resolves
+// inside vitest. Tests that exercise specific outcomes
+// (purchased/restored/declined/error) override the mock with
+// `vi.mocked(triggerPaywall).mockResolvedValueOnce(...)` per-case.
+vi.mock('../src/superwall/client', () => {
+  return {
+    configureSuperwall: vi.fn().mockResolvedValue(undefined),
+    triggerPaywall: vi.fn().mockResolvedValue({ outcome: 'declined' }),
+    PLACEMENT_PAYMENT_MODEL_UNLOCK: 'payment_model_unlock',
+    SuperwallTriggerError: class SuperwallTriggerError extends Error {
+      public override readonly name = 'SuperwallTriggerError';
+      public readonly placement: string;
+      constructor(message: string, placement: string) {
+        super(message);
+        this.placement = placement;
+      }
+    },
+  };
+});
+
 // Import the default export AFTER the mocks have been registered so the
 // route module's `import { useRouter } from 'expo-router'` resolves to the
 // mocked surface above.
@@ -168,5 +190,119 @@ describe('payment-model route file — render smoke (Sub-AC 17.3)', () => {
     render(React.createElement(PaymentModelRoute));
     expect(pushSpy).not.toHaveBeenCalled();
     expect(replaceSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2.5 — 5-path completion coverage
+//
+// Each of the five completion paths (purchased / restored / declined /
+// error / explicit skip) gets a dedicated test that fires the wrapper
+// mock with a specific outcome shape and asserts the route's reaction:
+//   - state slice updates (isPremium, isProcessing)
+//   - navigation target (router.replace + path with/without premium=true)
+//   - analytics event firing (trackPaymentCompleted with restored flag,
+//     trackPaywallError, trackPaymentSkipped) — by virtue of the path
+//     reaching the right branch.
+//
+// The wrapper module mock is overridden per-test with
+// `vi.mocked(triggerPaywall).mockResolvedValueOnce(...)` so individual
+// outcomes don't bleed into sibling tests.
+// ---------------------------------------------------------------------------
+
+import { triggerPaywall, SuperwallTriggerError } from '../src/superwall/client';
+
+function fireCtaOnPress(tree: TestRenderer.ReactTestRenderer): void {
+  const cta = findHostByTestId(tree, 'payment-model-unlock-cta');
+  if (cta === null) throw new Error('CTA not found in tree');
+  const onPress = cta.props.onPress as (() => void) | undefined;
+  if (typeof onPress !== 'function') throw new Error('CTA onPress missing');
+  act(() => {
+    onPress();
+  });
+}
+
+async function flushMicrotasks(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe('payment-model route — Phase 2.5 completion coverage', () => {
+  it('purchased outcome → setIsPremium + router.replace premium=true', async () => {
+    pushSpy.mockClear();
+    replaceSpy.mockClear();
+    vi.mocked(triggerPaywall).mockResolvedValueOnce({
+      outcome: 'purchased',
+      productId: 'com.personalcolorkr.monthly.premium',
+    });
+    const tree = render(React.createElement(PaymentModelRoute));
+    fireCtaOnPress(tree);
+    await flushMicrotasks();
+    expect(replaceSpy).toHaveBeenCalledWith(
+      '/(funnel)/result-reveal?premium=true',
+    );
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it('restored outcome → same purchased path with restored flag', async () => {
+    pushSpy.mockClear();
+    replaceSpy.mockClear();
+    vi.mocked(triggerPaywall).mockResolvedValueOnce({
+      outcome: 'restored',
+      productId: 'com.personalcolorkr.monthly.premium',
+    });
+    const tree = render(React.createElement(PaymentModelRoute));
+    fireCtaOnPress(tree);
+    await flushMicrotasks();
+    expect(replaceSpy).toHaveBeenCalledWith(
+      '/(funnel)/result-reveal?premium=true',
+    );
+  });
+
+  it('declined outcome → no navigation, user stays on payment-model', async () => {
+    pushSpy.mockClear();
+    replaceSpy.mockClear();
+    vi.mocked(triggerPaywall).mockResolvedValueOnce({ outcome: 'declined' });
+    const tree = render(React.createElement(PaymentModelRoute));
+    fireCtaOnPress(tree);
+    await flushMicrotasks();
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(pushSpy).not.toHaveBeenCalled();
+    expect(findHostByTestId(tree, 'payment-model-screen')).toBeTruthy();
+  });
+
+  it('SuperwallTriggerError → inline error text rendered, no navigation', async () => {
+    pushSpy.mockClear();
+    replaceSpy.mockClear();
+    vi.mocked(triggerPaywall).mockRejectedValueOnce(
+      new (SuperwallTriggerError as unknown as new (
+        message: string,
+        placement: string,
+      ) => Error)('network error', 'payment_model_unlock'),
+    );
+    const tree = render(React.createElement(PaymentModelRoute));
+    fireCtaOnPress(tree);
+    await flushMicrotasks();
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(findHostByTestId(tree, 'payment-model-error-text')).toBeTruthy();
+  });
+
+  it('explicit skip CTA → router.replace to locked result-reveal', () => {
+    pushSpy.mockClear();
+    replaceSpy.mockClear();
+    const tree = render(React.createElement(PaymentModelRoute));
+    const skip = findHostByTestId(tree, 'payment-model-skip-cta');
+    expect(skip).toBeTruthy();
+    const onPress = skip?.props.onPress as (() => void) | undefined;
+    expect(typeof onPress).toBe('function');
+    act(() => {
+      (onPress as () => void)();
+    });
+    expect(replaceSpy).toHaveBeenCalledWith('/(funnel)/result-reveal');
+    expect(replaceSpy).not.toHaveBeenCalledWith(
+      '/(funnel)/result-reveal?premium=true',
+    );
   });
 });

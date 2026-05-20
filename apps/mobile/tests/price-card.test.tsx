@@ -1,54 +1,55 @@
 /**
- * Unit test — `apps/mobile/src/components/funnel/PriceCard.tsx` price-display
- * leaf component (Phase 2.4, Sub-AC 7.1).
+ * Unit test — `apps/mobile/src/components/funnel/PriceCard.tsx`
+ * value-proposition card leaf component (Phase 2.5, AC 13).
+ *
+ * Phase context (Phase 2.4 → Phase 2.5):
+ *   In Phase 2.4 this component rendered the hardcoded one-time premium
+ *   amount "₩9,900" read from `formatPaymentAmountKrw()`. Phase 2.5
+ *   replaces the placeholder payment flow with the real Superwall SDK
+ *   paywall trigger — the subscription price is owned entirely by the
+ *   Superwall paywall modal (ASC sandbox product), so the app UI MUST NOT
+ *   duplicate it. Per the Seed evaluation principle "price_single_source",
+ *   this test pins the new value-prop content contract and explicitly
+ *   forbids any re-introduction of price-display behavior.
  *
  * What this test pins:
  *   1. The component renders a root card host with the documented testID
- *      (`<prefix>-price-card`) so the screen-level test can pin the
- *      price-line surface without re-discovering it.
- *   2. The price `<Text>` host renders the locale-formatted KRW amount
- *      produced by `formatPaymentAmountKrw()` — verifying both:
- *        (a) the ₩ symbol (or KRW currency marker — Node ICU build variance
- *            is tolerated symmetrically to the sibling `payment-model-ctas`
- *            test);
- *        (b) the thousands-separator grouping ("9,900" — NOT "9900" and NOT
- *            "9.900");
- *      and additionally pins that the rendered string equals the formatter
- *      output verbatim — guaranteeing no hand-stitched "₩" prefix has been
- *      added on top of the formatter result.
- *   3. The price text node carries `accessibilityRole="text"` and an
- *      `accessibilityLabel` matching the formatted amount, so VoiceOver/
- *      TalkBack announces the price correctly.
- *   4. The component renders the Korean one-time-unlock caption
- *      ("1회 결제 · 평생 이용") inside a sibling `<Text>` host carrying the
- *      documented `<prefix>-price-caption` testID — pinning the single-tier
- *      / no-subscription contract from the Seed constraint
- *      ("single one-time unlock only — no subscription model, price tiers,
- *      discount codes, or free trials").
- *   5. The default testID prefix is `'payment-model'` and a custom prefix
- *      re-roots all three derived testIDs deterministically — same
- *      convention as the sibling `FunnelHeadline` / `ScanOptionItem` leaves.
- *   6. The exported `PRICE_CARD_ONE_TIME_CAPTION` constant equals the
- *      rendered caption literal (drift guard between the constant and the
- *      rendered surface).
- *   7. The component does NOT embed a literal hardcoded "9900" or "9,900"
- *      digit string in its source — the price flows through
- *      `formatPaymentAmountKrw()` only. Verified indirectly: setting
- *      `PAYMENT_AMOUNT_KRW` to a different integer at the formatter would
- *      propagate to the rendered string (not asserted here because the
- *      constant is frozen by `as const`, but the no-literal contract is
- *      pinned by the file-level docblock and the source-import structure).
+ *      (`<prefix>-value-prop-card`) so the screen-level test can pin the
+ *      value-prop surface without re-discovering it.
+ *   2. The card renders a heading text node carrying the documented
+ *      `<prefix>-value-prop-heading` testID and the Korean heading
+ *      literal exported from `VALUE_PROP_CARD_HEADING`.
+ *   3. The card renders exactly three benefit rows — one per
+ *      `VALUE_PROP_CARD_BENEFITS` tuple entry — each carrying the
+ *      documented `<prefix>-value-prop-item-<index>` testID and the
+ *      corresponding Korean benefit copy. Tuple ordering is part of the
+ *      contract (scope → utility → longevity).
+ *   4. Each benefit row carries `accessibilityRole="text"` and an
+ *      `accessibilityLabel` equal to the benefit string alone (the leading
+ *      checkmark glyph is decorative and must not be announced).
+ *   5. The exported constants (`VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX`,
+ *      `VALUE_PROP_CARD_HEADING`, `VALUE_PROP_CARD_BENEFITS`) match the
+ *      documented literals — drift guards between the constants and the
+ *      rendered surface.
+ *   6. The default testID prefix is `'payment-model'` and a custom prefix
+ *      re-roots every derived testID deterministically — same convention
+ *      as the sibling `FunnelHeadline` / `ScanOptionItem` leaves.
+ *   7. The component does NOT render any price string, currency marker
+ *      ('₩', 'KRW', '9,900', '9900'), or one-time-unlock caption ("1회
+ *      결제"). Verified by sweeping the entire rendered tree's text
+ *      content for forbidden substrings — a regression that re-adds the
+ *      Phase 2.4 price line would fail this assertion.
  *
- * Why react-test-renderer + the same `vi.mock('react-native')` shape as the
- * sibling component tests (`scan-option-item.test.tsx`,
+ * Why react-test-renderer + the same `vi.mock('react-native')` shape as
+ * the sibling component tests (`scan-option-item.test.tsx`,
  * `funnel-headline.test.tsx`):
- *   The setup-rn-stub pre-populates Node's CJS require.cache so the testing
- *   library helpers do not crash on `require('react-native')`. Vite's ESM
- *   SSR transform, however, resolves the component's
- *   `import { View, Text, StyleSheet } from 'react-native'` through the ESM
- *   path which lands on the real Flow file. The inline `vi.mock` shadows
- *   that resolution with a minimal host-component map, exactly mirroring
- *   the sibling component tests' pattern.
+ *   The setup-rn-stub pre-populates Node's CJS require.cache so the
+ *   testing library helpers do not crash on `require('react-native')`.
+ *   Vite's ESM SSR transform, however, resolves the component's
+ *   `import { View, Text, StyleSheet } from 'react-native'` through the
+ *   ESM path which lands on the real Flow file. The inline `vi.mock`
+ *   shadows that resolution with a minimal host-component map, exactly
+ *   mirroring the sibling component tests' pattern.
  *
  * Why props-based (not screen-mounted):
  *   `PriceCard` is a pure leaf component — no expo-router, no context, no
@@ -81,13 +82,11 @@ vi.mock('react-native', async () => {
 });
 
 import {
-  formatPaymentAmountKrw,
-  PAYMENT_AMOUNT_KRW,
-} from '../src/funnel/payment-model-ctas';
-import {
   PriceCard,
-  PRICE_CARD_DEFAULT_TEST_ID_PREFIX,
-  PRICE_CARD_ONE_TIME_CAPTION,
+  VALUE_PROP_CARD_BENEFITS,
+  VALUE_PROP_CARD_BULLET_GLYPH,
+  VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX,
+  VALUE_PROP_CARD_HEADING,
 } from '../src/components/funnel/PriceCard';
 import { COLORS, TYPOGRAPHY } from '../src/theme';
 
@@ -101,15 +100,59 @@ function findHostByTestId(
   tree: TestRenderer.ReactTestRenderer,
   testID: string,
 ): TestInstance | null {
-  // Filter for host elements only (where `type` is a string like 'View'/'Text').
-  // The mocked react-native components wrap their host element in a function
-  // component, so `findAll` would otherwise return two matches per testID
-  // (the wrapper FC + the rendered host); we want the host node only.
+  // Filter for host elements only (where `type` is a string like
+  // 'View'/'Text'). The mocked react-native components wrap their host
+  // element in a function component, so `findAll` would otherwise return
+  // two matches per testID (the wrapper FC + the rendered host); we want
+  // the host node only.
   const matches = tree.root.findAll(
     (node) =>
       typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
+}
+
+function findAllHostsByTestIdPattern(
+  tree: TestRenderer.ReactTestRenderer,
+  prefix: string,
+): readonly TestInstance[] {
+  return tree.root.findAll(
+    (node) =>
+      typeof node.type === 'string' &&
+      typeof node.props?.testID === 'string' &&
+      (node.props.testID as string).startsWith(prefix),
+  ) as unknown as readonly TestInstance[];
+}
+
+function collectRenderedText(
+  tree: TestRenderer.ReactTestRenderer,
+): string {
+  // Sweep every host text-bearing child and concatenate into one string so
+  // the "no forbidden substring" assertion below can scan the whole
+  // rendered surface in one pass.
+  const parts: string[] = [];
+  const walk = (node: unknown): void => {
+    if (typeof node === 'string' || typeof node === 'number') {
+      parts.push(String(node));
+      return;
+    }
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (node !== null && typeof node === 'object') {
+      const maybeChildren = (node as { children?: unknown }).children;
+      if (maybeChildren !== undefined) {
+        walk(maybeChildren);
+      }
+      const maybeProps = (node as { props?: { children?: unknown } }).props;
+      if (maybeProps && maybeProps.children !== undefined) {
+        walk(maybeProps.children);
+      }
+    }
+  };
+  walk(tree.toJSON());
+  return parts.join(' ');
 }
 
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
@@ -121,10 +164,10 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   return tree;
 }
 
-describe('PriceCard — root card surface', () => {
-  it('renders a host element with the default <prefix>-price-card testID', () => {
+describe('PriceCard — root value-prop card surface', () => {
+  it('renders a host element with the default <prefix>-value-prop-card testID', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const card = findHostByTestId(tree, 'payment-model-price-card');
+    const card = findHostByTestId(tree, 'payment-model-value-prop-card');
     expect(card).toBeTruthy();
   });
 
@@ -132,145 +175,236 @@ describe('PriceCard — root card surface', () => {
     // Pin the exported constant to the documented kebab-case prefix so a
     // future refactor that desyncs the constant from the rendered handle
     // fails this assertion.
-    expect(PRICE_CARD_DEFAULT_TEST_ID_PREFIX).toBe('payment-model');
+    expect(VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX).toBe('payment-model');
+  });
+
+  it('carries accessibilityRole="summary" on the card root', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    const card = findHostByTestId(tree, 'payment-model-value-prop-card');
+    expect(card?.props.accessibilityRole).toBe('summary');
   });
 });
 
-describe('PriceCard — price amount display (Sub-AC 7.1 primary contract)', () => {
-  it('renders the formatted KRW amount produced by formatPaymentAmountKrw()', () => {
-    // The price rendered on screen must equal the formatter output
-    // verbatim — no hand-stitched ₩ prefix, no duplicated grouping logic.
-    // This pins the no-drift invariant between the price card and the
-    // primary unlock CTA label (which composes the same formatter).
-    const expected = formatPaymentAmountKrw();
+describe('PriceCard — value-prop heading (AC 13 primary contract)', () => {
+  it('renders the Korean heading literal inside the documented testID', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    expect(amount).toBeTruthy();
-    expect(String(amount?.props.children)).toBe(expected);
+    const heading = findHostByTestId(tree, 'payment-model-value-prop-heading');
+    expect(heading).toBeTruthy();
+    expect(String(heading?.props.children)).toBe(VALUE_PROP_CARD_HEADING);
   });
 
-  it('includes the thousands-separator grouped digits ("9,900")', () => {
-    // The locale-formatting contract: the rendered string MUST contain the
-    // grouped digits. A regression to ungrouped "9900" (mis-configured
-    // formatter) or a wrong locale ("9.900" — German grouping) both fail
-    // this assertion.
-    const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    expect(String(amount?.props.children)).toContain('9,900');
-  });
-
-  it('includes a KRW currency marker (₩ symbol or "KRW" code)', () => {
-    // Either rendering is acceptable — Node's ICU build can produce either
-    // "₩9,900" or "KRW 9,900" depending on locale data. The assertion
-    // fails only when the formatter forgets the currency entirely.
-    const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    const rendered = String(amount?.props.children);
-    expect(/[₩]|KRW/.test(rendered)).toBe(true);
-  });
-
-  it('matches the underlying PAYMENT_AMOUNT_KRW constant (9,900) in the grouped output', () => {
-    // The integer constant + the grouped digit substring must agree —
-    // verifies that the formatter is reading from the same constant the
-    // unlock CTA reads from, and that no hardcoded literal has been
-    // substituted on top.
-    expect(PAYMENT_AMOUNT_KRW).toBe(9_900);
-    const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    expect(String(amount?.props.children)).toContain('9,900');
-  });
-});
-
-describe('PriceCard — accessibility surface', () => {
-  it('carries accessibilityRole="text" on the price <Text>', () => {
-    const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    expect(amount?.props.accessibilityRole).toBe('text');
-  });
-
-  it('sets accessibilityLabel to the formatted price string', () => {
-    // VoiceOver / TalkBack should announce the visible price verbatim;
-    // the platforms localise the currency reading themselves so no
-    // synthesised "nine thousand nine hundred won" gloss is needed.
-    const expected = formatPaymentAmountKrw();
-    const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    expect(amount?.props.accessibilityLabel).toBe(expected);
-  });
-});
-
-describe('PriceCard — one-time-unlock caption (single-tier contract)', () => {
-  it('renders the Korean one-time-unlock caption inside the documented testID', () => {
-    const tree = render(React.createElement(PriceCard, {}));
-    const caption = findHostByTestId(tree, 'payment-model-price-caption');
-    expect(caption).toBeTruthy();
-    expect(String(caption?.props.children)).toBe(PRICE_CARD_ONE_TIME_CAPTION);
-  });
-
-  it('pins the exported PRICE_CARD_ONE_TIME_CAPTION literal ("1회 결제 · 평생 이용")', () => {
+  it('pins the exported VALUE_PROP_CARD_HEADING literal ("이 분석으로 받게 되는 것")', () => {
     // Drift guard between the exported constant and the rendered surface.
-    // Per the Seed constraint ("single one-time unlock only — no
-    // subscription model, price tiers, discount codes, or free trials")
-    // this caption makes the framing visually unambiguous.
-    expect(PRICE_CARD_ONE_TIME_CAPTION).toBe('1회 결제 · 평생 이용');
+    expect(VALUE_PROP_CARD_HEADING).toBe('이 분석으로 받게 되는 것');
+  });
+
+  it('carries accessibilityRole="header" on the heading text', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    const heading = findHostByTestId(tree, 'payment-model-value-prop-heading');
+    expect(heading?.props.accessibilityRole).toBe('header');
+  });
+});
+
+describe('PriceCard — three benefit rows (AC 13 primary contract)', () => {
+  it('renders exactly three benefit rows', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    const rows = findAllHostsByTestIdPattern(
+      tree,
+      'payment-model-value-prop-item-',
+    );
+    expect(rows).toHaveLength(3);
+  });
+
+  it('exposes a VALUE_PROP_CARD_BENEFITS tuple of length 3', () => {
+    // The tuple length is part of the contract — exactly three benefits,
+    // not 2 or 4. A future contributor cannot add a fourth without
+    // updating the tuple AND this assertion.
+    expect(VALUE_PROP_CARD_BENEFITS).toHaveLength(3);
+  });
+
+  it('renders the three Korean benefit strings in tuple order (scope → utility → longevity)', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    VALUE_PROP_CARD_BENEFITS.forEach((benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      expect(row).toBeTruthy();
+      // The visible text on each row is "✓ <benefit>" — we assert the
+      // benefit copy is present anywhere in the rendered string so the
+      // glyph + spacing details remain implementation flexibility.
+      expect(String(row?.props.children)).toContain(benefit);
+    });
+  });
+
+  it('pins each benefit literal explicitly (scope: full color analysis)', () => {
+    // Verify the canonical scope-of-analysis benefit copy.
+    expect(VALUE_PROP_CARD_BENEFITS[0]).toBe('전체 퍼스널 컬러 분석');
+  });
+
+  it('pins each benefit literal explicitly (utility: coordination recommendations)', () => {
+    // Verify the canonical coordination-recommendation benefit copy.
+    expect(VALUE_PROP_CARD_BENEFITS[1]).toBe('맞춤 코디 추천');
+  });
+
+  it('pins each benefit literal explicitly (longevity: lifetime save)', () => {
+    // Verify the canonical lifetime-save benefit copy.
+    expect(VALUE_PROP_CARD_BENEFITS[2]).toBe('평생 저장');
+  });
+
+  it('renders the decorative checkmark glyph in front of each benefit', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      expect(String(row?.props.children)).toContain(
+        VALUE_PROP_CARD_BULLET_GLYPH,
+      );
+    });
+  });
+});
+
+describe('PriceCard — benefit-row accessibility', () => {
+  it('sets accessibilityRole="text" on every benefit row', () => {
+    const tree = render(React.createElement(PriceCard, {}));
+    VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      expect(row?.props.accessibilityRole).toBe('text');
+    });
+  });
+
+  it('sets accessibilityLabel to the benefit string alone (glyph not announced)', () => {
+    // The leading ✓ glyph is decorative — the screen-reader announcement
+    // must be the benefit text only, NOT "checkmark <benefit>".
+    const tree = render(React.createElement(PriceCard, {}));
+    VALUE_PROP_CARD_BENEFITS.forEach((benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      expect(row?.props.accessibilityLabel).toBe(benefit);
+    });
+  });
+});
+
+describe('PriceCard — Phase 2.5 price-removal contract (price_single_source)', () => {
+  it('does NOT render any KRW currency marker (₩ or "KRW")', () => {
+    // Per the Seed evaluation principle "price_single_source", the
+    // subscription price is owned only by the Superwall paywall — no
+    // hardcoded duplicates in the value-prop card.
+    const tree = render(React.createElement(PriceCard, {}));
+    const rendered = collectRenderedText(tree);
+    expect(rendered).not.toContain('₩');
+    expect(rendered).not.toContain('KRW');
+  });
+
+  it('does NOT render the Phase 2.4 amount digits ("9,900" or "9900")', () => {
+    // The hardcoded ₩9,900 line was removed in Phase 2.5 — a regression
+    // that re-introduces the literal digit sequence would fail here.
+    const tree = render(React.createElement(PriceCard, {}));
+    const rendered = collectRenderedText(tree);
+    expect(rendered).not.toContain('9,900');
+    expect(rendered).not.toContain('9900');
+  });
+
+  it('does NOT render the Phase 2.4 one-time-unlock caption ("1회 결제")', () => {
+    // The "1회 결제 · 평생 이용" caption was removed because Phase 2.5
+    // ships a monthly subscription, not a one-time unlock. The
+    // value-prop card's "평생 저장" benefit refers to retention of the
+    // analysis result, NOT a one-time-purchase framing.
+    const tree = render(React.createElement(PriceCard, {}));
+    const rendered = collectRenderedText(tree);
+    expect(rendered).not.toContain('1회 결제');
   });
 });
 
 describe('PriceCard — typography tokens applied (no drift from design tokens)', () => {
-  it('applies TYPOGRAPHY.headline.bold (fontSize + fontWeight) to the price row', () => {
+  it('applies TYPOGRAPHY.subhead.bold (fontSize + fontWeight) to the heading row', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const amount = findHostByTestId(tree, 'payment-model-price-amount');
-    const style = amount?.props.style as {
+    const heading = findHostByTestId(tree, 'payment-model-value-prop-heading');
+    const style = heading?.props.style as {
       fontSize?: number;
       fontWeight?: string;
       color?: string;
     };
-    expect(style.fontSize).toBe(TYPOGRAPHY.headline.bold.fontSize);
-    expect(style.fontWeight).toBe(TYPOGRAPHY.headline.bold.fontWeight);
+    expect(style.fontSize).toBe(TYPOGRAPHY.subhead.bold.fontSize);
+    expect(style.fontWeight).toBe(TYPOGRAPHY.subhead.bold.fontWeight);
   });
 
-  it('applies TYPOGRAPHY.caption.regular (fontSize + fontWeight) to the caption row', () => {
+  it('applies TYPOGRAPHY.body.regular (fontSize + fontWeight) to every benefit row', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const caption = findHostByTestId(tree, 'payment-model-price-caption');
-    const style = caption?.props.style as {
-      fontSize?: number;
-      fontWeight?: string;
-    };
-    expect(style.fontSize).toBe(TYPOGRAPHY.caption.regular.fontSize);
-    expect(style.fontWeight).toBe(TYPOGRAPHY.caption.regular.fontWeight);
+    VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      const style = row?.props.style as {
+        fontSize?: number;
+        fontWeight?: string;
+      };
+      expect(style.fontSize).toBe(TYPOGRAPHY.body.regular.fontSize);
+      expect(style.fontWeight).toBe(TYPOGRAPHY.body.regular.fontWeight);
+    });
   });
 
-  it('paints both rows with COLORS.grayscale.text (canonical near-black)', () => {
+  it('paints the heading and benefit rows with COLORS.grayscale.text (canonical near-black)', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const amountStyle = findHostByTestId(tree, 'payment-model-price-amount')
-      ?.props.style as { color?: string };
-    const captionStyle = findHostByTestId(tree, 'payment-model-price-caption')
-      ?.props.style as { color?: string };
-    expect(amountStyle.color).toBe(COLORS.grayscale.text);
-    expect(captionStyle.color).toBe(COLORS.grayscale.text);
+    const headingStyle = findHostByTestId(
+      tree,
+      'payment-model-value-prop-heading',
+    )?.props.style as { color?: string };
+    expect(headingStyle.color).toBe(COLORS.grayscale.text);
+
+    VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
+      const row = findHostByTestId(
+        tree,
+        `payment-model-value-prop-item-${String(index)}`,
+      );
+      const rowStyle = row?.props.style as { color?: string };
+      expect(rowStyle.color).toBe(COLORS.grayscale.text);
+    });
   });
 
-  it('paints the card background with COLORS.base.pink (Korean beauty surface)', () => {
+  it('paints the card background with COLORS.base.pink (Korean beauty surface, carried forward from Phase 2.4)', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const card = findHostByTestId(tree, 'payment-model-price-card');
+    const card = findHostByTestId(tree, 'payment-model-value-prop-card');
     const style = card?.props.style as { backgroundColor?: string };
     expect(style.backgroundColor).toBe(COLORS.base.pink);
   });
 });
 
 describe('PriceCard — testID prefix expansion', () => {
-  it('re-roots all three testIDs when a custom testIDPrefix is supplied', () => {
+  it('re-roots all testIDs when a custom testIDPrefix is supplied', () => {
     const tree = render(
       React.createElement(PriceCard, { testIDPrefix: 'custom-prefix' }),
     );
-    expect(findHostByTestId(tree, 'custom-prefix-price-card')).toBeTruthy();
-    expect(findHostByTestId(tree, 'custom-prefix-price-amount')).toBeTruthy();
-    expect(findHostByTestId(tree, 'custom-prefix-price-caption')).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-value-prop-card')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'custom-prefix-value-prop-heading'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'custom-prefix-value-prop-item-0'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'custom-prefix-value-prop-item-1'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'custom-prefix-value-prop-item-2'),
+    ).toBeTruthy();
     // The default-prefixed handles must NOT resolve when the prefix is
     // overridden — drift guard against a copy-paste bug that hard-codes
     // the default in the component.
-    expect(findHostByTestId(tree, 'payment-model-price-card')).toBeNull();
-    expect(findHostByTestId(tree, 'payment-model-price-amount')).toBeNull();
-    expect(findHostByTestId(tree, 'payment-model-price-caption')).toBeNull();
+    expect(findHostByTestId(tree, 'payment-model-value-prop-card')).toBeNull();
+    expect(
+      findHostByTestId(tree, 'payment-model-value-prop-heading'),
+    ).toBeNull();
+    expect(
+      findHostByTestId(tree, 'payment-model-value-prop-item-0'),
+    ).toBeNull();
   });
 });

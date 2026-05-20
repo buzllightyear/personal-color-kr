@@ -1,0 +1,101 @@
+{
+  "_comment_": "StoreKit Configuration File — Phase 2.5 / AC 15. Mirrors the ASC sandbox subscription product (com.personalcolorkr.monthly.premium, group personal_color_premium, baseline ₩9,900/month) so iOS Simulator can exercise the Superwall purchase flow without a live ASC sandbox round-trip. Xcode binds this file via the scheme's Run > Options > StoreKit Configuration setting. The cross-check test at apps/mobile/tests/superwall-products.test.ts parses this JSON and asserts each field equals the constants exported from apps/mobile/src/superwall/products.ts — drift between the two surfaces fails CI rather than silently breaking sandbox purchases.",
+  "identifier": "5F1A7C20-PCKR-PHASE25-AC15-PERSONALCOLORKR",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_applicationInternalID": "0000000000",
+    "_developerTeamID": "TEAMIDPLACEHOLDER",
+    "_failTransactionsEnabled": false,
+    "_locale": "ko_KR",
+    "_storefront": "KOR",
+    "_storeKitErrors": [
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21000000",
+      "localizations": [
+        {
+          "description": "월간 퍼스널컬러 진단·콘텐츠 패키지 구독",
+          "displayName": "퍼스널컬러 프리미엄",
+          "locale": "ko"
+        }
+      ],
+      "name": "personal_color_premium",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9900",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "21000001",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "월간 퍼스널컬러 진단·콘텐츠 패키지 구독",
+              "displayName": "퍼스널컬러 프리미엄",
+              "locale": "ko"
+            }
+          ],
+          "productID": "com.personalcolorkr.monthly.premium",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Personal Color Premium Monthly",
+          "subscriptionGroupID": "21000000",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

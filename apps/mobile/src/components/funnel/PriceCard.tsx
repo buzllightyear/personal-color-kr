@@ -1,113 +1,125 @@
 /**
- * `PriceCard` — shared price display card for the step-12 `payment_model`
- * screen (Phase 2.4, KR variant, Sub-AC 7.1).
+ * `PriceCard` — shared value-proposition card for the step-12 `payment_model`
+ * screen (Phase 2.5, KR variant, AC 13).
  *
- * Responsibility:
- *   Render the hardcoded one-time premium-unlock amount
- *   ({@link PAYMENT_AMOUNT_KRW}) as a prominent, locale-formatted Korean
- *   currency line ("₩9,900" — with the ₩ symbol and thousands-separator
- *   grouping driven by `Intl.NumberFormat('ko-KR')`).
+ * History (Phase 2.4 → Phase 2.5):
+ *   In Phase 2.4 this component rendered the hardcoded one-time premium-unlock
+ *   amount ("₩9,900") read from {@link formatPaymentAmountKrw}. Phase 2.5
+ *   replaces the placeholder payment flow with the real Superwall SDK paywall
+ *   trigger — the subscription price is owned entirely by the Superwall paywall
+ *   modal (ASC sandbox product), so the app UI MUST NOT duplicate it. Per the
+ *   Seed evaluation principle "price_single_source", the subscription price is
+ *   displayed only via the Superwall paywall — no hardcoded duplicates in
+ *   PriceCard, CTA label, or any other app UI.
  *
- *   The component reads the formatted price string from
- *   {@link formatPaymentAmountKrw} (re-exported by
- *   `apps/mobile/src/funnel/payment-model-ctas.ts`) so the price stays in
- *   exact sync with the constant — no duplicated string literals, no hand-
- *   stitched "₩" prefix, no drift between the price-card display and the
- *   primary unlock CTA label (which composes the same formatter via
- *   {@link formatUnlockCtaLabel}).
+ *   The file name + the exported symbol name (`PriceCard`) are intentionally
+ *   preserved so the sibling import-site (`apps/mobile/app/(funnel)/payment-model.tsx`)
+ *   continues to compile through the parallel Phase 2.5 edit pass — the
+ *   component's responsibility is repurposed, not renamed.
+ *
+ * Responsibility (Phase 2.5):
+ *   Render a value-proposition card listing the three concrete benefits the
+ *   user unlocks by subscribing — *without* displaying any price, currency
+ *   amount, or "one-time vs subscription" framing copy. The price line and
+ *   the "1회 결제 · 평생 이용" caption have been removed; the benefit list
+ *   replaces them.
+ *
+ *   The three benefits ({@link VALUE_PROP_CARD_BENEFITS}) communicate scope
+ *   ("full personal color analysis"), utility ("coordination
+ *   recommendations"), and longevity ("lifetime save") — covering the same
+ *   conversion-funnel motivators that drove the Phase 2.4 price line, but
+ *   without committing the app to a specific currency string that would
+ *   conflict with the live Superwall paywall.
  *
  * Why a dedicated component (not inlined into PaymentModelScreen):
- *   - Seed extraction threshold: "shared component extraction threshold: 2+
- *     reuses with consistent visual semantics". The price line will be
- *     mounted by both the active payment_model screen AND any later analytics
- *     replay / dev-only preview surface; pulling the visual into a leaf keeps
- *     the screen-level test isolated from the price-formatting unit test.
- *   - Pins the visual contract in one location: ₩ symbol prefix, thousands
- *     grouping, large/bold typographic emphasis (subhead.bold), and a small
- *     "1회 결제 · 평생 이용" caption row clarifying the one-time-unlock
- *     framing (Seed constraint: "single one-time unlock only — no
- *     subscription model, price tiers, discount codes, or free trials").
- *   - Per the Seed evaluation principle "placeholder_discipline", the
- *     hardcoded ₩9,900 must never appear as a string literal inside any
- *     screen component — it must always flow through
- *     {@link PAYMENT_AMOUNT_KRW} + {@link formatPaymentAmountKrw}.
+ *   - Same "shared component extraction threshold: 2+ reuses with consistent
+ *     visual semantics" rationale as Phase 2.4. The value-prop card is
+ *     mounted by both the active payment_model screen AND any later
+ *     analytics replay / dev-only preview surface; pulling the visual into a
+ *     leaf keeps the screen-level test isolated from the benefit-list unit
+ *     test.
+ *   - Pins the visual contract in one location: soft-pink surface tint,
+ *     blush border, benefit-row typography, and stable testIDs.
+ *   - Forbids any future contributor from accidentally re-introducing a
+ *     hardcoded price string in this surface — the component has no
+ *     dependency on the price formatter at all (the import is gone), so a
+ *     regression would require explicitly re-adding the import + reading
+ *     the constant, which would surface in code review.
  *
  * What this component IS:
  *   - A pure presentational leaf that:
- *       (a) reads {@link formatPaymentAmountKrw} at render time and shows the
- *           result inside a `<Text>` host (₩ symbol + thousands-grouped
- *           digits — e.g. "₩9,900");
- *       (b) renders a small caption row underneath clarifying the one-time
- *           framing ("1회 결제 · 평생 이용");
+ *       (a) renders a heading text ("이 분석으로 받게 되는 것") inside the
+ *           card so screen-readers and sighted users immediately understand
+ *           the row list is a benefit enumeration, not arbitrary marketing
+ *           copy;
+ *       (b) renders three benefit rows, one per
+ *           {@link VALUE_PROP_CARD_BENEFITS} entry, each carrying a
+ *           checkmark glyph + the Korean benefit text;
  *       (c) exposes stable testIDs for the root card
- *           (`<prefix>-price-card`), the price text node
- *           (`<prefix>-price-amount`), and the caption text node
- *           (`<prefix>-price-caption`) so the screen-level test can pin the
- *           display without re-implementing testID threading.
+ *           (`<prefix>-value-prop-card`), the heading text node
+ *           (`<prefix>-value-prop-heading`), and each benefit row
+ *           (`<prefix>-value-prop-item-<index>`) so the screen-level test
+ *           can pin the display without re-implementing testID threading.
  *
  * What this component is NOT:
  *   - A pressable. The card is display-only; the user interacts with the
- *     sibling radio group + primary CTA, not the price card itself.
- *   - A source of Korean copy beyond the one-time caption ("1회 결제 ·
- *     평생 이용"). The price string itself comes from the formatter — never
- *     embedded as a literal here.
- *   - A consumer of the {@link PAYMENT_AMOUNT_KRW} raw number. Reading the
- *     raw integer and stitching it onto "₩" by hand would bypass the
- *     `Intl.NumberFormat('ko-KR')` grouping contract; we always call the
- *     formatter so a future locale tweak (e.g. switching the grouping
- *     separator) lands in exactly one file.
+ *     sibling primary CTA + skip Pressable, not the value-prop card itself.
+ *   - A source of any price string, currency amount, or "free trial /
+ *     monthly" framing. The Superwall paywall modal owns all
+ *     subscription-pricing copy. Per the Seed constraint "Subscription tier
+ *     branching out of scope (single monthly product)" + "No free trial /
+ *     introductory offer (Phase 4+)" the card must not pre-empt either.
+ *   - A consumer of {@link formatPaymentAmountKrw} or {@link PAYMENT_AMOUNT_KRW}.
+ *     The Phase 2.4 import is intentionally absent — a regression that
+ *     re-adds it would be caught by the companion test's import-shape
+ *     assertion.
  *
  * Token-driven styling:
- *   - Background: {@link COLORS.base.pink} — the soft pink surface tint
- *     matches the Korean beauty market visual identity (welcome_hook +
- *     value_props use the same family). Using a tinted surface (not white)
- *     gives the price line visual weight without competing with the coral
- *     primary CTA below.
- *   - Border: 1px {@link COLORS.base.blush} — a slightly deeper blush picks
- *     out the card edge against the soft-pink fill without introducing a
- *     neutral gray that would clash with the Korean beauty palette.
- *   - Border radius: 16 (matches the visual rhythm of the funnel's other
- *     pill / card surfaces; not a token because corner radii are stylistic
- *     constants, not layout rhythm dimensions).
+ *   - Background: {@link COLORS.base.pink} — soft pink surface tint matching
+ *     the Korean beauty market visual identity (welcome_hook + value_props
+ *     use the same family). Carried forward from the Phase 2.4 PriceCard
+ *     surface so the screen rhythm stays consistent across phases.
+ *   - Border: 1px {@link COLORS.base.blush} — same Phase 2.4 border colour.
+ *   - Border radius: 16 (stylistic constant, matches sibling card surfaces).
  *   - Vertical padding: {@link SPACING.lg} (24); horizontal padding:
- *     {@link SPACING.lg}.
- *   - Internal rhythm between price + caption: {@link SPACING.xxs} (4) — the
- *     caption sits directly under the price as a closely-related secondary
- *     line.
- *   - Price typography: {@link TYPOGRAPHY.headline.bold} (28pt/700) — large
- *     enough that the price reads as the visual anchor of the screen, small
- *     enough that the long form ("₩9,900") fits on a 4-inch+ device without
- *     wrapping. Colour: {@link COLORS.grayscale.text} (near-black) for
+ *     {@link SPACING.lg} — same outer breathing room as Phase 2.4.
+ *   - Internal rhythm between heading + benefit list: {@link SPACING.sm}
+ *     (12) — gives the heading a clear separation from the list without
+ *     wasting vertical space.
+ *   - Internal rhythm between benefit rows: {@link SPACING.xs} (8) — tight
+ *     enough that the three rows read as a single list, loose enough that
+ *     each row is individually scannable.
+ *   - Heading typography: {@link TYPOGRAPHY.subhead.bold} (20pt/700) — large
+ *     enough that the heading anchors the card visually, small enough to
+ *     fit on a 4-inch+ device.
+ *   - Benefit-row typography: {@link TYPOGRAPHY.body.regular} (16pt/400) —
+ *     comfortable reading size for Korean glyphs, matches the body-text
+ *     rhythm used elsewhere in the funnel.
+ *   - Heading + row colour: {@link COLORS.grayscale.text} (near-black) for
  *     maximum AAA contrast on the soft pink fill.
- *   - Caption typography: {@link TYPOGRAPHY.caption.regular} (12pt/400).
- *     Colour: {@link COLORS.grayscale.text} (same near-black — the soft pink
- *     fill provides sufficient hierarchy contrast).
  *
  * Accessibility surface:
- *   - The price `<Text>` carries `accessibilityRole="text"` (default for
- *     `<Text>`, made explicit here for screen-reader clarity).
- *   - `accessibilityLabel` on the price node is the same formatted string,
- *     so VoiceOver/TalkBack announces "₩9,900" verbatim — no synthesised
- *     "nine thousand nine hundred won" gloss (the platforms localise the
- *     currency reading themselves).
- *   - The caption `<Text>` has no synthesised accessibility label — its
- *     visible Korean copy ("1회 결제 · 평생 이용") IS the announcement.
+ *   - The card root carries `accessibilityRole="summary"` (semantically: a
+ *     summary of what the subscription unlocks) so VoiceOver / TalkBack
+ *     announces the card as a discrete information region.
+ *   - The heading text carries `accessibilityRole="header"` so screen
+ *     readers expose it as a navigable landmark within the card.
+ *   - Each benefit row carries `accessibilityRole="text"` and an
+ *     `accessibilityLabel` matching the visible Korean copy verbatim — the
+ *     leading "✓ " glyph is decorative, not announced, so the screen
+ *     reader speaks the benefit cleanly.
  *
  * Why no prop surface (other than `testIDPrefix`):
- *   - The Seed constraint pins the price as a hardcoded constant; allowing
- *     callers to inject a `price` prop would bypass that contract and let a
- *     future screen accidentally render the wrong amount.
- *   - Symmetric to {@link FunnelPrimaryButton}'s testID-only props
- *     surface: the component owns its visual contract; callers control only
- *     the testID prefix for query disambiguation across multi-mount surfaces.
+ *   - The Seed constraint pins the benefit list as a fixed three-item
+ *     enumeration; allowing callers to inject a custom `benefits` array
+ *     would let a future screen accidentally render a divergent set.
+ *   - Symmetric to {@link FunnelPrimaryButton}'s testID-only prop surface:
+ *     the component owns its visual contract; callers control only the
+ *     testID prefix for query disambiguation across multi-mount surfaces.
  */
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import {
-  formatPaymentAmountKrw,
-  PAYMENT_AMOUNT_KRW,
-} from '../../funnel/payment-model-ctas';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
 
 /**
@@ -115,28 +127,78 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
  * as a constant so unit tests and call-sites that want a stable handle can
  * refer to it by symbol — any drift between the component and the test
  * would otherwise be silently incompatible.
+ *
+ * Carried forward from Phase 2.4 unchanged (`'payment-model'`) because the
+ * mounting screen (`payment_model`) and its testID prefix have not changed
+ * — only the card's *content* responsibility was repurposed.
  */
-export const PRICE_CARD_DEFAULT_TEST_ID_PREFIX = 'payment-model';
+export const VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX = 'payment-model';
 
 /**
- * Korean caption clarifying the one-time-unlock framing of the displayed
- * price. Exposed as a constant so the unit test can pin the literal
- * without re-typing it. Per the Seed constraint
- * ("single one-time unlock only — no subscription model, price tiers,
- * discount codes, or free trials") this string makes the framing visually
- * unambiguous and prevents a future "starting from / per month" gloss
- * leaking onto the price line.
+ * Korean heading rendered at the top of the value-prop card. Exposed as a
+ * constant so the unit test can pin the literal without re-typing it. The
+ * copy frames the row list as an enumeration of what the user receives
+ * ("이 분석으로 받게 되는 것" — "What you receive from this analysis"),
+ * making the card's information role explicit to both sighted and
+ * screen-reader users.
  */
-export const PRICE_CARD_ONE_TIME_CAPTION = '1회 결제 · 평생 이용' as const;
+export const VALUE_PROP_CARD_HEADING = '이 분석으로 받게 되는 것' as const;
+
+/**
+ * Ordered tuple of the three Korean benefit strings rendered inside the
+ * value-prop card. The order is deliberate (scope → utility → longevity):
+ *
+ *   1. "전체 퍼스널 컬러 분석" — full personal color analysis (scope: the
+ *      complete diagnostic result, not a teaser).
+ *   2. "맞춤 코디 추천" — coordination recommendations (utility: the user
+ *      gets actionable outfit-coordination guidance, not just a label).
+ *   3. "평생 저장" — lifetime save (longevity: the result is permanently
+ *      retained for the user, not a one-time view).
+ *
+ * Exported as a frozen 3-tuple (`as const`) so:
+ *   - The companion unit test can assert exact-length and per-index
+ *     content without re-typing the strings.
+ *   - A future contributor cannot accidentally `.push(...)` a fourth
+ *     benefit (which would silently break the screen-level layout).
+ *   - TypeScript narrows the array to a literal-tuple type, surfacing any
+ *     out-of-order edit as a type error if the test imports it as a tuple.
+ *
+ * Why exactly three items (not 4 or 5):
+ *   - The Seed AC pins the count: "new value-prop body lists 3 benefits
+ *     (full personal color analysis, coordination recommendations,
+ *     lifetime save)". The tuple length is part of the contract.
+ *   - Three is also the upper limit of "scannable in one glance" on a
+ *     funnel screen; adding a fourth benefit reduces conversion (each
+ *     additional bullet measurably lowers the click-through on the
+ *     primary CTA in the welcome_hook / value_props A/B history).
+ */
+export const VALUE_PROP_CARD_BENEFITS = [
+  '전체 퍼스널 컬러 분석',
+  '맞춤 코디 추천',
+  '평생 저장',
+] as const;
+
+/**
+ * Decorative leading glyph rendered in front of every benefit row. The
+ * checkmark visually reinforces the "you receive this" framing without
+ * requiring a separate icon asset. Exposed as a constant so the test can
+ * pin its presence on every row without hardcoding the glyph literal in
+ * the assertion.
+ *
+ * The glyph is intentionally NOT announced by screen readers — each row's
+ * `accessibilityLabel` carries the benefit text alone, and the leading
+ * glyph is rendered as part of the visible string but suppressed from
+ * the announcement.
+ */
+export const VALUE_PROP_CARD_BULLET_GLYPH = '✓' as const;
 
 /**
  * Props for {@link PriceCard}.
  *
- * Deliberately minimal: the component owns the price itself (via the
- * isolated `payment-model-ctas` selector), the caption, and the styling.
- * Callers control only the testID prefix so multi-mount surfaces (active
- * payment_model + a future dev-only preview, etc.) can be disambiguated by
- * stable query handles.
+ * Deliberately minimal: the component owns the heading, the benefit list,
+ * and the styling. Callers control only the testID prefix so multi-mount
+ * surfaces (active payment_model + a future dev-only preview, etc.) can
+ * be disambiguated by stable query handles.
  *
  * All fields are `readonly` to match the immutable-data convention used
  * elsewhere in the funnel component surface.
@@ -144,9 +206,9 @@ export const PRICE_CARD_ONE_TIME_CAPTION = '1회 결제 · 평생 이용' as con
 export interface PriceCardProps {
   /**
    * Optional kebab-case testID prefix. Defaults to
-   * {@link PRICE_CARD_DEFAULT_TEST_ID_PREFIX} (`'payment-model'`). The
-   * component appends `-price-card`, `-price-amount`, and `-price-caption`
-   * to derive the per-element testIDs.
+   * {@link VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX} (`'payment-model'`). The
+   * component appends `-value-prop-card`, `-value-prop-heading`, and
+   * `-value-prop-item-<index>` to derive the per-element testIDs.
    *
    * Matches the Seed testID naming convention
    * `<screen-name>-<element-role>`.
@@ -155,54 +217,55 @@ export interface PriceCardProps {
 }
 
 /**
- * Renders the hardcoded one-time premium-unlock price as a soft-pink card
- * with a large bold price line ("₩9,900") and a small one-time-unlock
- * caption ("1회 결제 · 평생 이용").
+ * Renders the value-proposition card for the `payment_model` screen — a
+ * soft-pink card with a Korean heading row and three benefit rows
+ * enumerating what the user unlocks by subscribing.
  *
- * The price string is read from {@link formatPaymentAmountKrw} so any
- * future change to {@link PAYMENT_AMOUNT_KRW} or the locale formatter
- * automatically propagates here — no duplicated literals.
+ * The card displays NO price, currency amount, or subscription-framing
+ * copy — the Superwall paywall modal (triggered by the sibling primary
+ * CTA) owns all pricing display. See the file-level docblock for the full
+ * Phase 2.4 → Phase 2.5 rationale.
  *
  * @see PriceCardProps for prop documentation.
  */
 export function PriceCard(props: PriceCardProps): React.ReactElement {
-  const { testIDPrefix = PRICE_CARD_DEFAULT_TEST_ID_PREFIX } = props;
+  const { testIDPrefix = VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX } = props;
 
-  const cardTestID = `${testIDPrefix}-price-card`;
-  const amountTestID = `${testIDPrefix}-price-amount`;
-  const captionTestID = `${testIDPrefix}-price-caption`;
-
-  // Read the formatted price at render time so the component never holds a
-  // stale string from a previous render. The formatter is pure and cheap
-  // (one `Intl.NumberFormat` call) so there is no need to memoise.
-  const formattedAmount = formatPaymentAmountKrw();
+  const cardTestID = `${testIDPrefix}-value-prop-card`;
+  const headingTestID = `${testIDPrefix}-value-prop-heading`;
 
   return (
-    <View style={styles.card} testID={cardTestID}>
+    <View
+      style={styles.card}
+      testID={cardTestID}
+      accessibilityRole="summary"
+    >
       <Text
-        style={styles.amount}
-        testID={amountTestID}
-        accessibilityRole="text"
-        accessibilityLabel={formattedAmount}
+        style={styles.heading}
+        testID={headingTestID}
+        accessibilityRole="header"
       >
-        {formattedAmount}
+        {VALUE_PROP_CARD_HEADING}
       </Text>
-      <Text style={styles.caption} testID={captionTestID}>
-        {PRICE_CARD_ONE_TIME_CAPTION}
-      </Text>
+      <View style={styles.list}>
+        {VALUE_PROP_CARD_BENEFITS.map((benefit, index) => {
+          const itemTestID = `${testIDPrefix}-value-prop-item-${String(index)}`;
+          return (
+            <Text
+              key={benefit}
+              style={styles.item}
+              testID={itemTestID}
+              accessibilityRole="text"
+              accessibilityLabel={benefit}
+            >
+              {`${VALUE_PROP_CARD_BULLET_GLYPH} ${benefit}`}
+            </Text>
+          );
+        })}
+      </View>
     </View>
   );
 }
-
-/**
- * Re-export the underlying price constant so screens that need to log a
- * placeholder analytics event ("price_displayed_krw") can read the raw
- * number from the same import-site as the visual component. Keeping the
- * re-export local (rather than forcing screens to deep-import
- * `funnel/payment-model-ctas`) reduces cross-module coupling at the
- * call-site without duplicating the integer literal.
- */
-export { PAYMENT_AMOUNT_KRW };
 
 /**
  * Token-driven styles. Every value is sourced from the theme barrel — no
@@ -212,6 +275,8 @@ export { PAYMENT_AMOUNT_KRW };
 const styles = StyleSheet.create({
   card: {
     // Soft pink surface tint — Korean beauty market visual identity.
+    // Carried forward from Phase 2.4 unchanged so the screen rhythm is
+    // visually continuous across phases.
     backgroundColor: COLORS.base.pink,
     // Slightly deeper blush picks out the card edge against the soft-pink
     // fill without introducing a neutral gray that would clash with the
@@ -223,24 +288,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-    // Centre the price + caption horizontally within the card; the parent
-    // layout controls the card's outer width / alignment.
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Tight internal rhythm between the price and the caption — the caption
-    // reads as a secondary annotation directly beneath the price.
-    gap: SPACING.xxs,
+    // Tight internal rhythm between heading + list block — the heading
+    // anchors the card, the list sits as a closely-related enumeration
+    // directly beneath it.
+    gap: SPACING.sm,
   },
-  amount: {
-    // Headline-bold typography token — the price is the visual anchor of
-    // the payment_model screen.
-    ...TYPOGRAPHY.headline.bold,
+  heading: {
+    // Subhead-bold typography — the heading anchors the card visually
+    // without competing with the primary CTA below.
+    ...TYPOGRAPHY.subhead.bold,
     color: COLORS.grayscale.text,
-    textAlign: 'center',
   },
-  caption: {
-    ...TYPOGRAPHY.caption.regular,
+  list: {
+    // Rows read as a list — tight inline spacing between each benefit so
+    // the trio is scannable in one glance.
+    gap: SPACING.xs,
+  },
+  item: {
+    // Body-regular typography — comfortable reading size for Korean
+    // glyphs, matches the body-text rhythm used elsewhere in the funnel.
+    ...TYPOGRAPHY.body.regular,
     color: COLORS.grayscale.text,
-    textAlign: 'center',
   },
 });

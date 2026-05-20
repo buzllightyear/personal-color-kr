@@ -81,6 +81,14 @@ vi.mock('expo-constants', () => ({
   },
 }));
 
+// Mock the Superwall wrapper module so the layout's `configureSuperwall`
+// import does NOT pull in `@superwall/react-native-superwall` (which fails
+// in the vitest environment because the SDK reads its own package.json).
+vi.mock('../src/superwall/client', () => ({
+  configureSuperwall: vi.fn().mockResolvedValue(undefined),
+  triggerPaywall: vi.fn().mockResolvedValue({ outcome: 'declined' }),
+}));
+
 async function loadRootLayout() {
   const mod: any = await import('../app/_layout');
   return mod.default;

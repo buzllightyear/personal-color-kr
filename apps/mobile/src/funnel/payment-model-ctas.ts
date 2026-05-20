@@ -86,14 +86,23 @@ export const PAYMENT_MODEL_METHOD_LABELS: Readonly<Record<PaymentMethod, string>
   });
 
 /**
- * Korean label rendered on the primary "unlock premium" CTA. Composed
- * lazily via {@link formatUnlockCtaLabel} so the price stays in sync
- * with {@link PAYMENT_AMOUNT_KRW} — never duplicated as a hardcoded
- * substring.
+ * Korean label rendered on the primary "unlock premium" CTA.
  *
- * The static fragment ("결제하고 잠금 해제") is exported as a separate
- * constant so analytics + a11y tests can assert against the verb form
- * without depending on the locale-formatted price.
+ * Phase 2.5 (Superwall integration) note:
+ *   In Phase 2.4 this constant was the *suffix* fragment of a composed
+ *   "<price> 결제하고 잠금 해제" label — the in-app CTA inlined the
+ *   ₩9,900 amount alongside the verb form. Phase 2.5 hands price
+ *   display ownership to the Superwall paywall sheet, which renders
+ *   the ASC-registered subscription price natively. The app CTA must
+ *   therefore stop duplicating the amount; {@link formatUnlockCtaLabel}
+ *   now returns this verb-form fragment alone so no hardcoded ₩9,900
+ *   substring leaks into the app UI (price_single_source invariant).
+ *
+ * Why the "SUFFIX" name is retained:
+ *   Renaming the export to `PAYMENT_MODEL_UNLOCK_CTA_LABEL` would force
+ *   churn on every analytics / a11y test that imports the constant by
+ *   its current name. The "SUFFIX" suffix is now historically named —
+ *   the symbol denotes the full CTA label string in Phase 2.5.
  */
 export const PAYMENT_MODEL_UNLOCK_CTA_SUFFIX = '결제하고 잠금 해제' as const;
 
@@ -137,16 +146,31 @@ export function formatPaymentAmountKrw(): string {
 }
 
 /**
- * Compose the primary unlock CTA label by prefixing the locale-
- * formatted price onto {@link PAYMENT_MODEL_UNLOCK_CTA_SUFFIX}.
+ * Return the primary unlock CTA label rendered on the in-app
+ * payment_model step-12 screen.
  *
- * Example output: "₩9,900 결제하고 잠금 해제".
+ * Example output: "결제하고 잠금 해제".
  *
- * Why a function (and not a precomputed string constant):
- *   Symmetric to {@link formatPaymentAmountKrw} — the formatter runs at
- *   call time so the price never desyncs from {@link PAYMENT_AMOUNT_KRW}
- *   if the constant is patched in a future phase.
+ * Phase 2.5 contract (Superwall):
+ *   The Superwall paywall sheet is now the *single source of truth* for
+ *   subscription price display — the ASC-registered product price
+ *   (com.personalcolorkr.monthly.premium) is rendered inside the
+ *   Superwall-controlled UI, not on the app CTA. This function
+ *   therefore returns the bare verb-form label (no "₩9,900" prefix);
+ *   prefixing the locale-formatted price here would duplicate price
+ *   information across two UI surfaces and break the
+ *   `price_single_source` invariant (see Seed Evaluation Principles).
+ *
+ * Why a function (and not a re-exported string constant):
+ *   Two reasons retained from Phase 2.4:
+ *     1. Existing call-sites (`payment-model.tsx`, `PriceCard.tsx`
+ *        tests, analytics fixtures) invoke it as a function. Preserving
+ *        the function signature keeps the Phase 2.5 diff minimal and
+ *        avoids cascading rename churn through every consumer.
+ *     2. A future re-introduction of dynamic copy (A/B variants,
+ *        localised verb forms, etc.) is a one-file edit — the call-
+ *        site contract stays stable.
  */
 export function formatUnlockCtaLabel(): string {
-  return `${formatPaymentAmountKrw()} ${PAYMENT_MODEL_UNLOCK_CTA_SUFFIX}`;
+  return PAYMENT_MODEL_UNLOCK_CTA_SUFFIX;
 }
