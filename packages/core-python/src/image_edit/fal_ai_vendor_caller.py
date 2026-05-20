@@ -1466,17 +1466,79 @@ class FalAiVendorCaller:
                 retry loop because retrying a malformed request is
                 pointless.
 
-        The implementation is supplied by the sibling AC tasks of
-        the same orchestration which fill in the 3-step HTTP flow,
-        preset → prompt resolution, model-param defaults, and PII
-        allowlist parsing. This method's *signature* — and the
-        ``bytes`` return contract — is locked in by this AC.
+        Orchestrates the 3-step Fal.ai flow as documented in the
+        module-level docstring:
+
+          1. :meth:`_upload_selfie_to_storage` — upload
+             ``request.selfie_bytes`` to Fal storage and receive a
+             short-lived storage URL.
+          2. :meth:`_post_img2img_request` — POST the FLUX img2img
+             request with the storage URL, the preset-resolved prompt,
+             and the allowlisted per-call overrides from
+             ``request.params``; receive the CDN URL of the edited
+             image.
+          3. :meth:`_download_result` — GET the CDN URL and return the
+             raw edited bytes.
+
+        The preset → prompt resolution happens here at the adapter
+        boundary because the FLUX prompt vocabulary is private to this
+        adapter; upstream diagnosis code emits the season string and
+        downstream consumers expect opaque bytes. An unknown or
+        wrong-typed ``params["preset"]`` value short-circuits as
+        :class:`ValueError` before any HTTP round-trip so a malformed
+        call never wastes a Fal credit.
+
+        Budget bookkeeping uses :func:`time.monotonic` to track the
+        end-to-end deadline. Each step receives the *remaining* budget
+        (``deadline - now``) — never the original ``attempt_timeout`` —
+        so a slow upload cannot allow the edit step to overrun the
+        wrapper's overall budget.
         """
-        # The body is filled by sibling AC tasks. The ``raise`` keeps
-        # the signature honest while preventing accidental "always
-        # succeeds with empty bytes" production-path usage.
-        raise NotImplementedError(
-            "FalAiVendorCaller.__call__ body is supplied by sibling AC "
-            "tasks (3-step HTTP flow, preset mapping, params, env). "
-            "This AC (1/N) locks the Protocol-compliant signature."
+        # Compute the end-to-end deadline once at the start of this
+        # attempt. Each step receives `deadline - monotonic()` as its
+        # own budget, so a slow upload cannot let the edit step overrun
+        # the wrapper's overall window.
+        deadline_monotonic = time.monotonic() + attempt_timeout
+
+        # Resolve preset → prompt at the adapter boundary. The
+        # `params` slot is `Mapping[str, object]` so `preset` may be
+        # any object; the type-check rejects non-strings before the
+        # dict lookup. Unknown presets short-circuit as ValueError —
+        # the same classification the rest of the adapter uses for
+        # permanent contract violations.
+        preset_obj = request.params.get("preset")
+        if not isinstance(preset_obj, str):
+            raise ValueError(
+                "VendorRequest.params['preset'] must be a string, "
+                f"got {type(preset_obj).__name__}"
+            )
+        prompt = _PRESET_TO_PROMPT.get(preset_obj)
+        if prompt is None:
+            raise ValueError(
+                f"unknown preset {preset_obj!r}; "
+                f"must be one of {sorted(_PRESET_TO_PROMPT)}"
+            )
+
+        # Step 1 of 3: upload bytes → storage URL.
+        storage_url = self._upload_selfie_to_storage(
+            request.selfie_bytes,
+            deadline_monotonic - time.monotonic(),
+        )
+
+        # Step 2 of 3: POST img2img with the storage URL, resolved
+        # prompt, and the caller's per-call overrides (the builder
+        # silently drops keys outside the 3-field allowlist).
+        result_url = self._post_img2img_request(
+            image_url=storage_url,
+            prompt=prompt,
+            params=request.params,
+            timeout=deadline_monotonic - time.monotonic(),
+        )
+
+        # Step 3 of 3: GET the CDN URL → raw edited bytes. Uses the
+        # `_download_result` semantic alias so the orchestration reads
+        # in domain vocabulary (Phase 4 FastAPI form).
+        return self._download_result(
+            result_url,
+            deadline_monotonic - time.monotonic(),
         )
