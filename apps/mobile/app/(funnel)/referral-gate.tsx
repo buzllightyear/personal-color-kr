@@ -21,13 +21,17 @@
  *     `referral_gate` remains intact — the `shared=false` upsell branch on
  *     `social_evolution` links the user BACK here to share.
  *
- * Placeholder side effects (Seed constraint:
- *   "All external SDK interactions are noop placeholders with TODO
- *   comments"):
- *   - `trackReferralShared({ method: 'kakao' | 'copy_link' })` and
- *     `trackReferralSkipped({})` are `console.log` wrappers under
- *     `src/analytics/` that will swap to `posthog.capture(...)` in
- *     Phase 2.5.
+ * PostHog analytics wiring (Phase 2.6 — client pass-through DI):
+ *   - `trackReferralShared({ method })` and `trackReferralSkipped({})` now
+ *     accept a `PostHog | undefined` client as their first argument. The
+ *     route resolves the singleton via `usePostHog()` (the hook returns
+ *     `undefined` when the provider is in degraded mode — no api key in
+ *     `.env`) and closes over the result inside each `useCallback` handler.
+ *   - The track helpers degrade silently when `posthog` is `undefined`
+ *     (optional-chain guard on `capture`) so the share / skip handlers
+ *     never throw even with the SDK absent. This matches the Seed
+ *     constraint "Degraded mode posthog undefined must produce silent
+ *     no-op".
  *   - No real Kakao SDK call, no clipboard write — both share buttons
  *     route through the same `setReferral({ shared: true })` write so the
  *     funnel-state contract treats them identically.
@@ -41,6 +45,7 @@
  */
 import * as React from 'react';
 import { useRouter } from 'expo-router';
+import { usePostHog } from 'posthog-react-native';
 
 import { trackReferralShared } from '../../src/analytics/track-referral-shared';
 import { trackReferralSkipped } from '../../src/analytics/track-referral-skipped';
@@ -50,23 +55,29 @@ import { ReferralGateScreen } from '../../src/screens/funnel/ReferralGateScreen'
 export default function ReferralGateRoute(): React.ReactElement {
   const router = useRouter();
   const { setReferral } = useFunnelState();
+  // `usePostHog()` returns `PostHog | undefined`. The `undefined` branch is
+  // the documented degraded-mode contract (no api key in `.env` → provider
+  // renders a fragment, no context value). The track helpers below
+  // optional-chain on `capture`, so passing `undefined` is a silent no-op
+  // by design — no throw, no console output, capture call count is 0.
+  const posthog = usePostHog();
 
   const handleShareKakao = React.useCallback((): void => {
-    trackReferralShared({ method: 'kakao' });
+    trackReferralShared(posthog, { method: 'kakao' });
     setReferral({ shared: true });
     router.replace('/(funnel)/social-evolution');
-  }, [router, setReferral]);
+  }, [posthog, router, setReferral]);
 
   const handleCopyLink = React.useCallback((): void => {
-    trackReferralShared({ method: 'copy_link' });
+    trackReferralShared(posthog, { method: 'copy_link' });
     setReferral({ shared: true });
     router.replace('/(funnel)/social-evolution');
-  }, [router, setReferral]);
+  }, [posthog, router, setReferral]);
 
   const handleSkip = React.useCallback((): void => {
-    trackReferralSkipped({});
+    trackReferralSkipped(posthog, {});
     router.push('/(funnel)/social-evolution');
-  }, [router]);
+  }, [posthog, router]);
 
   return (
     <ReferralGateScreen

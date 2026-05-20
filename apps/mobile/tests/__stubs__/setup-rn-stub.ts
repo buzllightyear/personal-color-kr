@@ -60,6 +60,15 @@ function resolveReactNativeEntry(): string {
  */
 type StubComponent = (props: Record<string, unknown>) => unknown;
 
+interface StubPlatform {
+  readonly OS: 'ios';
+  readonly select: <T>(specifics: {
+    readonly ios?: T;
+    readonly android?: T;
+    readonly default?: T;
+  }) => T | undefined;
+}
+
 interface StubReactNative {
   readonly View: StubComponent;
   readonly Text: StubComponent;
@@ -68,6 +77,39 @@ interface StubReactNative {
   readonly Switch: StubComponent;
   readonly ScrollView: StubComponent;
   readonly Modal: StubComponent;
+  readonly Pressable: StubComponent;
+  readonly TouchableOpacity: StubComponent;
+  readonly Platform: StubPlatform;
+  readonly StyleSheet: {
+    readonly create: <T extends Record<string, unknown>>(s: T) => T;
+    readonly flatten: (s: unknown) => unknown;
+    readonly hairlineWidth: number;
+    readonly absoluteFill: Record<string, number>;
+    readonly absoluteFillObject: Record<string, number>;
+  };
+  readonly NativeModules: Readonly<Record<string, unknown>>;
+  readonly NativeEventEmitter: new (...args: ReadonlyArray<unknown>) => {
+    readonly addListener: () => { readonly remove: () => void };
+    readonly removeAllListeners: () => void;
+  };
+  readonly AppState: {
+    readonly currentState: 'active';
+    readonly addEventListener: () => { readonly remove: () => void };
+  };
+  readonly Dimensions: {
+    readonly get: () => { readonly width: number; readonly height: number };
+    readonly addEventListener: () => { readonly remove: () => void };
+  };
+  readonly Linking: {
+    readonly addEventListener: () => { readonly remove: () => void };
+    readonly removeAllListeners: () => void;
+    readonly getInitialURL: () => Promise<null>;
+  };
+  readonly Keyboard: {
+    readonly addListener: () => { readonly remove: () => void };
+    readonly removeAllListeners: () => void;
+    readonly dismiss: () => void;
+  };
 }
 
 function makeStubExports(): StubReactNative {
@@ -97,6 +139,75 @@ function makeStubExports(): StubReactNative {
     };
   }
 
+  // Platform stub — required by `posthog-react-native`'s CJS dist files
+  // (e.g. `dist/utils.js`'s `isMacOS()` reads `Platform.OS`). The route test
+  // files already mock `Platform` at the ESM `vi.mock` layer, but
+  // `posthog-react-native/dist/native-deps.js` does
+  // `var _reactNative=require("react-native")` from inside `node_modules` —
+  // a raw CJS path that vitest's mock registry does NOT intercept. The
+  // require-cache stub IS the intercept mechanism for that path, so the
+  // Platform shape must live here. `OS: 'ios'` is the same default the
+  // route tests already pick.
+  const platformStub: StubPlatform = {
+    OS: 'ios',
+    select: <T,>(specifics: {
+      readonly ios?: T;
+      readonly android?: T;
+      readonly default?: T;
+    }): T | undefined => specifics.ios ?? specifics.default,
+  };
+  // Minimal stand-ins for the additional surface `posthog-react-native`
+  // touches at module-load time (NativeEventEmitter for queue lifecycle,
+  // AppState / Linking for foreground/background hooks, Dimensions for the
+  // device-type probe). Each returns inert listeners that no-op on
+  // subscription. None of the tests under `apps/mobile/tests/` exercise
+  // these surfaces — they exist solely so the PostHog CJS entry can finish
+  // its module-load top-level statements without throwing.
+  class StubNativeEventEmitter {
+    addListener(): { readonly remove: () => void } {
+      return { remove: () => undefined };
+    }
+    removeAllListeners(): void {
+      return undefined;
+    }
+  }
+  const appStateStub: StubReactNative['AppState'] = {
+    currentState: 'active',
+    addEventListener: (): { readonly remove: () => void } => ({
+      remove: () => undefined,
+    }),
+  };
+  const dimensionsStub: StubReactNative['Dimensions'] = {
+    get: (): { readonly width: number; readonly height: number } => ({
+      width: 390,
+      height: 844,
+    }),
+    addEventListener: (): { readonly remove: () => void } => ({
+      remove: () => undefined,
+    }),
+  };
+  const linkingStub: StubReactNative['Linking'] = {
+    addEventListener: (): { readonly remove: () => void } => ({
+      remove: () => undefined,
+    }),
+    removeAllListeners: (): void => undefined,
+    getInitialURL: (): Promise<null> => Promise.resolve(null),
+  };
+  const styleSheetStub: StubReactNative['StyleSheet'] = {
+    create: <T extends Record<string, unknown>>(s: T): T => s,
+    flatten: (s: unknown): unknown => s,
+    hairlineWidth: 1,
+    absoluteFill: {},
+    absoluteFillObject: {},
+  };
+  const keyboardStub: StubReactNative['Keyboard'] = {
+    addListener: (): { readonly remove: () => void } => ({
+      remove: () => undefined,
+    }),
+    removeAllListeners: (): void => undefined,
+    dismiss: (): void => undefined,
+  };
+
   return {
     View: makeHostComponent('View'),
     Text: makeHostComponent('Text'),
@@ -105,6 +216,17 @@ function makeStubExports(): StubReactNative {
     Switch: makeHostComponent('Switch'),
     ScrollView: makeHostComponent('ScrollView'),
     Modal: makeHostComponent('Modal'),
+    Pressable: makeHostComponent('Pressable'),
+    TouchableOpacity: makeHostComponent('TouchableOpacity'),
+    Platform: platformStub,
+    StyleSheet: styleSheetStub,
+    NativeModules: {},
+    NativeEventEmitter:
+      StubNativeEventEmitter as unknown as StubReactNative['NativeEventEmitter'],
+    AppState: appStateStub,
+    Dimensions: dimensionsStub,
+    Linking: linkingStub,
+    Keyboard: keyboardStub,
   };
 }
 

@@ -55,6 +55,7 @@
 import * as React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { usePostHog } from 'posthog-react-native';
 
 import { trackPaymentCompleted } from '../../src/analytics/track-payment-completed';
 import { trackPaymentSkipped } from '../../src/analytics/track-payment-skipped';
@@ -87,6 +88,13 @@ export default function PaymentModelRoute(): React.ReactElement {
   const { payment, setPaymentProcessing, setIsPremium } = useFunnelState();
   const { isProcessing } = payment;
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  // `usePostHog()` returns `PostHog | undefined` — degraded mode contract
+  // (no api key in `.env` → provider degrades to fragment, no context).
+  // The track helpers optional-chain on `capture`, so passing `undefined`
+  // is a silent no-op (no throw, no console output, capture count 0) per
+  // Seed constraint "Degraded mode posthog undefined must produce silent
+  // no-op".
+  const posthog = usePostHog();
 
   const handleUnlock = React.useCallback(async (): Promise<void> => {
     if (isProcessing) {
@@ -99,7 +107,7 @@ export default function PaymentModelRoute(): React.ReactElement {
       if (result.outcome === 'purchased' || result.outcome === 'restored') {
         // `method` is the Phase 2.4 deprecated sentinel (Phase 2.5 surface
         // owns the actual provider choice via Superwall + StoreKit).
-        trackPaymentCompleted({
+        trackPaymentCompleted(posthog, {
           method: 'kakao',
           amountKrw: PAYMENT_AMOUNT_KRW,
           restored: result.outcome === 'restored',
@@ -122,19 +130,19 @@ export default function PaymentModelRoute(): React.ReactElement {
           : error instanceof Error
             ? error.message
             : String(error);
-      trackPaywallError({ placement, errorMessage: errMsg });
+      trackPaywallError(posthog, { placement, errorMessage: errMsg });
       setErrorMessage(PAYWALL_ERROR_INLINE_TEXT);
       setPaymentProcessing(false);
     }
-  }, [isProcessing, setPaymentProcessing, setIsPremium, router]);
+  }, [isProcessing, posthog, setPaymentProcessing, setIsPremium, router]);
 
   const handleSkip = React.useCallback((): void => {
     if (isProcessing) {
       return;
     }
-    trackPaymentSkipped({});
+    trackPaymentSkipped(posthog, {});
     router.replace('/(funnel)/result-reveal');
-  }, [isProcessing, router]);
+  }, [isProcessing, posthog, router]);
 
   return (
     <FunnelScreenLayout

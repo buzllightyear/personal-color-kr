@@ -23,9 +23,8 @@
  *   the future PostHog wiring. The Phase 2.4 sibling modules
  *   `src/analytics/track-payment-completed.ts`,
  *   `src/analytics/track-referral-shared.ts`,
- *   `src/analytics/track-referral-skipped.ts`,
- *   `src/analytics/track-social-evolution-skipped.ts`, and
- *   `src/analytics/track-payment-method-selected.ts` set the precedent —
+ *   `src/analytics/track-referral-skipped.ts`, and
+ *   `src/analytics/track-social-evolution-skipped.ts` set the precedent —
  *   this file mirrors their shape so the helpers stay structurally
  *   identical and reviewable side-by-side. The Phase 2.5 sibling
  *   `src/analytics/track-payment-skipped.ts` lands alongside this module
@@ -56,7 +55,7 @@
  *        future widening of the placement surface in `placements.ts` is
  *        enforced as a compile error on every analytics call site until the
  *        new placement is handled. This mirrors the precedent set by
- *        `trackPaymentCompleted` and `trackPaymentMethodSelected`, which key
+ *        `trackPaymentCompleted`, which keys
  *        on the {@link PaymentMethod} union from the funnel-state contract
  *        for the same compile-time-coupling reason.
  *
@@ -125,6 +124,8 @@
  *   and testable under the vitest Node runner without resolving the
  *   native SDK.
  */
+import type { PostHog } from 'posthog-react-native';
+
 import type { SuperwallPlacement } from '../superwall/placements';
 
 /**
@@ -167,8 +168,8 @@ export interface TrackPaywallErrorPayload {
  * import-site catches the rename.
  *
  * The verb-noun form (`paywall_error`, noun outcome) matches the
- * `payment_completed`, `referral_shared`, `referral_skipped`,
- * `social_evolution_skipped`, and `payment_method_selected` precedents,
+ * `payment_completed`, `referral_shared`, `referral_skipped`, and
+ * `social_evolution_skipped` precedents,
  * satisfying the Seed constraint "PostHog event names use snake_case +
  * verb form for Phase 2.5 reuse". The `paywall_*` prefix scope-isolates
  * this event from the `payment_*` funnel-outcome events so that
@@ -195,14 +196,20 @@ export const PAYWALL_ERROR_EVENT_NAME = 'paywall_error' as const;
  * @param payload - structured event properties; see
  *   {@link TrackPaywallErrorPayload}.
  */
-export function trackPaywallError(payload: TrackPaywallErrorPayload): void {
-  // TODO(phase-2.5): Replace this console.log with the real PostHog call:
-  //   const posthog = usePostHog(); // or DI'd client
-  //   posthog?.capture(PAYWALL_ERROR_EVENT_NAME, payload);
-  // The placeholder prefix `[analytics:placeholder]` makes the no-op
-  // visible in dev logs without polluting the structured event-name slot —
-  // tests assert against `PAYWALL_ERROR_EVENT_NAME` and `payload`, not
-  // the prefix, so it can be tweaked freely.
-  // eslint-disable-next-line no-console
-  console.log('[analytics:placeholder]', PAYWALL_ERROR_EVENT_NAME, payload);
+export function trackPaywallError(
+  posthog: PostHog | undefined,
+  payload: TrackPaywallErrorPayload,
+): void {
+  // Client pass-through DI: the caller (a React component using
+  // `usePostHog()` from `src/providers/PostHogProvider.tsx`) supplies the
+  // singleton PostHog client; pure-TS modules like this one stay free of
+  // React/hook coupling and remain trivially testable under vitest.
+  //
+  // Degraded mode (posthog === undefined) silently no-ops — no throw, no
+  // console output, capture call count is 0 — per the Seed constraint
+  // "Degraded mode posthog undefined must produce silent no-op".
+  // Spread into a fresh object literal so the readonly + literal-typed
+  // payload widens to `PostHogEventProperties` (`{ [key: string]: JsonType }`)
+  // expected by `posthog.capture`. The values are unchanged.
+  posthog?.capture(PAYWALL_ERROR_EVENT_NAME, { ...payload });
 }

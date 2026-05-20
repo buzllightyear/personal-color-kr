@@ -19,9 +19,8 @@
  *   module would couple their evolution and force a wider blast radius for
  *   the future PostHog wiring. The parallel modules
  *   `src/analytics/track-referral-shared.ts` (Sub-AC 18.1),
- *   `src/analytics/track-referral-skipped.ts` (Sub-AC 18.2),
- *   `src/analytics/track-social-evolution-skipped.ts` (Sub-AC 18.3), and
- *   `src/analytics/track-payment-method-selected.ts` (Sub-AC 18.4) set the
+ *   `src/analytics/track-referral-skipped.ts` (Sub-AC 18.2), and
+ *   `src/analytics/track-social-evolution-skipped.ts` (Sub-AC 18.3) set the
  *   precedent — this file mirrors their shape so the helpers stay
  *   structurally identical and reviewable side-by-side.
  *
@@ -51,9 +50,8 @@
  *        of the payment-method domain in `src/contracts/funnel-state.ts` is
  *        enforced as a compile error on every analytics call site until the
  *        new method is handled. This mirrors the precedent set by
- *        `trackPaymentMethodSelected` (Sub-AC 18.4) and
  *        {@link PAYMENT_MODEL_METHOD_LABELS} in
- *        `src/funnel/payment-model-ctas.ts`, which key on the same union
+ *        `src/funnel/payment-model-ctas.ts`, which keys on the same union
  *        for the same compile-time-coupling reason.
  *
  *     2. `amountKrw` — the integer KRW price the user "paid". In Phase 2.4
@@ -100,6 +98,8 @@
  *   coupling, mirroring the singleton-via-hook pattern already used in
  *   `src/providers/PostHogProvider.tsx`.
  */
+import type { PostHog } from 'posthog-react-native';
+
 import type { PaymentMethod } from '../contracts/funnel-state';
 
 /**
@@ -112,9 +112,7 @@ import type { PaymentMethod } from '../contracts/funnel-state';
  * stance enforced across the rest of the funnel contracts (e.g.
  * `FunnelStateValue` in `src/contracts/funnel-state.ts`) and the sibling
  * analytics payloads ({@link TrackReferralSharedPayload} in
- * `src/analytics/track-referral-shared.ts`,
- * {@link TrackPaymentMethodSelectedPayload} in
- * `src/analytics/track-payment-method-selected.ts`).
+ * `src/analytics/track-referral-shared.ts`).
  *
  * Fields:
  *   - `method`    — *(deprecated in Phase 2.5)* the placeholder payment
@@ -186,10 +184,9 @@ export interface TrackPaymentCompletedPayload {
  * import-site catches the rename.
  *
  * The verb form (`*_completed`, past tense) matches `referral_shared`,
- * `referral_skipped`, `social_evolution_skipped`,
- * `payment_method_selected`, and the root-layout `funnel_step_entered`
- * precedent, satisfying the Seed constraint "PostHog event names use
- * snake_case + verb form for Phase 2.5 reuse".
+ * `referral_skipped`, `social_evolution_skipped`, and the root-layout
+ * `funnel_step_entered` precedent, satisfying the Seed constraint
+ * "PostHog event names use snake_case + verb form for Phase 2.5 reuse".
  *
  * Naming note: this event-name literal collides intentionally with the
  * `'payment_completed'` rating-action string in
@@ -212,15 +209,19 @@ export const PAYMENT_COMPLETED_EVENT_NAME = 'payment_completed' as const;
  *   {@link TrackPaymentCompletedPayload}.
  */
 export function trackPaymentCompleted(
+  posthog: PostHog | undefined,
   payload: TrackPaymentCompletedPayload,
 ): void {
-  // TODO(phase-2.5): Replace this console.log with the real PostHog call:
-  //   const posthog = usePostHog(); // or DI'd client
-  //   posthog?.capture(PAYMENT_COMPLETED_EVENT_NAME, payload);
-  // The placeholder prefix `[analytics:placeholder]` makes the no-op
-  // visible in dev logs without polluting the structured event-name slot —
-  // tests assert against `PAYMENT_COMPLETED_EVENT_NAME` and `payload`,
-  // not the prefix, so it can be tweaked freely.
-  // eslint-disable-next-line no-console
-  console.log('[analytics:placeholder]', PAYMENT_COMPLETED_EVENT_NAME, payload);
+  // Client pass-through DI: the caller (a React component using
+  // `usePostHog()` from `src/providers/PostHogProvider.tsx`) supplies the
+  // singleton PostHog client; pure-TS modules like this one stay free of
+  // React/hook coupling and remain trivially testable under vitest.
+  //
+  // Degraded mode (posthog === undefined) silently no-ops — no throw, no
+  // console output, capture call count is 0 — per the Seed constraint
+  // "Degraded mode posthog undefined must produce silent no-op".
+  // Spread into a fresh object literal so the readonly + literal-typed
+  // payload widens to `PostHogEventProperties` (`{ [key: string]: JsonType }`)
+  // expected by `posthog.capture`. The values are unchanged.
+  posthog?.capture(PAYMENT_COMPLETED_EVENT_NAME, { ...payload });
 }

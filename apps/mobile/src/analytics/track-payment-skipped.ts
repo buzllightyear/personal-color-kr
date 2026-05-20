@@ -103,6 +103,7 @@
  *   remains importable and testable under the vitest Node runner without
  *   resolving the native SDK.
  */
+import type { PostHog } from 'posthog-react-native';
 
 /**
  * Structured payload accompanying every `payment_skipped` placeholder
@@ -158,14 +159,17 @@ export const PAYMENT_SKIPPED_EVENT_NAME = 'payment_skipped' as const;
  * @param payload - structured event properties; see
  *   {@link TrackPaymentSkippedPayload}.
  */
-export function trackPaymentSkipped(payload: TrackPaymentSkippedPayload): void {
-  // TODO(phase-2.5): Replace this console.log with the real PostHog call:
-  //   const posthog = usePostHog(); // or DI'd client
-  //   posthog?.capture(PAYMENT_SKIPPED_EVENT_NAME, payload);
-  // The placeholder prefix `[analytics:placeholder]` makes the no-op
-  // visible in dev logs without polluting the structured event-name slot —
-  // tests assert against `PAYMENT_SKIPPED_EVENT_NAME` and `payload`, not
-  // the prefix, so it can be tweaked freely.
-  // eslint-disable-next-line no-console
-  console.log('[analytics:placeholder]', PAYMENT_SKIPPED_EVENT_NAME, payload);
+export function trackPaymentSkipped(
+  posthog: PostHog | undefined,
+  payload: TrackPaymentSkippedPayload,
+): void {
+  // Client pass-through DI: the caller (a React component using
+  // `usePostHog()` from `src/providers/PostHogProvider.tsx`) supplies the
+  // singleton PostHog client; pure-TS modules like this one stay free of
+  // React/hook coupling and remain trivially testable under vitest.
+  //
+  // Degraded mode (posthog === undefined) silently no-ops — no throw, no
+  // console output, capture call count is 0 — per the Seed constraint
+  // "Degraded mode posthog undefined must produce silent no-op".
+  posthog?.capture(PAYMENT_SKIPPED_EVENT_NAME, payload);
 }
