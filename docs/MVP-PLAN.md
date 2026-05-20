@@ -30,7 +30,7 @@
 | 2.3 | ✅ 6~9단계 screens (scan_option → result_reveal; 24-point face scan animation + locked assets + diagnosisInput Context slice + Phase 2.1 isPreviewMode 보존) | TS/RN |
 | 2.4 | ✅ 10~12단계 한국 변형 (referral_gate · social_evolution · payment_model 한국 변형 UI shell + state slices + 결제 placeholder + premium unlock BackHandler) | TS/RN |
 | 2.5 | ✅ Superwall paywall + StoreKit 구독 결제 통합 (wrapper module + EAS dev client 전환 + ASC sandbox + 5-path completion handling + value-prop PriceCard) | iOS |
-| 2.6 | PostHog 12단계 이벤트 emit wire-up | TS |
+| 2.6 | ✅ PostHog 12단계 이벤트 emit wire-up (6 placeholder track-*.ts → posthog?.capture(EVENT_NAME, payload) client pass-through DI + orphan track-payment-method-selected 삭제 + 6:6 spec 1:1) | TS |
 
 ### Phase 3 — Post-payment delivery (첫 패키지 4종 실연동)
 | ID | 작업 | 비고 |
@@ -112,8 +112,8 @@
 | 2.3 | 2026-05-18 | 2026-05-19 | `orch_cd33a0972630` | `8be0230` | APPROVED · Stage 2 · 0.92 |
 | 2.4 | 2026-05-19 | 2026-05-20 | `orch_a7ebcc674886` | `07132de` | APPROVED · Stage 2 · 0.93 |
 | 2.5 | 2026-05-19 | 2026-05-20 | `orch_3b575df72faa` | `2de2119` | APPROVED · Stage 2 · 0.92 |
-| 2.6 | — | — | | | 다음 단계 |
-| 3.x | — | — | | | |
+| 2.6 | 2026-05-20 | 2026-05-20 | `orch_8d132bdbc9aa` | `77282c2` | APPROVED · Stage 2 · 0.93 |
+| 3.x | — | — | | | 다음 단계 |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
@@ -553,6 +553,86 @@
 - 패턴 재확인: orchestrator는 wrapper/analytics/test scaffolding 잘 만들지만 cross-cutting wire-up (route handler가 wrapper API를 실제로 await 하는 단계)에서 자주 정지
 
 **Evaluate**: APPROVED Stage 2 · score **0.92** · goal alignment 0.93 · drift 0.05 · uncertainty 0.12 (Phase 2.1/2.3과 동률 — 1st-class native integration phase 첫 시도로서 만족)
+
+### Phase 2.6 결과 요약 (2026-05-20)
+
+**PostHog 12단계 이벤트 emit wire-up** (PR #13, merge `77282c2`, 19 files, +895/-711):
+
+**Client pass-through DI 패턴 확정 (Option A)**:
+- 6개 placeholder track-*.ts 모듈을 `(posthog: PostHog | undefined, payload)` 시그니처로 변환
+- 본체: `posthog?.capture(EVENT_NAME, payload)` 또는 spread 변형 `{ ...payload }` (interface payload → PostHogEventProperties index signature 호환을 위해 3개 모듈에서 spread)
+- React 컴포넌트에서 `const posthog = usePostHog()` → useCallback handler closure로 전달
+- track-*.ts 모듈은 pure TS 유지 (no React/hook coupling) — vitest 환경에서 native-free
+- Phase 2.4 placeholder doc-comment가 명시적으로 예고했던 "thin wrapper that accepts the client via DI" 패턴 그대로 구현
+
+**6개 모듈 wire-up 매핑**:
+- `track-referral-shared.ts:114` → `posthog?.capture(REFERRAL_SHARED_EVENT_NAME, { ...payload })`
+- `track-referral-skipped.ts:120` → `posthog?.capture(REFERRAL_SKIPPED_EVENT_NAME, payload)`
+- `track-social-evolution-skipped.ts:127` → `posthog?.capture(SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME, payload)`
+- `track-payment-completed.ts:226` → `posthog?.capture(PAYMENT_COMPLETED_EVENT_NAME, { ...payload })`
+- `track-payment-skipped.ts:174` → `posthog?.capture(PAYMENT_SKIPPED_EVENT_NAME, payload)`
+- `track-paywall-error.ts:214` → `posthog?.capture(PAYWALL_ERROR_EVENT_NAME, { ...payload })`
+
+**Event name 상수 6개 (변경 없음 — Phase 2.4/2.5 placeholder에서 이미 snake_case 정의)**: `referral_shared`, `referral_skipped`, `social_evolution_skipped`, `payment_completed`, `payment_skipped`, `paywall_error` — drift 방지를 위해 capture 호출 첫 인자는 항상 상수 import (literal 금지)
+
+**3개 route file call-site 와이어업 (6 call-sites)**:
+- `app/(funnel)/referral-gate.tsx`: `usePostHog()` import + 3 call-sites (kakao share / copy link share / skip)
+- `app/(funnel)/social-evolution.tsx`: `usePostHog()` import + 1 call-site (skip)
+- `app/(funnel)/payment-model.tsx`: `usePostHog()` import + 3 call-sites (purchased/restored, error, skip)
+- 모든 useCallback dep array에 posthog 포함 (regression-prevention)
+
+**Degraded mode silent no-op 보안 가드**:
+- `posthog?.capture` optional chain만 사용 — throw 금지, console.log/console.warn/console.error 금지
+- 6 unit tests가 `posthog === undefined` 시 capture call count === 0 검증
+- 추가로 console spy 3종 (log/warn/error) 모두 0 호출 검증 — Phase 2.4 placeholder logger 완전 은퇴 입증
+
+**Vitest 구조 변경 (4 rewrite + 1 delete + 2 new = 7 file ops, end state 6:6 1:1)**:
+- Rewrite (4): track-referral-shared/skipped, track-social-evolution-skipped, track-payment-completed — console.log spy → captureFn vi.fn() spy + stubPostHog = { capture: captureFn } as PostHog
+- Delete (1): track-payment-method-selected.ts + .test.ts — Phase 2.5에서 KakaoPay/Toss radio 제거로 orphan, production 호출 0건
+- New (2): track-payment-skipped.test.ts, track-paywall-error.test.ts
+- 모듈당 정확히 2 test case (happy path + degraded mode)
+- payment-model-skip-flow.test.tsx (Phase 2.5 contract): console.log 옵저빙에서 usePostHog().capture 옵저빙으로 재배선 — analytics-before-navigation 순서 invariant 보존
+
+**Orphan cleanup (track-payment-method-selected)**:
+- 모듈 파일 삭제 (134 lines)
+- spec 파일 삭제 (115 lines)
+- track-paywall-error.ts L59, track-payment-completed.ts L54의 cross-doc references 정리
+
+**4중 정합 (Phase 2.6 정의)**:
+- ✅ TS strict `tsc --noEmit` — exit 0
+- ✅ vitest captureFn spy — 887 passed, 2 skipped, 0 failed (84 test files)
+- ✅ event_name 상수 = `posthog.capture()` 첫 인자 — 6/6 grep으로 검증
+- ✅ production `console.log` + `TODO(phase-2.6)` 잔존 — 0건 (Stage 2 evaluator가 별도 grep으로 재확인)
+
+**PII 보안 invariant**:
+- Payload types 좁은 도메인 (e.g., `{ readonly method: 'kakao' | 'copy_link' }`, `Record<string, never>`) — distinct_id/transaction_id/receipt_token/customer_email/selfieUri 구조적으로 추가 불가
+- PII grep 결과 (production code): 0건 (JSDoc 경고 주석만 남음)
+- TS structural typing이 PII 차단을 강제 — runtime PII assertion 불필요
+
+**Phase 2.2 funnel_step_entered untouched**:
+- `app/_layout.tsx`의 `useEffect(usePathname)` auto-capture 변경 0건
+- `tests/funnel-step-entered-capture.test.tsx` reference 패턴 보존
+- Phase 2.2가 이미 12개 funnel kebab slug allowlist로 작동 중 — Phase 2.6에서는 존재 확인만
+
+**7번째 MCP-disconnect recovery (Phase 1.2/2.1/2.2/2.3/2.4/2.5/2.6)**:
+- Orchestrator AC 8/13, Sub-AC 8/9 도달 — 6 모듈 wire-up + 2 route file (referral-gate, social-evolution) + 4 spec rewrite + 1 delete + 2 new spec까지 완성
+- payment-model.tsx call-site wiring (Sub-AC 7.3) 실행 중 disconnect — 3 call-sites 미와이어 상태
+- Worktree commit `26d3107` → main feature branch cherry-pick `b59a5f9`
+- 수동 완성 (`16c7ae1`):
+  - payment-model.tsx 와이어업 (3 call-sites)
+  - 3 production 모듈에 `{ ...payload }` spread 추가 (PostHogEventProperties index signature 호환)
+  - 4 test 파일 `MockInstance` 타입 annotation 수정 (RN console type override 회피)
+  - Phase 2.5 payment-model-skip-flow.test.tsx 를 capture spy 패턴으로 재작성
+- 패턴 재확인: 7회 연속 적용 — orchestrator의 강점(scaffolding)과 약점(cross-cutting handler wire-up) 모두 일관
+
+**Out of scope (Seed 명시 — Phase 4 launch readiness로 이연)**:
+- super properties / `posthog.register()` 호출
+- A/B test / feature flag 연동
+- User identification / alias
+- PostHog dashboard funnel 정의 (product setup)
+- Custom server-side proxy
+
+**Evaluate**: APPROVED Stage 2 · score **0.93** · goal alignment 0.95 · drift 0.05 · uncertainty 0.10 (Phase 2.2/2.4와 동률 — analytics 중심 phase의 최고 baseline)
 
 ## 참고
 
