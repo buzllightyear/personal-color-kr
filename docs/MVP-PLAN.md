@@ -35,7 +35,7 @@
 ### Phase 3 — Post-payment delivery (첫 패키지 4종 실연동)
 | ID | 작업 | 비고 |
 |----|------|------|
-| 3.1 | Fal.ai 실제 API call wiring (Replicate에서 변경됨, 1.2 결정) | Py |
+| 3.1 | ✅ Fal.ai 실제 API call wiring (FalAiVendorCaller 어댑터: VendorCaller Protocol 구현, 3-step upload→edit→download HTTPS sync, preset→prompt boundary 해상도, deadline_monotonic 예산 분배) | Py |
 | 3.2 | Personal color diagnosis 런타임 wiring (Python invoke) | Py |
 | 3.3 | ContentPackage 4종 화면 (진단·편집·가이드·큐레이션) | TS/RN |
 | 3.4 | result_wording 톤 혼합 화면 적용 | TS/RN |
@@ -113,7 +113,8 @@
 | 2.4 | 2026-05-19 | 2026-05-20 | `orch_a7ebcc674886` | `07132de` | APPROVED · Stage 2 · 0.93 |
 | 2.5 | 2026-05-19 | 2026-05-20 | `orch_3b575df72faa` | `2de2119` | APPROVED · Stage 2 · 0.92 |
 | 2.6 | 2026-05-20 | 2026-05-20 | `orch_8d132bdbc9aa` | `77282c2` | APPROVED · Stage 2 · 0.93 |
-| 3.x | — | — | | | 다음 단계 |
+| 3.1 | 2026-05-20 | 2026-05-21 | `orch_0db1520139ca` | `b3a2deb` | APPROVED · Stage 2 · 0.92 (retry after wireup fix) |
+| 3.x | — | — | | | 다음 단계 (3.2) |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
@@ -633,6 +634,94 @@
 - Custom server-side proxy
 
 **Evaluate**: APPROVED Stage 2 · score **0.93** · goal alignment 0.95 · drift 0.05 · uncertainty 0.10 (Phase 2.2/2.4와 동률 — analytics 중심 phase의 최고 baseline)
+
+### Phase 3.1 결과 요약 (2026-05-21)
+
+**Fal.ai 실제 API call wiring** (PR #15, squash merge `b3a2deb`, 17 files, +7676/-12):
+
+**Adapter 패턴 (VendorCaller Protocol 구현)**:
+- `packages/core-python/src/image_edit/fal_ai_vendor_caller.py` (1544L) — `FalAiVendorCaller` 클래스가 기존 `VendorCaller` Protocol 시그니처(`__call__(request: VendorRequest, attempt_timeout: float) -> bytes`)를 그대로 구현
+- bytes-in / bytes-out 경계 보존 — Fal JSON, CDN URL, storage 토큰 등 메타데이터가 호출자에게 노출되지 않음
+- `from __future__ import annotations` (PEP 563) — type hints는 문자열, `typing.get_type_hints()`로 실제 해상도 가능
+- `__slots__ = ('_api_key', '_authorization_header')` — `__init__` 후 상태 없음, attribute injection 방지
+- sync def per Protocol (frozen) — Phase 4 FastAPI에서 그대로 재사용 가능
+
+**3-step HTTP flow (upload → edit → download)**:
+- Step 1: `_upload_selfie_to_storage(selfie_bytes, timeout) -> str` — `POST https://fal.run/storage/upload` multipart, 3s 천장. 응답 JSON의 `url` 필드만 allowlist (filename/size/mime/expires_at 등 모두 폐기)
+- Step 2: `_post_img2img_request(image_url, prompt, params, timeout) -> str` — `POST https://fal.run/fal-ai/flux/dev/image-to-image` JSON, 15s 천장. 응답 `images[0].url` 만 allowlist (request_id/seed/nsfw 등 폐기). `_build_img2img_payload()` pure function이 payload 빌드, 3-field override allowlist (`strength`, `guidance_scale`, `num_inference_steps`)
+- Step 3: `_download_image_bytes(url, timeout) -> bytes` / `_download_result()` alias — opaque CDN URL `GET`, 3s 천장. **Authorization header 없음** (CDN log leak 방지). bytes 만 반환, 헤더/메타 폐기
+- `__call__()` orchestration (commit `c280e86`): `deadline_monotonic = time.monotonic() + attempt_timeout` 으로 deadline 계산, 각 step에 `deadline - now()` 잔여 예산 전달 — slow upload가 edit 슬라이스를 침범하지 못함
+
+**Preset → prompt 경계 해상도 (AC 6)**:
+- `_PRESET_TO_PROMPT: Final[Mapping[str, str]]` 모듈 스코프 closed enum — `spring-warm` / `summer-cool` / `autumn-warm` / `winter-cool` 4개만
+- FLUX prompt 어휘는 adapter 내부 비공개 — 진단 파이프라인은 `"spring-warm"` 만 emit, downstream consumer는 bytes 만 받음
+- `__call__()` 진입 직후 boundary resolve — unknown/non-string preset은 ValueError로 short-circuit, **HTTP round-trip 0** (Fal credit 낭비 방지)
+
+**모델 파라미터 디폴트 (Seed v0.2.0 고정)**:
+- `fal_ai_defaults.py:85-101` — `DEFAULT_STRENGTH=0.85`, `DEFAULT_GUIDANCE_SCALE=3.5`, `DEFAULT_NUM_INFERENCE_STEPS=28`
+- module-scope `Final` — 재배치 불가, mypy `--strict` 가 mutation 거부
+- 호출자가 `VendorRequest.params` 의 3-field allowlist를 통해 per-call override 가능, 알려지지 않은 키는 silent drop
+
+**에러 분류 (vendor_client.py 계약 보존)**:
+- `VendorError` (transient, retriable): HTTP 429, 5xx, network reset, DNS fail, request timeout, `timeout <= 0`
+- `ValueError` (permanent, non-retriable): HTTP 4xx (429 제외), JSON decode fail, missing/empty/non-string allowlisted 필드, 3xx unexpected redirect, wrong-typed override
+- 외부 `edit_image()` retry loop는 `VendorError` 만 absorb — `ValueError` 시 즉시 short-circuit
+
+**FAL_API_KEY 보안 (server-side only)**:
+- `fal_ai_api_key.py` (152L) — `config.env.load_root_dotenv()` + `get_env(required=True)` 위에 구축, idempotent, thread-safe
+- 키 값이 모듈 어떤 string format에도 등장하지 않음 — log/exception body에 변수명과 .env 경로만
+- `apps/mobile/src/config/vendor-keys.ts` 의 `falApiKey: 'INTENTIONALLY ABSENT'` 보존 — mobile bundle 누출 0
+- Authorization header는 `__init__` 에서 한 번만 빌드 (`f"Key {api_key}"`), `__slots__` 으로 immutable 저장
+
+**전송 계층 mock 전략 (production 분기 0)**:
+- `httpx.MockTransport` + `monkeypatch.setattr('image_edit.fal_ai_vendor_caller.httpx.Client', factory)` — production 소스에 `DRY_RUN` / `if mock:` 분기 **0건**
+- Seed Contract: "Production code zero conditional branches for mock/dry-run" 강제 — 14개 test 파일이 동일 패턴
+- `_REAL_HTTPX_CLIENT` 캡처 (import 시점) — factory가 재귀 호출 방지
+
+**테스트 구조 (14 파일, +7340 / -0 + 정합 fix 추가 분)**:
+- `test_fal_ai_api_key.py` (390L), `test_fal_ai_defaults.py` (141L), `test_fal_ai_preset_to_prompt.py` (158L) — pure 모듈 단위
+- `test_fal_ai_request_builder.py` (546L), `test_fal_ai_response_parser.py` (556L) — pure function 단위
+- `test_fal_ai_upload_step.py` (712L), `test_fal_ai_edit_step.py` (1090L), `test_fal_ai_download_step.py` (717L), `test_fal_ai_download_result.py` (595L) — 3-step HTTP via MockTransport
+- `test_fal_ai_params_overrides.py` (666L) — 3-field allowlist 검증
+- `test_fal_ai_call_integration.py` (NEW, 4 tests) — `__call__` end-to-end orchestration (commit `c280e86` 의 follow-up). 1 happy path (3 round-trips in correct URL order, prompt embedded in edit body, returned bytes == CDN body) + 3 short-circuit (missing/unknown/non-string preset → ValueError + captured == [])
+
+**4중 정합 (Phase 3.1 정의 — Python 측 첫 phase)**:
+- ✅ pytest: **1232 passed** (image_edit 283, 전체 945 prior + 287 추가) · 3 skipped (`.env` absent in CI)
+- ✅ mypy `--strict`: 3 source files success
+- ✅ ruff check: 13 files pass
+- ✅ black `--check`: 13 files clean
+- ✅ PII grep (`distinct_id|transaction_id|receipt_token|customer_email|selfieUri`): **0 matches** in production sources
+- ✅ smoke_fal.py: 회귀 없음
+
+**8번째 MCP-disconnect recovery (Phase 1.2/2.1/2.2/2.3/2.4/2.5/2.6/3.1)**:
+- Orchestrator AC 9/21 도달 (Sub-AC 5/7 실행 중 disconnect)
+- Worktree commit `67923be` → main feature branch cherry-pick `d5d17af`
+- 1차 수동 완성 (`efd5874`):
+  - `test_fal_ai_download_result.py` PEP 563 annotation 비교 수정 — `sig.return_annotation is bytes` 가 PEP 563 활성 모듈에서는 string `'bytes'` 와 비교됨. `typing.get_type_hints()` 로 클래스 해상도 후 identity check
+  - black `--check` 자동 포맷팅 (4 test 파일)
+- 패턴 재확인: 8회 연속 적용 — orchestrator scaffolding 강점은 일관, end-to-end semantic completeness check은 별도 책임
+
+**Stage 2 1차 평가 REJECTED (score 0.78, 2026-05-20)**:
+- Evaluator가 `__call__` 가 `NotImplementedError("body is supplied by sibling AC tasks")` 인 것을 발견 — adapter end-to-end 호출 불가능
+- "AC 21/21 verified" 클레임은 사실 위반 — orchestrator partial이 AC 9/21 + manual completion이 test 표면 수정만 처리, AC 10 (`__call__` wireup) 미완
+- Drift score 0.25, AC compliance NO
+
+**2차 수정 (`c280e86` + `66d5b4d`)**:
+- `__call__` 본체 wire — preset boundary resolve + deadline_monotonic 예산 분배 + 3-step orchestration
+- 4 integration test 추가 — end-to-end MockTransport flow
+- `httpx>=0.27` 를 `pyproject.toml` runtime dep 으로 추가 (CI `pip install -e packages/core-python` 시 누락되었던 의존)
+
+**Stage 2 2차 평가 APPROVED (score 0.92, 2026-05-21)**:
+- AC compliance YES, goal alignment 0.93, drift 0.05, uncertainty 0.10
+- Evaluator의 7개 검증 질문 모두 positive — `__call__` 3-step orchestration, Protocol 시그니처 일치, integration test가 end-to-end (sub-method 재검증 아님), preset short-circuit 0 HTTP, deadline_monotonic 예산 분배, production mock 분기 0, 에러 분류 보존
+
+**Out of scope (Seed 명시)**:
+- FastAPI 서버 (Phase 4.1)
+- 인증/사용자 관리 (Phase 4.3)
+- result_wording 톤 혼합 (Phase 3.4)
+- Mobile/RN wiring (Phase 4 server 등장 이후)
+- diagnosis runtime (Phase 3.2)
+- fine-tune / LoRA adapter (Seed v0.2.0 금지)
 
 ## 참고
 
