@@ -46,6 +46,8 @@ from .pipeline import (
     PipelineResult,
     run_edit_pipeline,
 )
+from .fal_ai_api_key import FAL_API_KEY_ENV_VAR, load_fal_api_key
+from .fal_ai_vendor_caller import FalAiVendorCaller
 from .vendor_client import (
     DEFAULT_MAX_RETRIES,
     DEFAULT_TIMEOUT_SECONDS,
@@ -60,6 +62,8 @@ from .vendor_client import (
 __all__ = [
     "DEFAULT_MAX_RETRIES",
     "DEFAULT_TIMEOUT_SECONDS",
+    "FAL_API_KEY_ENV_VAR",
+    "FalAiVendorCaller",
     "LatencyStats",
     "LatencyTracker",
     "P95_SLO_SECONDS",
@@ -70,6 +74,7 @@ __all__ = [
     "VendorResponse",
     "VendorTimeoutError",
     "edit_image",
+    "load_fal_api_key",
     "measure_latency",
     "run_edit_pipeline",
     "track_latency",
