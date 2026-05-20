@@ -29,10 +29,10 @@
  *      depending on locale data); we assert on the structural
  *      substrings so the test passes deterministically on every
  *      supported runtime.
- *   7. `formatUnlockCtaLabel()` composes the unlock CTA by prefixing
- *      the formatted price onto `PAYMENT_MODEL_UNLOCK_CTA_SUFFIX` —
- *      verifying the no-drift invariant between the price constant
- *      and the rendered button copy.
+ *   7. `formatUnlockCtaLabel()` returns the verb-form unlock CTA copy
+ *      **without** the formatted price prefix — verifying the
+ *      Phase 2.5 `price_single_source` invariant (Superwall paywall
+ *      owns price display; the in-app CTA must not duplicate ₩9,900).
  *   8. `PAYMENT_MODEL_METHOD_LABELS` is frozen so consumers cannot
  *      mutate the shared snapshot.
  *
@@ -126,17 +126,27 @@ describe('payment-model-ctas — price formatter (Sub-AC 26)', () => {
     expect(formatted === '' || /[₩]|KRW/.test(formatted)).toBe(true);
   });
 
-  it('formatUnlockCtaLabel() composes the formatted price + the verb-form suffix', () => {
-    // Verifies the no-drift invariant: the unlock CTA copy is always
-    // `<price> 결제하고 잠금 해제`. If a future edit re-orders or
-    // duplicates either component, this assertion catches it.
+  it('formatUnlockCtaLabel() returns the verb-form CTA without the ₩9,900 price prefix (Phase 2.5 Superwall ownership)', () => {
+    // Phase 2.5 `price_single_source` invariant: the Superwall paywall
+    // sheet (not the in-app CTA) renders the ASC-registered
+    // subscription price. The unlock CTA on `payment_model` must
+    // therefore expose ONLY the Korean verb form — never an inlined
+    // "₩9,900" substring that would duplicate price information across
+    // two UI surfaces.
+    //
+    // Concrete checks:
+    //   1. The returned label is exactly the verb-form suffix.
+    //   2. It does NOT contain the locale-formatted price substring
+    //      "9,900" (the grouped digits the Phase 2.4 prefix used).
+    //   3. It does NOT contain the KRW currency markers ("₩" or "KRW")
+    //      — covering both ICU build renderings.
     const composed = formatUnlockCtaLabel();
-    expect(composed.endsWith(PAYMENT_MODEL_UNLOCK_CTA_SUFFIX)).toBe(true);
-    expect(composed.startsWith(formatPaymentAmountKrw())).toBe(true);
-    // And the two are joined by exactly one space — single source of
-    // truth for the separator.
-    expect(composed).toBe(
-      `${formatPaymentAmountKrw()} ${PAYMENT_MODEL_UNLOCK_CTA_SUFFIX}`,
-    );
+    expect(composed).toBe(PAYMENT_MODEL_UNLOCK_CTA_SUFFIX);
+    expect(composed).not.toContain('9,900');
+    expect(composed).not.toMatch(/[₩]|KRW/);
+    // And the helper formatter is still callable / unaffected — its
+    // output is reserved for analytics payload composition, not CTA
+    // display.
+    expect(typeof formatPaymentAmountKrw()).toBe('string');
   });
 });

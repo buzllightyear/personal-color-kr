@@ -4,8 +4,6 @@
  * Composition contract:
  *   - Renders `PriceCard` (hardcoded `PAYMENT_AMOUNT_KRW` from
  *     `payment-model-ctas.ts`).
- *   - Renders `PaymentMethodRadio` bound to `payment.selectedMethod` from
- *     `FunnelStateProvider` and `setSelectedPaymentMethod` for writes.
  *   - Renders a "결제하기" primary CTA (label sourced from
  *     `formatUnlockCtaLabel()`) that is `disabled` until a method has
  *     been selected.
@@ -30,11 +28,21 @@
  *      change) does NOT later trigger state writes against an unmounted
  *      component.
  *
- * Skip flow:
- *   "나중에 할게요" → `router.replace('/(funnel)/result-reveal')`
- *   (locked state — `isPremium` stays `false`).
+ * Skip flow (Phase 2.5 AC 10):
+ *   "나중에 할게요" →
+ *     1. `trackPaymentSkipped({})` (Phase 2.5 placeholder PostHog
+ *        capture — `console.log` body until Phase 2.6+ swaps in the
+ *        real `posthog.capture('payment_skipped', {})` call).
+ *     2. `router.replace('/(funnel)/result-reveal')` — LOCKED
+ *        result-reveal (no `?premium=true` query param; `isPremium`
+ *        stays `false` on the FunnelStateProvider payment slice).
  *   Replace (not push) so back-swipe from `result-reveal` cannot
  *   re-enter payment_model (the Seed names this the soft-gate exit).
+ *   This skip path is intentionally distinct from the Superwall
+ *   paywall *modal dismiss* (the `declined` outcome) — modal-dismiss
+ *   retains the user on payment_model and does NOT fire
+ *   `trackPaymentSkipped` per Seed evaluation principle
+ *   `analytics_separation`.
  *
  * What this route is NOT:
  *   - It does NOT import KakaoPay or Toss SDKs, make network calls,
@@ -61,7 +69,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { trackPaymentCompleted } from '../../src/analytics/track-payment-completed';
-import { PaymentMethodRadio } from '../../src/components/funnel/PaymentMethodRadio';
+import { trackPaymentSkipped } from '../../src/analytics/track-payment-skipped';
 import { PriceCard } from '../../src/components/funnel/PriceCard';
 import { FunnelPrimaryButton } from '../../src/components/funnel/FunnelPrimaryButton';
 import { FunnelHeadline } from '../../src/components/FunnelHeadline';
@@ -83,7 +91,6 @@ export default function PaymentModelRoute(): React.ReactElement {
   const router = useRouter();
   const {
     payment,
-    setSelectedPaymentMethod,
     setPaymentProcessing,
     setIsPremium,
   } = useFunnelState();
@@ -131,6 +138,22 @@ export default function PaymentModelRoute(): React.ReactElement {
     if (isProcessing) {
       return;
     }
+    // Phase 2.5 AC 10 — explicit-skip analytics fires BEFORE the
+    // navigation so the placeholder event is observable even if a
+    // navigation race / cleanup unmounts the route synchronously.
+    // The payload is the empty object `{}` per
+    // `TrackPaymentSkippedPayload = Record<string, never>`: the
+    // explicit-skip path has no domain discriminator (Phase 2.5
+    // collapses the Phase 2.4 KakaoPay/Toss `method` dimension
+    // because Superwall + StoreKit own the payment method choice).
+    // Navigation target is the LOCKED result-reveal — explicitly
+    // NO `?premium=true` query param, since the skip path leaves
+    // `payment.isPremium = false` on the FunnelStateProvider slice
+    // and the result-reveal route reads its premium flag from the
+    // provider, not from URL params (Seed: "skip_flow exit
+    // condition — Skip tap navigates to locked result-reveal with
+    // trackPaymentSkipped fired").
+    trackPaymentSkipped({});
     router.replace('/(funnel)/result-reveal');
   }, [isProcessing, router]);
 
@@ -149,13 +172,6 @@ export default function PaymentModelRoute(): React.ReactElement {
         />
         <View style={styles.priceWrapper}>
           <PriceCard />
-        </View>
-        <View style={styles.radioWrapper}>
-          <PaymentMethodRadio
-            value={selectedMethod}
-            onChange={setSelectedPaymentMethod}
-            disabled={isProcessing}
-          />
         </View>
       </View>
       <View style={styles.ctaStack}>
@@ -188,9 +204,6 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
   },
   priceWrapper: {
-    alignItems: 'stretch',
-  },
-  radioWrapper: {
     alignItems: 'stretch',
   },
   ctaStack: {

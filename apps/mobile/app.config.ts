@@ -151,6 +151,34 @@ export function buildExtraVendorKeys(): ExpoExtraVendorKeys {
  * Sibling sub-ACs read these values from `core-ts`'s PostHogClient wrapper
  * setup and (in Phase 2.5) the Superwall SDK init.
  */
+/**
+ * iOS bundle identifier — must match the bundle ID registered in Apple
+ * Developer / App Store Connect for sandbox subscription product testing.
+ *
+ * Phase 2.5 contract:
+ *   - ASC sandbox subscription product ID `com.personalcolorkr.monthly.premium`
+ *     belongs to subscription group `personal_color_premium`, which is owned
+ *     by this bundle identifier.
+ *   - Changing this value invalidates the ASC product link (sandbox testers
+ *     would no longer see the IAP) and breaks the Superwall dashboard
+ *     paywall<->product mapping. Treat as load-bearing.
+ *
+ * Exported so a sibling test (`tests/app-config-ios-bundle.test.ts`, when
+ * added) can pin the contract from the test side without re-parsing the
+ * exported config object.
+ */
+export const IOS_BUNDLE_IDENTIFIER: string = 'com.personalcolorkr.app';
+
+/**
+ * Expo runtime version — pinned to the Expo SDK 51 series so OTA updates
+ * served via EAS Update only land on dev clients whose native binary
+ * matches the JS bundle's native module ABI. Phase 2.5 is the first phase
+ * that links a native module (@superwall/react-native-superwall), so OTA
+ * mismatches would now manifest as native crashes rather than benign JS
+ * errors — pinning the runtime version is the cheapest mitigation.
+ */
+export const EXPO_RUNTIME_VERSION: string = '51.0.0';
+
 export default function defineExpoConfig({
   config,
 }: {
@@ -168,7 +196,22 @@ export default function defineExpoConfig({
     orientation: 'portrait',
     scheme: 'personal-color-kr',
     platforms: ['ios', 'android', 'web'],
-    plugins: ['expo-router'],
+    // expo-dev-client is the runtime that replaces Expo Go for Phase 2.5+ —
+    // it is what lets the custom dev client load native modules
+    // (@superwall/react-native-superwall) that Expo Go cannot link. Adding
+    // the plugin here ensures `expo prebuild` and EAS Build inject the
+    // necessary native scaffolding into the generated ios/ project.
+    plugins: ['expo-router', 'expo-dev-client'],
+    runtimeVersion: EXPO_RUNTIME_VERSION,
+    ios: {
+      bundleIdentifier: IOS_BUNDLE_IDENTIFIER,
+      // StoreKit subscription products are exercised in the iOS sandbox
+      // environment when running on a real device (simulator does not
+      // exercise the full receipt validation surface). The simulator build
+      // still loads the Superwall SDK and renders the paywall UI — only
+      // the purchase tap path needs a device.
+      supportsTablet: false,
+    },
     experiments: { typedRoutes: false },
     extra: {
       ...existingExtra,

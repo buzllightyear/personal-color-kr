@@ -117,18 +117,64 @@ import type { PaymentMethod } from '../contracts/funnel-state';
  * `src/analytics/track-payment-method-selected.ts`).
  *
  * Fields:
- *   - `method`    — the payment provider the placeholder simulator
- *                   completed against (KakaoPay or Toss).
- *   - `amountKrw` — the integer KRW amount "charged" by the placeholder.
+ *   - `method`    — *(deprecated in Phase 2.5)* the placeholder payment
+ *                   provider the Phase 2.4 simulator completed against
+ *                   (KakaoPay or Toss). Retained for forward compatibility
+ *                   with any in-flight Phase 2.4 call site; Phase 2.5 Superwall
+ *                   call sites SHOULD omit this field (StoreKit is the only
+ *                   provider). Final removal is scheduled for Phase 2.6 once
+ *                   the deprecated `selectedMethod` slice field is also
+ *                   removed from `FunnelPayment`. See Phase 2.5 Seed constraint:
+ *                   "method field on TrackPaymentCompletedPayload deprecated
+ *                   but not removed (forward compat)".
+ *   - `amountKrw` — the integer KRW amount "charged" (placeholder in Phase 2.4;
+ *                   Superwall-reported transaction amount in Phase 2.5).
+ *   - `restored`  — *(added in Phase 2.5, Sub-AC 18)* `true` when the
+ *                   Superwall paywall completion outcome was the
+ *                   `restored` discriminant (i.e. the user already owned an
+ *                   active App Store subscription and the paywall restored
+ *                   the entitlement without re-charging). `false` (or omitted)
+ *                   when the outcome was a fresh `purchased` transaction.
+ *                   The purchased-path Superwall callback MUST pass
+ *                   `restored: false` so downstream dashboards can compute a
+ *                   restored-vs-purchased breakdown without inferring from
+ *                   `undefined`. Optional under
+ *                   `exactOptionalPropertyTypes` so legacy Phase 2.4
+ *                   placeholder call sites that pre-date the Superwall
+ *                   wiring stay type-compatible (an absent field is
+ *                   interpreted as `false` downstream — same semantics
+ *                   as the explicit-false purchased path).
  *
- * Phase 2.5 may widen this additively (e.g.
- * `{ method; amountKrw; currency?: 'KRW' | 'USD'; tier?: 'monthly' | 'annual' }`)
+ * Phase 2.5+ may widen this additively (e.g.
+ * `{ method?; amountKrw; restored?; currency?: 'KRW' | 'USD'; tier?: 'monthly' | 'annual' }`)
  * without changing existing call sites, because optional fields default to
  * `undefined` under `exactOptionalPropertyTypes`.
  */
 export interface TrackPaymentCompletedPayload {
+  /**
+   * @deprecated Phase 2.5 — the Superwall + StoreKit subscription flow
+   * removes the KakaoPay/Toss provider choice (StoreKit is the only
+   * Phase 2.5 surface). The field is retained as required (not optional)
+   * for backward compatibility with the Phase 2.4 placeholder call sites
+   * still landing on this branch; Phase 2.6 will widen it to optional and
+   * Phase 2.7 will remove it. Phase 2.5 Superwall completion call sites
+   * SHOULD continue to pass *some* `PaymentMethod` value (e.g. a sentinel
+   * `'kakao'`) until the field is dropped — choosing a sentinel rather
+   * than widening the field today avoids a breaking change to every
+   * existing Phase 2.4 call site mid-phase.
+   */
   readonly method: PaymentMethod;
   readonly amountKrw: number;
+  /**
+   * Discriminator for the Superwall `purchased` vs `restored` completion
+   * outcomes (Sub-AC 18). `true` indicates a `restored` outcome (existing
+   * subscription re-attached, no new charge); `false` (or absent)
+   * indicates a fresh `purchased` outcome. The purchased path defaults to
+   * `false` — see field-level docstring on
+   * {@link TrackPaymentCompletedPayload} for the absence-vs-explicit-false
+   * semantics.
+   */
+  readonly restored?: boolean;
 }
 
 /**

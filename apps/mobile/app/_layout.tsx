@@ -5,6 +5,8 @@ import { usePostHog } from 'posthog-react-native';
 
 import { PostHogProvider } from '../src/providers/PostHogProvider';
 import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
+import { getVendorKeys } from '../src/config/vendor-keys';
+import { configureSuperwall } from '../src/superwall/client';
 
 /**
  * Root layout for the personal-color-kr Expo Router app shell.
@@ -101,7 +103,67 @@ function RootLayoutInner(): React.ReactElement {
   );
 }
 
+/**
+ * Phase 2.5 Sub-AC 2.2 — one-shot Superwall SDK initialisation.
+ *
+ * The native Superwall SDK exposes a global `Superwall.configure({ apiKey })`
+ * call that MUST run exactly once per JS runtime. The wrapper module
+ * (`src/superwall/client.ts`) gates re-entrancy with its own
+ * module-private `configured` flag (belt-and-suspenders alongside the
+ * SDK's own idempotency); the root layout's responsibility is purely
+ * to *trigger* the first call at app mount time.
+ *
+ * Why an empty dependency array:
+ *   - The SDK is process-global state (StoreKit observers, paywall
+ *     asset cache, presentation handler registry). Re-running configure
+ *     on every re-render would churn that state and is explicitly
+ *     forbidden by the Sub-AC contract ("called exactly once across
+ *     initial render + rerender").
+ *   - The Superwall publishable key is shipped via the Expo runtime
+ *     manifest at build time, so it cannot change during a single JS
+ *     runtime — making the empty deps array semantically correct as
+ *     well as Sub-AC-mandated.
+ *
+ * Graceful degradation:
+ *   - When `superwallApiKey` is undefined (developer hasn't populated
+ *     `SUPERWALL_API_KEY` in their local `.env` yet — the placeholder
+ *     onboarding state), we skip the configure call entirely. The
+ *     wrapper would otherwise throw `SuperwallNotConfiguredError` from
+ *     the regex validation. Subsequent `triggerPaywall` calls will
+ *     surface the not-configured state via their own error path, which
+ *     the route file maps to a Korean inline error message.
+ *
+ * Why a fire-and-forget `.catch`:
+ *   - `useEffect` callbacks cannot be `async`. We invoke the wrapper
+ *     and attach a `.catch` so unhandled promise rejection warnings
+ *     do not fire in development. The error is logged for visibility
+ *     but not surfaced to the UI — the proper user-facing error path
+ *     for Superwall problems is the route-level `triggerPaywall` catch
+ *     (per the Seed `error_transparency` evaluation principle, which
+ *     scopes inline errors to paywall TRIGGER failures, not configure
+ *     failures). TODO(phase-4): emit `superwall_configure_failed` to
+ *     PostHog when the analytics swap lands.
+ */
+function useConfigureSuperwallOnce(): void {
+  useEffect(() => {
+    const { superwallApiKey } = getVendorKeys();
+    if (superwallApiKey === undefined) {
+      return;
+    }
+    configureSuperwall(superwallApiKey).catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error('[superwall] configure failed', err);
+    });
+    // Empty deps — Sub-AC 2.2 contract: exactly once across initial
+    // render + rerender. The key is fetched fresh inside the effect
+    // so a future rotation does not require a different deps array
+    // (a rotation still ships in a new build).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 export default function RootLayout(): JSX.Element {
+  useConfigureSuperwallOnce();
   return (
     <PostHogProvider>
       <RootLayoutInner />

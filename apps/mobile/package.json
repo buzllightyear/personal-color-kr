@@ -4,18 +4,24 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
+    "prebuild": "expo prebuild --clean",
+    "prebuild:ios": "expo prebuild --platform ios --clean",
+    "build:ios:simulator": "eas build --profile development --platform ios --local",
+    "build:ios:dev": "eas build --profile development --platform ios",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@superwall/react-native-superwall": "^2.0.7",
     "core-ts": "workspace:*",
     "dotenv": "^16.4.7",
     "expo": "~51.0.39",
     "expo-constants": "~16.0.2",
+    "expo-dev-client": "~4.0.29",
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.24",
     "expo-status-bar": "~1.12.1",
@@ -33,6 +39,7 @@
     "@types/react": "~18.2.79",
     "@types/react-test-renderer": "18.0.7",
     "babel-preset-expo": "~11.0.0",
+    "eas-cli": "^12.0.0",
     "react-test-renderer": "18.2.0"
   }
 }
