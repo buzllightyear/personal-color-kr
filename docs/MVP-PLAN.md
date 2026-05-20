@@ -29,7 +29,7 @@
 | 2.2 | ✅ 1~5단계 screens (welcome → fake Analyzing 5초; 한국어 카피·디자인 토큰·FunnelStateContext·rating-gate modal·5s autoAdvance) | TS/RN |
 | 2.3 | ✅ 6~9단계 screens (scan_option → result_reveal; 24-point face scan animation + locked assets + diagnosisInput Context slice + Phase 2.1 isPreviewMode 보존) | TS/RN |
 | 2.4 | ✅ 10~12단계 한국 변형 (referral_gate · social_evolution · payment_model 한국 변형 UI shell + state slices + 결제 placeholder + premium unlock BackHandler) | TS/RN |
-| 2.5 | Superwall paywall + StoreKit 구독 결제 통합 | iOS |
+| 2.5 | ✅ Superwall paywall + StoreKit 구독 결제 통합 (wrapper module + EAS dev client 전환 + ASC sandbox + 5-path completion handling + value-prop PriceCard) | iOS |
 | 2.6 | PostHog 12단계 이벤트 emit wire-up | TS |
 
 ### Phase 3 — Post-payment delivery (첫 패키지 4종 실연동)
@@ -111,7 +111,8 @@
 | 2.2 | 2026-05-18 | 2026-05-19 | `orch_f9fd2fbeb451` | `eaadaa2` | APPROVED · Stage 2 · 0.93 |
 | 2.3 | 2026-05-18 | 2026-05-19 | `orch_cd33a0972630` | `8be0230` | APPROVED · Stage 2 · 0.92 |
 | 2.4 | 2026-05-19 | 2026-05-20 | `orch_a7ebcc674886` | `07132de` | APPROVED · Stage 2 · 0.93 |
-| 2.5 | — | — | | | 다음 단계 |
+| 2.5 | 2026-05-19 | 2026-05-20 | `orch_3b575df72faa` | `2de2119` | APPROVED · Stage 2 · 0.92 |
+| 2.6 | — | — | | | 다음 단계 |
 | 3.x | — | — | | | |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -473,6 +474,85 @@
 - 패턴 재확인: orchestrator는 leaf 컴포넌트는 잘 만들지만 cross-cutting wire-up(route ↔ screen) 단계에서 자주 정지
 
 **Evaluate**: APPROVED Stage 2 · score **0.93** · goal alignment 0.92 · drift 0.05 · uncertainty 0.10 (Phase 2.2와 동률 — 최고점)
+
+### Phase 2.5 결과 요약 (2026-05-20)
+
+**Superwall paywall + StoreKit iOS 구독 결제 통합** (PR #11, merge `2de2119`, 47+ files):
+
+**Wrapper-mediated native integration** (Phase 2.5 핵심 아키텍처 결정):
+- `apps/mobile/src/superwall/client.ts` — 유일한 `@superwall/react-native-superwall` import 사이트 (grep 검증 완료)
+- `configureSuperwall(apiKey)`: 멱등 (이미 configured면 early return). `app/_layout.tsx`의 useEffect with empty dep array에서 1회 호출
+- `triggerPaywall(placement, params?)`: `Promise<{ outcome: 'purchased' | 'restored' | 'declined', productId?: string }>` 반환
+- `SuperwallTriggerError` + `SuperwallNotConfiguredError`: caller try-catch용 두 종류 에러 클래스
+- `PLACEMENT_PAYMENT_MODEL_UNLOCK = 'payment_model_unlock'` constant in `placements.ts`
+- core-ts package는 pure JS/TS 유지 (Phase 1.2 key.ts regex만)
+
+**payment-model.tsx Phase 2.4 → 2.5 변환**:
+- PaymentMethodRadio import + setSelectedPaymentMethod usage 완전 제거 (KakaoPay/Toss UI shell deprecated — Superwall이 method 선택 흡수)
+- 250ms setTimeout placeholder + useRef cleanup 제거 (Superwall이 처리)
+- handleUnlock을 async + try-catch로 변환
+- 5-path completion handler:
+  - `purchased`: trackPaymentCompleted({restored:false}) + setIsPremium(true) + router.replace('/(funnel)/result-reveal?premium=true')
+  - `restored`: 동일 + restored:true on payload
+  - `declined`: setPaymentProcessing(false) only, 화면 잔류 (Superwall 내부 paywall_close 이벤트가 충당, 앱 analytics 미발화)
+  - `SuperwallTriggerError`: trackPaywallError({placement, errorMessage}) + inline error Text (subdued red '#C44569', accessibilityLiveRegion='polite') + CTA 재활성화
+  - explicit skip "나중에 할게요": trackPaymentSkipped({}) + router.replace('/(funnel)/result-reveal') (locked, no premium=true)
+- Inline error UI는 별도 toast component가 아닌 화면 내 conditional Text (Seed `error_transparency` 원칙)
+
+**PriceCard 변환** (`apps/mobile/src/components/funnel/PriceCard.tsx`):
+- 하드코딩 ₩9,900 + formatPaymentAmountKrw import 제거
+- value-proposition card로 재구성: VALUE_PROP_CARD_HEADING ('이 분석으로 받게 되는 것') + 3 benefit items (scope → utility → longevity)
+- testID `payment-model-value-prop-card`
+- 단일 source of truth: 실제 가격은 Superwall paywall만 표시 (가격 drift 위험 제거)
+
+**CTA label change**:
+- `formatUnlockCtaLabel()` returns bare `PAYMENT_MODEL_UNLOCK_CTA_SUFFIX` ('결제하고 잠금 해제')
+- ₩9,900 prefix 제거 — Superwall paywall이 가격 노출 owner
+
+**5개 신규 PostHog placeholder events** (총 8개로 확장):
+- 신규: `track-payment-skipped.ts` ('payment_skipped' / Record<string, never>), `track-paywall-error.ts` ('paywall_error' / {placement, errorMessage})
+- 확장: `TrackPaymentCompletedPayload`에 `restored?: boolean` optional field 추가 (Phase 2.4 method field는 deprecated as sentinel — Phase 2.6 정리)
+
+**EAS dev client 전환 (첫 native module 필요 phase)**:
+- `eas.json` 추가 — development-simulator + development + preview + production 프로파일
+- `developmentClient: true` — Expo Go 호환 불가 (네이티브 SDK)
+- `@superwall/react-native-superwall@2.1.7` apps/mobile/package.json에 추가
+
+**ASC sandbox 등록 문서**:
+- `docs/PHASE-2.5-ASC-SUBSCRIPTION.md` — 수동 등록 playbook
+- Product ID: `com.personalcolorkr.monthly.premium`
+- Subscription group: `personal_color_premium`
+- Baseline price: ₩9,900 (KRW)
+- `apps/mobile/storekit/PersonalColorKR.storekit` — Xcode StoreKit configuration 파일 (sandbox 테스트용)
+
+**테스트 회로** (Phase 2.4 880 + Phase 2.5 신규 = 880 passing):
+- Wrapper 단위 테스트 8종: superwall-client-wrapper, superwall-configure-idempotency, superwall-dependency-declared, superwall-placements, superwall-products, superwall-trigger-error, superwall-trigger-paywall-outcome, superwall-trigger-paywall-placement-forwarding
+- Completion 상태 테스트 5종: funnel-state-payment-{purchased, restored, declined, error, skip}, payment-model-skip-flow
+- Route+layout 테스트: payment-model-route 5-path coverage + root-layout-superwall-configure
+- Transitive mock 추가: root-layout.test.tsx, funnel-step-entered-capture.test.tsx (네이티브 모듈 leak 방지)
+
+**Test seam single-mock**:
+- vitest의 모든 native-touching path는 `vi.mock('../src/superwall/client', ...)` (또는 상응 path)을 통해 wrapper module에서 차단
+- `@superwall/react-native-superwall` package 자체는 vitest에서 절대 resolve되지 않음
+- 5-path 완성 테스트는 `vi.mocked(triggerPaywall).mockResolvedValueOnce(...)` per-case로 outcome 시뮬레이션
+
+**4중 정합**:
+- TypeScript types (PaywallOutcome discriminated union, SuperwallTriggerError class) ↔ vitest (wrapper API + 5-path completion behavior) ↔ wrapper module 존재 (src/superwall/{client, placements, products}.ts) ↔ FunnelStateProvider slice 호환성 (Phase 2.4 setters 재사용)
+
+**Security invariants 유지**:
+- 네이티브 import grep 검증: client.ts 단 1곳만 (다른 어떤 UI/test 파일도 직접 import 안 함)
+- Superwall publishable key는 `EXPO_PUBLIC_` prefix only (publishable, secret 아님)
+- payment slice/analytics payload에 PII (transaction_id, receipt token, customer email) 없음
+- ASC sandbox만 등록 — production registration Phase 7 미룸
+- 9개 internal funnel screen 외부 deep-link 차단 유지 (payment-model 포함)
+
+**6번째 MCP-disconnect recovery (Phase 1.2/2.1/2.2/2.3/2.4/2.5)**:
+- Orchestrator AC 12/24 도달 후 disconnect — wrapper + analytics + 8 wrapper tests + 5 completion tests + storekit config + ASC docs 까지 완성, 하지만 payment-model.tsx 자체는 PaymentMethodRadio만 제거하고 setTimeout placeholder가 그대로 (CTA가 가드 절(`selectedMethod === null`)로 영구 비활성화 상태)
+- Worktree commit `8b3b1fc` → main branch cherry-pick `7c77a9a`
+- 수동 완성 (`9487a72`): payment-model의 handleUnlock을 async + triggerPaywall 호출 + 5-path 분기로 재작성 + inline error UI + 5 completion 테스트 추가 + 2개 transitive-touch 테스트에 wrapper mock 추가
+- 패턴 재확인: orchestrator는 wrapper/analytics/test scaffolding 잘 만들지만 cross-cutting wire-up (route handler가 wrapper API를 실제로 await 하는 단계)에서 자주 정지
+
+**Evaluate**: APPROVED Stage 2 · score **0.92** · goal alignment 0.93 · drift 0.05 · uncertainty 0.12 (Phase 2.1/2.3과 동률 — 1st-class native integration phase 첫 시도로서 만족)
 
 ## 참고
 
