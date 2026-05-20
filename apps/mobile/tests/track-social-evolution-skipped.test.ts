@@ -1,96 +1,129 @@
 /**
  * Unit test — `apps/mobile/src/analytics/track-social-evolution-skipped.ts`
- * (Sub-AC 18.3, Phase 2.4).
+ * (Phase 2.6 — real PostHog `capture` wiring via client pass-through DI).
  *
- * Pins the placeholder contract for `trackSocialEvolutionSkipped`:
+ * Pins the post-Phase-2.6 contract for `trackSocialEvolutionSkipped`:
  *
- *   - No real PostHog client wiring (deferred to Phase 2.5 — Seed constraint
- *     "All external SDK interactions are noop placeholders with TODO
- *     comments").
- *   - The function MUST invoke `console.log` exactly once per call.
- *   - The `console.log` arguments MUST include the snake_case event-name
- *     literal `social_evolution_skipped` (Seed constraint: "PostHog event
- *     names use snake_case + verb form for Phase 2.5 reuse") AND the
- *     structured payload object so the swap to
- *     `posthog.capture('social_evolution_skipped', payload)` is a one-line
- *     edit.
+ *   1. **Happy path** — when a PostHog client is injected, the helper MUST
+ *      invoke `posthog.capture(...)` exactly once with the snake_case event
+ *      name literal `social_evolution_skipped` (sourced via the
+ *      {@link SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME} constant) AND the
+ *      empty-object payload the caller passed.
  *
- * Why a single `it(...)` block:
- *   Sub-AC 18.3 explicitly scopes the test to "a single test asserting
- *   console.log is called with correct event name and properties". One
- *   focused assertion is sufficient: the function under test has a single
- *   side effect (the `console.log` call) and no return value, so a single
- *   call + spy-introspection cycle covers the entire observable contract.
+ *   2. **Degraded mode (AC 11)** — when the injected client is `undefined`,
+ *      the helper MUST silently no-op: `capture` is not invoked (call count
+ *      === 0), no throw is propagated, and no console channel emits output.
  *
- * Why no dimension fields in the payload:
- *   The skip path has a single binary outcome — the user tapped the skip
- *   button on `social_evolution` — so there is no analogue of
- *   `trackReferralShared`'s `method` discriminator. The payload type
- *   `TrackSocialEvolutionSkippedPayload` resolves to `Record<string, never>`
- *   in Phase 2.4; the test passes `{}` and asserts the empty object is
- *   logged alongside the event-name constant. Phase 2.5 may add additive
- *   optional fields (e.g. `branch`, `dwell_ms`) without changing this
- *   test's call site.
+ * Why a stub PostHog client (rather than `vi.mock('posthog-react-native')`):
+ *   The Phase 2.6 DI signature is `(posthog: PostHog | undefined, payload)` —
+ *   the helper takes the client as its first argument, so the unit test can
+ *   construct a minimal `{ capture: vi.fn() }` stub and pass it directly.
+ *   Module-level mocking is only required when the SUT itself calls
+ *   `usePostHog()` internally (e.g. the auto-capture in `app/_layout.tsx`,
+ *   where `tests/funnel-step-entered-capture.test.tsx` legitimately needs
+ *   `vi.mock('posthog-react-native')`). Pass-through DI keeps this unit
+ *   test dependency-free and faster.
  *
- * Why `vi.spyOn(console, 'log').mockImplementation(() => undefined)`:
- *   Mirrors `tests/track-referral-shared.test.ts` and
- *   `tests/track-referral-skipped.test.ts` (the sibling Sub-AC 18.1 / 18.2
- *   tests) and `tests/funnel-guards.test.ts`'s `console.warn` spies — the
- *   spy silences the placeholder log so vitest's output stays clean, while
- *   `.mock.calls[0]` still preserves the arguments for assertion.
+ * Why we cast the stub to `PostHog`:
+ *   The `PostHog` class from `posthog-react-native` has ~40 public methods;
+ *   the SUT only exercises `.capture(name, payload)`. Constructing a full
+ *   structural match would be noise — the cast through `unknown` documents
+ *   that the stub deliberately implements a narrow subset of the surface
+ *   under test. Production code never sees this stub (only `usePostHog()`'s
+ *   real client or `undefined`), so the cast is type-safe in context.
+ *
+ * Why two `it(...)` blocks with inline spies (matches sibling pattern):
+ *   The Seed mandates "Each module minimum 2 test cases happy path capture +
+ *   degraded mode no-op". Inlining the console spies inside each `it` block
+ *   (rather than hoisting them to `beforeEach`) mirrors the
+ *   `tests/track-payment-skipped.test.ts` sibling shape AND sidesteps the
+ *   TS-strict mismatch between `ReturnType<typeof vi.spyOn>` (which resolves
+ *   to `MockInstance<unknown[], unknown>` because `vi.spyOn` is generic) and
+ *   the actual return type `MockInstance<[message?: any, ...optionalParams:
+ *   any[]], void>` from `vi.spyOn(console, 'log')`. A `try/finally` ensures
+ *   the console is always restored even if an assertion throws.
  */
-import type { MockInstance } from 'vitest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PostHog } from 'posthog-react-native';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME,
   trackSocialEvolutionSkipped,
   type TrackSocialEvolutionSkippedPayload,
 } from '../src/analytics/track-social-evolution-skipped';
 
-describe('trackSocialEvolutionSkipped (Phase 2.4 placeholder, Sub-AC 18.3)', () => {
-  // `console.log`'s real signature is
-  // `(message?: any, ...optionalParams: any[]) => void`. We narrow the spy
-  // generics to that exact tuple so `.mock.calls[0]` is typed as
-  // `[any?, ...any[]]` and the variadic-arg assertions below compile under
-  // TS strict.
-  let logSpy: MockInstance<[message?: unknown, ...optionalParams: unknown[]], void>;
+describe('trackSocialEvolutionSkipped (Phase 2.6 — real PostHog capture wiring)', () => {
+  it('invokes posthog.capture("social_evolution_skipped", payload) exactly once on happy path', () => {
+    // Stub the singleton PostHog client with a spied `.capture`. The DI
+    // signature lets us hand this directly to the helper without touching
+    // `posthog-react-native`'s real module.
+    const captureFn = vi.fn();
+    const posthog = { capture: captureFn } as unknown as PostHog;
 
-  beforeEach(() => {
-    logSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined) as MockInstance<
-      [message?: unknown, ...optionalParams: unknown[]],
-      void
-    >;
-  });
-
-  afterEach(() => {
-    logSpy.mockRestore();
-  });
-
-  it('console.logs the `social_evolution_skipped` event with the supplied payload', () => {
-    // The Phase 2.4 payload is an empty object — `TrackSocialEvolutionSkippedPayload`
+    // The Phase 2.6 payload is an empty object — `TrackSocialEvolutionSkippedPayload`
     // resolves to `Record<string, never>` so the literal `{}` is the only
-    // value the type permits. The variable + explicit annotation make the
-    // contract visible at the call site: if Phase 2.5 widens the payload
-    // shape, every downstream consumer is forced to revisit this annotation.
+    // value the type permits. The explicit annotation pins the contract: if
+    // a future phase widens the payload shape, this annotation forces a
+    // call-site update.
     const payload: TrackSocialEvolutionSkippedPayload = {};
 
-    trackSocialEvolutionSkipped(payload);
+    trackSocialEvolutionSkipped(posthog, payload);
 
-    // Single side effect: exactly one console.log call. Forbids both
-    // "no log" regressions and "logs twice" regressions.
-    expect(logSpy).toHaveBeenCalledTimes(1);
+    // Single side effect: exactly one capture call. Forbids both
+    // "no capture" regressions and "captures twice" regressions.
+    expect(captureFn).toHaveBeenCalledTimes(1);
 
-    // The recorded arguments MUST contain the snake_case event-name literal
-    // and the structured payload object so the Phase 2.5 swap to a real
-    // `posthog.capture(name, payload)` is mechanical. We do not pin the
-    // exact prefix label (e.g. `[analytics:placeholder]`) so the placeholder
-    // wrapper can be tweaked for log-readability without breaking the test
-    // — the contract under test is "event name + properties appear in the
-    // call arguments", not the cosmetic prefix.
-    const callArgs = logSpy.mock.calls[0] ?? [];
-    expect(callArgs).toContain('social_evolution_skipped');
-    expect(callArgs).toContainEqual(payload);
+    // Assert against the exported constant rather than the duplicated
+    // string literal `'social_evolution_skipped'` so a rename in the SUT
+    // triggers a compile-time / test-time failure here instead of silently
+    // diverging from the PostHog dashboard's funnel definition.
+    expect(captureFn).toHaveBeenCalledWith(SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME, payload);
+
+    // Belt-and-braces literal check: the constant MUST equal the exact
+    // snake_case string the PostHog dashboard funnel is keyed on. This
+    // closes the "event_name === capture arg" cross-check axis from the
+    // Seed exit conditions.
+    expect(SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME).toBe('social_evolution_skipped');
+  });
+
+  it('silently no-ops when posthog is undefined (degraded mode — AC 11)', () => {
+    // Degraded mode: the PostHogProvider's onboarding-degradation branch
+    // (missing EXPO_PUBLIC_POSTHOG_API_KEY) returns `undefined` from
+    // `usePostHog()`. The helper MUST swallow this and do nothing — no
+    // throw, no `console.log`/`.warn`/`.error`, zero captures recorded.
+    const captureFn = vi.fn();
+    const consoleLogSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    try {
+      const payload: TrackSocialEvolutionSkippedPayload = {};
+
+      // The call MUST NOT throw — `posthog?.capture(...)` optional chaining
+      // short-circuits when the client is undefined.
+      expect(() => trackSocialEvolutionSkipped(undefined, payload)).not.toThrow();
+
+      // Zero capture invocations confirms the degraded path is a true
+      // no-op (no fallback to console logging, no spy on a stub client).
+      expect(captureFn).not.toHaveBeenCalled();
+
+      // Zero console output of any kind — the degraded path is silent,
+      // not "logs a warning". This pins the Seed constraint "Degraded mode
+      // posthog undefined must produce silent no-op — no throw no
+      // console.log capture called 0 times".
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleLogSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

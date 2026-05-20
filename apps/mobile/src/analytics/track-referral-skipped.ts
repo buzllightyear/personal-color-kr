@@ -59,6 +59,7 @@
  *   coupling, mirroring the singleton-via-hook pattern already used in
  *   `src/providers/PostHogProvider.tsx`.
  */
+import type { PostHog } from 'posthog-react-native';
 
 /**
  * Structured payload accompanying every `referral_skipped` placeholder
@@ -104,14 +105,17 @@ export const REFERRAL_SKIPPED_EVENT_NAME = 'referral_skipped' as const;
  * @param payload - structured event properties; see
  *   {@link TrackReferralSkippedPayload}.
  */
-export function trackReferralSkipped(payload: TrackReferralSkippedPayload): void {
-  // TODO(phase-2.5): Replace this console.log with the real PostHog call:
-  //   const posthog = usePostHog(); // or DI'd client
-  //   posthog?.capture(REFERRAL_SKIPPED_EVENT_NAME, payload);
-  // The placeholder prefix `[analytics:placeholder]` makes the no-op
-  // visible in dev logs without polluting the structured event-name slot —
-  // tests assert against `REFERRAL_SKIPPED_EVENT_NAME` and `payload`, not
-  // the prefix, so it can be tweaked freely.
-  // eslint-disable-next-line no-console
-  console.log('[analytics:placeholder]', REFERRAL_SKIPPED_EVENT_NAME, payload);
+export function trackReferralSkipped(
+  posthog: PostHog | undefined,
+  payload: TrackReferralSkippedPayload,
+): void {
+  // Client pass-through DI: the caller (a React component using
+  // `usePostHog()` from `src/providers/PostHogProvider.tsx`) supplies the
+  // singleton PostHog client; pure-TS modules like this one stay free of
+  // React/hook coupling and remain trivially testable under vitest.
+  //
+  // Degraded mode (posthog === undefined) silently no-ops — no throw, no
+  // console output, capture call count is 0 — per the Seed constraint
+  // "Degraded mode posthog undefined must produce silent no-op".
+  posthog?.capture(REFERRAL_SKIPPED_EVENT_NAME, payload);
 }

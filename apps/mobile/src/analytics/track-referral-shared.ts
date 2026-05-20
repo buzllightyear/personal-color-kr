@@ -44,6 +44,7 @@
  *   coupling, mirroring the singleton-via-hook pattern already used in
  *   `src/providers/PostHogProvider.tsx`.
  */
+import type { PostHog } from 'posthog-react-native';
 
 /**
  * Share method that produced the `referral_shared` event on
@@ -93,14 +94,19 @@ export const REFERRAL_SHARED_EVENT_NAME = 'referral_shared' as const;
  * @param payload - structured event properties; see
  *   {@link TrackReferralSharedPayload}.
  */
-export function trackReferralShared(payload: TrackReferralSharedPayload): void {
-  // TODO(phase-2.5): Replace this console.log with the real PostHog call:
-  //   const posthog = usePostHog(); // or DI'd client
-  //   posthog?.capture(REFERRAL_SHARED_EVENT_NAME, payload);
-  // The placeholder prefix `[analytics:placeholder]` makes the no-op
-  // visible in dev logs without polluting the structured event-name slot —
-  // tests assert against `REFERRAL_SHARED_EVENT_NAME` and `payload`, not
-  // the prefix, so it can be tweaked freely.
-  // eslint-disable-next-line no-console
-  console.log('[analytics:placeholder]', REFERRAL_SHARED_EVENT_NAME, payload);
+export function trackReferralShared(
+  posthog: PostHog | undefined,
+  payload: TrackReferralSharedPayload,
+): void {
+  // Client pass-through DI: the caller (a React component using
+  // `usePostHog()` from `src/providers/PostHogProvider.tsx`) supplies the
+  // singleton PostHog client; pure-TS modules like this one stay free of
+  // React/hook coupling and remain trivially testable under vitest.
+  //
+  // Degraded mode (posthog === undefined) silently no-ops — no throw, no
+  // console output, capture call count is 0 — per the Seed constraint
+  // "Degraded mode posthog undefined must produce silent no-op". The
+  // optional-chain (`?.`) is the chosen guard so the call site stays a
+  // single expression matching the future Phase 4+ super-properties swap.
+  posthog?.capture(REFERRAL_SHARED_EVENT_NAME, payload);
 }

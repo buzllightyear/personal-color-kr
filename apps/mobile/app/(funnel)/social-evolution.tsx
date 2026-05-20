@@ -29,6 +29,25 @@
  *   - `router.push('/(funnel)/payment-model')` on the shared=true forward
  *     CTA. Same push semantics for back-swipe symmetry.
  *
+ * PostHog analytics wiring (Phase 2.6 — client pass-through DI):
+ *   - `trackSocialEvolutionSkipped({})` now accepts a `PostHog | undefined`
+ *     client as its first argument. The route resolves the singleton via
+ *     `usePostHog()` (the hook returns `undefined` when the provider is in
+ *     degraded mode — no api key in `.env`) and closes over the result
+ *     inside each `useCallback` handler.
+ *   - Both call-sites (the shared=false skip CTA and the shared=true
+ *     forward CTA) invoke `trackSocialEvolutionSkipped(posthog, {})`. The
+ *     helper degrades silently when `posthog` is `undefined`
+ *     (optional-chain guard on `capture`) so the handlers never throw even
+ *     with the SDK absent. This matches the Seed constraint
+ *     "Degraded mode posthog undefined must produce silent no-op".
+ *   - Handlers are defined with `React.useCallback` before the conditional
+ *     branch so the rules-of-hooks invariant holds across both render
+ *     paths (the unused `handleContinue` on the shared=false branch and
+ *     the unused `handleSkip`/`handleShareAgain` on the shared=true
+ *     branch incur no runtime cost — the callbacks are stable references
+ *     and never invoked outside their owning branch).
+ *
  * What this route is NOT:
  *   - Not a state writer. The route only READS `referral.shared` from the
  *     funnel context — the slice is written exclusively at `referral_gate`
@@ -48,6 +67,7 @@
  */
 import * as React from 'react';
 import { useRouter } from 'expo-router';
+import { usePostHog } from 'posthog-react-native';
 
 import { trackSocialEvolutionSkipped } from '../../src/analytics/track-social-evolution-skipped';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
@@ -57,15 +77,31 @@ import { SocialEvolutionSharedTrueBranch } from '../../src/screens/funnel/Social
 export default function SocialEvolutionRoute(): React.ReactElement {
   const router = useRouter();
   const { referral } = useFunnelState();
+  // `usePostHog()` returns `PostHog | undefined`. The `undefined` branch is
+  // the documented degraded-mode contract (no api key in `.env` → provider
+  // renders a fragment, no context value). `trackSocialEvolutionSkipped`
+  // optional-chains on `capture`, so passing `undefined` is a silent no-op
+  // by design — no throw, no console output, capture call count is 0.
+  const posthog = usePostHog();
+
+  // Handlers are defined unconditionally (before the branch split) so the
+  // rules-of-hooks invariant holds across re-renders that flip between the
+  // shared=false and shared=true branches.
+  const handleShareAgain = React.useCallback((): void => {
+    router.push('/(funnel)/referral-gate');
+  }, [router]);
+
+  const handleSkip = React.useCallback((): void => {
+    trackSocialEvolutionSkipped(posthog, {});
+    router.push('/(funnel)/payment-model');
+  }, [posthog, router]);
+
+  const handleContinue = React.useCallback((): void => {
+    trackSocialEvolutionSkipped(posthog, {});
+    router.push('/(funnel)/payment-model');
+  }, [posthog, router]);
 
   if (!referral.shared) {
-    const handleShareAgain = (): void => {
-      router.push('/(funnel)/referral-gate');
-    };
-    const handleSkip = (): void => {
-      trackSocialEvolutionSkipped({});
-      router.push('/(funnel)/payment-model');
-    };
     return (
       <SocialEvolutionSharedFalseBranch
         onShareAgain={handleShareAgain}
@@ -74,9 +110,5 @@ export default function SocialEvolutionRoute(): React.ReactElement {
     );
   }
 
-  const handleContinue = (): void => {
-    trackSocialEvolutionSkipped({});
-    router.push('/(funnel)/payment-model');
-  };
   return <SocialEvolutionSharedTrueBranch onContinue={handleContinue} />;
 }
