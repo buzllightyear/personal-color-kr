@@ -46,7 +46,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Any, Callable, Final
+from typing import Any, Callable, Final, get_type_hints
 
 import httpx
 import pytest
@@ -142,12 +142,18 @@ def test_download_result_exists_with_documented_signature() -> None:
     sig = inspect.signature(method)
     # bound-method params on the class read as (self, result_url, timeout)
     params = list(sig.parameters.values())
-    assert [p.name for p in params] == ["self", "result_url", "timeout"], (
-        f"Sub-AC 2.3 fixes the parameter names; saw {[p.name for p in params]!r}"
-    )
-    assert sig.return_annotation is bytes, (
+    assert [p.name for p in params] == [
+        "self",
+        "result_url",
+        "timeout",
+    ], f"Sub-AC 2.3 fixes the parameter names; saw {[p.name for p in params]!r}"
+    # `from __future__ import annotations` (PEP 563) stores annotations as
+    # strings until resolved. Use `get_type_hints` to materialise the real
+    # `bytes` class for an identity comparison.
+    hints = get_type_hints(method)
+    assert hints.get("return") is bytes, (
         "Sub-AC 2.3 fixes the bytes-only return contract; "
-        f"saw return annotation {sig.return_annotation!r}"
+        f"saw return annotation {hints.get('return')!r}"
     )
 
 
@@ -457,8 +463,7 @@ def test_download_result_preserves_tight_budget_below_ceiling(
     caller._download_result(_FAKE_RESULT_URL, timeout=0.5)
 
     assert observed_timeouts == [0.5], (
-        "alias must pass tight budgets through unchanged; "
-        f"saw {observed_timeouts!r}"
+        "alias must pass tight budgets through unchanged; " f"saw {observed_timeouts!r}"
     )
 
 
@@ -547,12 +552,12 @@ def test_download_result_error_messages_redact_url_and_key(
             caller._download_result(_FAKE_RESULT_URL, timeout=3.0)
         except (VendorError, ValueError) as exc:
             message = str(exc)
-            assert _TEST_API_KEY not in message, (
-                f"{tag} branch leaked API key into exception message"
-            )
-            assert _FAKE_RESULT_URL not in message, (
-                f"{tag} branch leaked result URL into exception message"
-            )
+            assert (
+                _TEST_API_KEY not in message
+            ), f"{tag} branch leaked API key into exception message"
+            assert (
+                _FAKE_RESULT_URL not in message
+            ), f"{tag} branch leaked result URL into exception message"
         else:
             pytest.fail(f"{tag} branch did not raise as expected")
 

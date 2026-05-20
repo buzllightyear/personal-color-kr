@@ -173,8 +173,10 @@ def _post_with_request_params(
     that wiring in one helper keeps every test focused on the contract
     it actually pins, not the boilerplate of HTTP mocking.
     """
-    handler = response_handler if response_handler is not None else (
-        lambda _r: _ok_response()
+    handler = (
+        response_handler
+        if response_handler is not None
+        else (lambda _r: _ok_response())
     )
     captured = _install_mock_transport(monkeypatch, handler)
 

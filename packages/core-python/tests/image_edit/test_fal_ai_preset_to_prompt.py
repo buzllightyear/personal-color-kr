@@ -30,7 +30,6 @@ import pytest
 
 from image_edit.fal_ai_vendor_caller import _PRESET_TO_PROMPT
 
-
 # The closed enum of season presets — kept here (test-local) rather than
 # imported from the adapter so the test fails loud if the adapter ever
 # drifts away from the Seed Contract's four-season closure.
@@ -70,12 +69,10 @@ def test_preset_to_prompt_value_is_non_empty_string(preset: str) -> None:
     here keeps the failure visible at adapter init / test time.
     """
     prompt = _PRESET_TO_PROMPT[preset]
-    assert isinstance(prompt, str), (
-        f"prompt for {preset!r} must be str, got {type(prompt).__name__}"
-    )
-    assert prompt.strip(), (
-        f"prompt for {preset!r} must be a non-empty string"
-    )
+    assert isinstance(
+        prompt, str
+    ), f"prompt for {preset!r} must be str, got {type(prompt).__name__}"
+    assert prompt.strip(), f"prompt for {preset!r} must be a non-empty string"
 
 
 @pytest.mark.unit
@@ -121,8 +118,7 @@ def test_preset_to_prompt_values_are_unique() -> None:
     """
     values = list(_PRESET_TO_PROMPT.values())
     assert len(set(values)) == len(values), (
-        "every season must map to a unique prompt; "
-        f"got duplicates in {values}"
+        "every season must map to a unique prompt; " f"got duplicates in {values}"
     )
 
 

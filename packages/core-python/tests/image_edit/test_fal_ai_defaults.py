@@ -29,7 +29,6 @@ from image_edit.fal_ai_defaults import (
     DEFAULT_STRENGTH,
 )
 
-
 # ---------------------------------------------------------------------------
 # Value range tests
 # ---------------------------------------------------------------------------
@@ -76,8 +75,11 @@ def test_all_three_constants_are_final_annotated() -> None:
     actual `typing.Final` special form, which we then assert on.
     """
     hints = get_type_hints(fal_ai_defaults, include_extras=True)
-    for name in ("DEFAULT_STRENGTH", "DEFAULT_GUIDANCE_SCALE",
-                 "DEFAULT_NUM_INFERENCE_STEPS"):
+    for name in (
+        "DEFAULT_STRENGTH",
+        "DEFAULT_GUIDANCE_SCALE",
+        "DEFAULT_NUM_INFERENCE_STEPS",
+    ):
         assert name in hints, f"{name} must carry a type annotation"
         origin = typing.get_origin(hints[name])
         # `Final[float]` → origin is `typing.Final`. Plain `float` → origin
@@ -128,6 +130,7 @@ def test_constants_round_trip_through_json_cleanly() -> None:
     catch that here instead.
     """
     import json
+
     payload = {
         "strength": DEFAULT_STRENGTH,
         "guidance_scale": DEFAULT_GUIDANCE_SCALE,
