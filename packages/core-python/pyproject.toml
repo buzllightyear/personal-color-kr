@@ -9,6 +9,10 @@ dependencies = [
     # optional dev tool) because production smoke scripts such as
     # `scripts/smoke_fal.py` import the helper at runtime to discover keys.
     "python-dotenv>=1.0",
+    # `httpx` is the synchronous HTTP transport used by the Fal.ai vendor
+    # adapter (`image_edit.fal_ai_vendor_caller`). It is imported by
+    # production source — not just tests — so it must be a runtime dep.
+    "httpx>=0.27",
 ]
 
 [build-system]
