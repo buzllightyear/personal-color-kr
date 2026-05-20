@@ -1,68 +1,56 @@
 /**
- * Funnel route — `payment_model` (Phase 2.4, step 12 of 12, KR variant).
+ * Funnel route — `payment_model` (Phase 2.5, step 12 of 12, KR variant).
  *
  * Composition contract:
- *   - Renders `PriceCard` (hardcoded `PAYMENT_AMOUNT_KRW` from
- *     `payment-model-ctas.ts`).
- *   - Renders a "결제하기" primary CTA (label sourced from
- *     `formatUnlockCtaLabel()`) that is `disabled` until a method has
- *     been selected.
- *   - Renders a subdued "나중에 할게요" soft-gate skip control matching
- *     the rhythm of step-4 `rating_gate` and step-10 `referral_gate`.
+ *   - Renders `PriceCard` (now a value-proposition card after Phase 2.5
+ *     transformation — no hardcoded KRW price; the price is owned by the
+ *     Superwall paywall surface).
+ *   - Renders a "결제하고 잠금 해제" primary CTA (label from
+ *     `formatUnlockCtaLabel()`) — tapping it opens the Superwall paywall.
+ *   - Renders a subdued "나중에 할게요" soft-gate skip control.
+ *   - Renders an inline Korean error Text on `SuperwallTriggerError`
+ *     (subdued red, no toast component — Seed "error_transparency").
  *
- * Payment placeholder flow (Seed:
- *   "payment_model CTA triggers 250ms setTimeout noop + sets
- *    payment.isPremium=true + router.replace to result-reveal"):
- *   1. Tap "결제하기" → set `payment.isProcessing = true` (locks the radio
- *      and disables both CTAs).
- *   2. After a 250ms `setTimeout` placeholder:
- *      - `trackPaymentCompleted({ method })` (console.log placeholder).
- *      - `setIsPremium(true)`.
- *      - `setPaymentProcessing(false)`.
- *      - `router.replace('/(funnel)/result-reveal?premium=true')`. The
- *        `?premium=true` query param is a navigation TRIGGER only; the
- *        actual `isPremium` source-of-truth lives in the
- *        `FunnelStateProvider` payment slice per the Seed contract.
- *   3. The `setTimeout` handle is captured in a `useRef` and cleared in
- *      the effect cleanup so an early unmount (back-swipe, route
- *      change) does NOT later trigger state writes against an unmounted
- *      component.
+ * Phase 2.5 Superwall integration:
+ *   1. CTA tap → `setPaymentProcessing(true)` (disables both CTAs).
+ *   2. `await triggerPaywall(PLACEMENT_PAYMENT_MODEL_UNLOCK)` — opens the
+ *      Superwall paywall modal in sandbox/production.
+ *   3. Branch on outcome:
+ *      - `purchased`: setIsPremium(true) + trackPaymentCompleted (restored=false)
+ *        + router.replace('/(funnel)/result-reveal?premium=true')
+ *      - `restored`: identical to purchased + trackPaymentCompleted (restored=true)
+ *      - `declined`: stay on payment-model, CTA re-enabled, no analytics
+ *        (Superwall internal paywall_close event covers it)
+ *      - `SuperwallTriggerError`: catch, set inline error text, CTA
+ *        re-enabled, trackPaywallError fired
+ *   4. In all cases `setPaymentProcessing(false)` runs in the finally
+ *      block so the CTA always re-enables.
  *
  * Skip flow (Phase 2.5 AC 10):
- *   "나중에 할게요" →
- *     1. `trackPaymentSkipped({})` (Phase 2.5 placeholder PostHog
- *        capture — `console.log` body until Phase 2.6+ swaps in the
- *        real `posthog.capture('payment_skipped', {})` call).
- *     2. `router.replace('/(funnel)/result-reveal')` — LOCKED
- *        result-reveal (no `?premium=true` query param; `isPremium`
- *        stays `false` on the FunnelStateProvider payment slice).
- *   Replace (not push) so back-swipe from `result-reveal` cannot
- *   re-enter payment_model (the Seed names this the soft-gate exit).
- *   This skip path is intentionally distinct from the Superwall
- *   paywall *modal dismiss* (the `declined` outcome) — modal-dismiss
- *   retains the user on payment_model and does NOT fire
- *   `trackPaymentSkipped` per Seed evaluation principle
- *   `analytics_separation`.
+ *   "나중에 할게요" tap → trackPaymentSkipped({}) +
+ *   router.replace('/(funnel)/result-reveal') (locked, no premium=true).
+ *   This skip path is intentionally distinct from the Superwall paywall
+ *   *modal dismiss* (the `declined` outcome) — modal-dismiss retains the
+ *   user on payment_model and does NOT fire `trackPaymentSkipped` per
+ *   Seed evaluation principle `analytics_separation`.
  *
  * What this route is NOT:
- *   - It does NOT import KakaoPay or Toss SDKs, make network calls,
- *     or process real transactions. Every external SDK touch is a
- *     `console.log` + `TODO(phase-2.5)` placeholder.
+ *   - It does NOT import @superwall/react-native-superwall directly.
+ *     The wrapper at apps/mobile/src/superwall/client.ts is the single
+ *     test-mock seam — Seed: "All native @superwall/react-native-superwall
+ *     imports confined to single wrapper file".
  *   - It does NOT manage `isPremium` via route params. The
  *     `?premium=true` on the result-reveal target is a navigation
  *     trigger only — `payment.isPremium` lives in the
  *     FunnelStateProvider.
- *   - It does NOT block hardware back. Per the Seed: "payment_model
- *     back button naturally returns to social_evolution (no
- *     BackHandler blocking)". The only BackHandler in Phase 2.4 lives
- *     on the premium branch of `result-reveal`.
+ *   - It does NOT block hardware back. Per Phase 2.4 Seed:
+ *     "payment_model back button naturally returns to social_evolution
+ *     (no BackHandler blocking)".
  *
  * External deep-link invariant:
  *   `payment-model` is one of the 9 INTERNAL-ONLY funnel kebab slugs.
  *   External deep links to this slug must be redirected to
- *   `welcome-hook` per the `src/internal-only-routes.ts` allowlist
- *   (Phase 2.1 security invariant preserved — payment-related routes
- *   especially must not be reachable cold from a URL).
+ *   `welcome-hook` per the `src/internal-only-routes.ts` allowlist.
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -70,6 +58,7 @@ import { useRouter } from 'expo-router';
 
 import { trackPaymentCompleted } from '../../src/analytics/track-payment-completed';
 import { trackPaymentSkipped } from '../../src/analytics/track-payment-skipped';
+import { trackPaywallError } from '../../src/analytics/track-paywall-error';
 import { PriceCard } from '../../src/components/funnel/PriceCard';
 import { FunnelPrimaryButton } from '../../src/components/funnel/FunnelPrimaryButton';
 import { FunnelHeadline } from '../../src/components/FunnelHeadline';
@@ -80,84 +69,72 @@ import {
   formatUnlockCtaLabel,
 } from '../../src/funnel/payment-model-ctas';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
+import {
+  PLACEMENT_PAYMENT_MODEL_UNLOCK,
+  SuperwallTriggerError,
+  triggerPaywall,
+} from '../../src/superwall/client';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../src/theme';
 import { FUNNEL_SCREENS } from 'core-ts/funnel';
 
 const SCREEN = FUNNEL_SCREENS.payment_model;
 
-const PAYMENT_PLACEHOLDER_TIMEOUT_MS = 250;
+const PAYWALL_ERROR_INLINE_TEXT =
+  '결제 연결에 실패했어요. 잠시 후 다시 시도해 주세요.' as const;
 
 export default function PaymentModelRoute(): React.ReactElement {
   const router = useRouter();
-  const {
-    payment,
-    setPaymentProcessing,
-    setIsPremium,
-  } = useFunnelState();
-  const { selectedMethod, isProcessing } = payment;
+  const { payment, setPaymentProcessing, setIsPremium } = useFunnelState();
+  const { isProcessing } = payment;
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Capture the in-flight placeholder timer so an unmount (back-swipe,
-  // route change) clears it before the deferred state writes fire — per
-  // the Seed constraint "setTimeout(250ms) payment placeholder must
-  // have useEffect cleanup for unmount safety".
-  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  React.useEffect(() => {
-    return () => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
-
-  const handleUnlock = React.useCallback((): void => {
-    if (selectedMethod === null || isProcessing) {
+  const handleUnlock = React.useCallback(async (): Promise<void> => {
+    if (isProcessing) {
       return;
     }
+    setErrorMessage(null);
     setPaymentProcessing(true);
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      trackPaymentCompleted({
-        method: selectedMethod,
-        amountKrw: PAYMENT_AMOUNT_KRW,
-      });
-      setIsPremium(true);
+    try {
+      const result = await triggerPaywall(PLACEMENT_PAYMENT_MODEL_UNLOCK);
+      if (result.outcome === 'purchased' || result.outcome === 'restored') {
+        // `method` is the Phase 2.4 deprecated sentinel (Phase 2.5 surface
+        // owns the actual provider choice via Superwall + StoreKit).
+        trackPaymentCompleted({
+          method: 'kakao',
+          amountKrw: PAYMENT_AMOUNT_KRW,
+          restored: result.outcome === 'restored',
+        });
+        setIsPremium(true);
+        setPaymentProcessing(false);
+        router.replace('/(funnel)/result-reveal?premium=true');
+        return;
+      }
+      // declined — user dismissed the Superwall modal without completing.
+      // Stay on payment-model, CTA re-enabled. No analytics fired here;
+      // Superwall's internal paywall_close event covers it per
+      // analytics_separation.
       setPaymentProcessing(false);
-      router.replace('/(funnel)/result-reveal?premium=true');
-    }, PAYMENT_PLACEHOLDER_TIMEOUT_MS);
-  }, [
-    selectedMethod,
-    isProcessing,
-    setPaymentProcessing,
-    setIsPremium,
-    router,
-  ]);
+    } catch (error) {
+      const placement = PLACEMENT_PAYMENT_MODEL_UNLOCK;
+      const errMsg =
+        error instanceof SuperwallTriggerError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : String(error);
+      trackPaywallError({ placement, errorMessage: errMsg });
+      setErrorMessage(PAYWALL_ERROR_INLINE_TEXT);
+      setPaymentProcessing(false);
+    }
+  }, [isProcessing, setPaymentProcessing, setIsPremium, router]);
 
   const handleSkip = React.useCallback((): void => {
     if (isProcessing) {
       return;
     }
-    // Phase 2.5 AC 10 — explicit-skip analytics fires BEFORE the
-    // navigation so the placeholder event is observable even if a
-    // navigation race / cleanup unmounts the route synchronously.
-    // The payload is the empty object `{}` per
-    // `TrackPaymentSkippedPayload = Record<string, never>`: the
-    // explicit-skip path has no domain discriminator (Phase 2.5
-    // collapses the Phase 2.4 KakaoPay/Toss `method` dimension
-    // because Superwall + StoreKit own the payment method choice).
-    // Navigation target is the LOCKED result-reveal — explicitly
-    // NO `?premium=true` query param, since the skip path leaves
-    // `payment.isPremium = false` on the FunnelStateProvider slice
-    // and the result-reveal route reads its premium flag from the
-    // provider, not from URL params (Seed: "skip_flow exit
-    // condition — Skip tap navigates to locked result-reveal with
-    // trackPaymentSkipped fired").
     trackPaymentSkipped({});
     router.replace('/(funnel)/result-reveal');
   }, [isProcessing, router]);
-
-  const unlockDisabled = selectedMethod === null || isProcessing;
 
   return (
     <FunnelScreenLayout
@@ -173,12 +150,23 @@ export default function PaymentModelRoute(): React.ReactElement {
         <View style={styles.priceWrapper}>
           <PriceCard />
         </View>
+        {errorMessage !== null ? (
+          <Text
+            style={styles.errorText}
+            testID="payment-model-error-text"
+            accessibilityLiveRegion="polite"
+          >
+            {errorMessage}
+          </Text>
+        ) : null}
       </View>
       <View style={styles.ctaStack}>
         <FunnelPrimaryButton
           label={formatUnlockCtaLabel()}
-          onPress={handleUnlock}
-          disabled={unlockDisabled}
+          onPress={() => {
+            void handleUnlock();
+          }}
+          disabled={isProcessing}
           testID="payment-model-unlock-cta"
           accessibilityLabel={formatUnlockCtaLabel()}
         />
@@ -218,5 +206,14 @@ const styles = StyleSheet.create({
   skipLabel: {
     ...TYPOGRAPHY.button.medium,
     color: COLORS.grayscale.disabled,
+  },
+  errorText: {
+    ...TYPOGRAPHY.body.regular,
+    // Subdued red — Phase 2.5 introduces the only error-state surface in
+    // the funnel. Hex literal (not a theme token) since `COLORS` does not
+    // yet expose a semantic.error slot; if more error surfaces land, the
+    // theme can be extended in a follow-up phase.
+    color: '#C44569',
+    textAlign: 'center',
   },
 });

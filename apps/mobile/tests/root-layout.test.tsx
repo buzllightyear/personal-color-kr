@@ -180,6 +180,22 @@ vi.mock('expo-constants', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Mock — superwall client wrapper
+//
+// The wrapper module is the single test-mock seam for the Superwall native
+// integration (per Phase 2.5 Seed: "vitest mocks the wrapper module path and
+// does NOT directly import @superwall/react-native-superwall"). Mocking the
+// wrapper here prevents the transitive native module import from blowing up
+// vitest with "Cannot find module '../package.json'" inside the SDK's bundle.
+// ---------------------------------------------------------------------------
+vi.mock('../src/superwall/client', () => {
+  return {
+    configureSuperwall: vi.fn().mockResolvedValue(undefined),
+    triggerPaywall: vi.fn().mockResolvedValue({ outcome: 'declined' }),
+  };
+});
+
+// ---------------------------------------------------------------------------
 // Lazy module loader.
 //
 // Re-imports the layout (and transitively the PostHogProvider source) after
