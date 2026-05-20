@@ -208,5 +208,8 @@ export function trackPaywallError(
   // Degraded mode (posthog === undefined) silently no-ops — no throw, no
   // console output, capture call count is 0 — per the Seed constraint
   // "Degraded mode posthog undefined must produce silent no-op".
-  posthog?.capture(PAYWALL_ERROR_EVENT_NAME, payload);
+  // Spread into a fresh object literal so the readonly + literal-typed
+  // payload widens to `PostHogEventProperties` (`{ [key: string]: JsonType }`)
+  // expected by `posthog.capture`. The values are unchanged.
+  posthog?.capture(PAYWALL_ERROR_EVENT_NAME, { ...payload });
 }

@@ -35,6 +35,7 @@
  *   or null stub.
  */
 import type { PostHog } from 'posthog-react-native';
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -55,9 +56,15 @@ describe('trackReferralShared (Phase 2.6 — real PostHog capture wiring)', () =
   const stubPostHog = { capture: captureFn } as unknown as PostHog;
   // Console spies prove the Phase-2.4 placeholder logger has been fully
   // retired — degraded mode in particular must produce zero console output.
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  // Use vitest's `MockInstance` without generics to sidestep React Native's
+  // override of the global `console` type (which does not expose 'log' /
+  // 'warn' / 'error' as method names that `ReturnType<typeof vi.spyOn<...>>`
+  // can constrain). The `.toHaveBeenCalled` / `.mockRestore` assertions used
+  // below come from the assertion / mock interfaces themselves, so the
+  // unconstrained `MockInstance` annotation is sufficient.
+  let consoleLogSpy: MockInstance;
+  let consoleWarnSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
 
   beforeEach(() => {
     captureFn.mockReset();

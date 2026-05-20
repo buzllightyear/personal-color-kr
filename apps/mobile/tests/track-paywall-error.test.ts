@@ -37,6 +37,7 @@
  *   exception text fails the assertion.
  */
 import type { PostHog } from 'posthog-react-native';
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -48,9 +49,11 @@ import {
 describe('trackPaywallError (Phase 2.6 — real PostHog capture wiring)', () => {
   const captureFn = vi.fn();
   const stubPostHog = { capture: captureFn } as unknown as PostHog;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  // See track-referral-shared.test.ts for the rationale on using the
+  // un-constrained vitest `MockInstance` annotation.
+  let consoleLogSpy: MockInstance;
+  let consoleWarnSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
 
   beforeEach(() => {
     captureFn.mockReset();

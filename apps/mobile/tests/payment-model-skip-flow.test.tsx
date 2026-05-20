@@ -58,21 +58,26 @@
  *     once AC 7 lands; mocking the wrapper module to an inert surface
  *     keeps this test resilient under that future state.
  *
- * Why we capture `console.log` rather than mocking the analytics module:
+ * Why we spy on `posthog.capture` rather than mocking the analytics module:
  *   The analytics module (`track-payment-skipped.ts`) is the
  *   *contract under test*. Mocking it would let a regression strip the
  *   call entirely without failing this test. Spying on the underlying
- *   `console.log` call instead pins the *observable side-effect* of
- *   the helper — exactly the same contract that the unit test
- *   `tests/track-referral-skipped.test.ts` pins for the helper itself,
+ *   `posthog.capture` invocation instead pins the *observable side-effect*
+ *   of the helper — exactly the same contract that the unit test
+ *   `tests/track-payment-skipped.test.ts` pins for the helper itself,
  *   composed with the route-level "called once with empty payload"
  *   expectation here. The two tests together form a complete chain:
- *   route invokes helper, helper logs event.
+ *   route invokes helper, helper calls `posthog.capture(...)`.
+ *
+ * Phase 2.6 update — replaced the Phase 2.5 `console.log` spy with a
+ *   `usePostHog()` mock returning a captureFn spy, mirroring the pattern
+ *   established by `tests/funnel-step-entered-capture.test.tsx`. The
+ *   Phase 2.4/2.5 placeholder logger is fully retired (Seed constraint
+ *   "zero residual console.log/TODO(phase-2.6) in production code").
  */
 import * as React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import type { MockInstance } from 'vitest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // react-native mock — host stubs only (no Animated / Modal needed)
@@ -139,6 +144,20 @@ vi.mock('../src/superwall/client', () => {
   };
 });
 
+// ---------------------------------------------------------------------------
+// posthog-react-native mock — `usePostHog()` returns a stub whose `.capture`
+// is the module-scope spy under assertion. Mirrors the pattern from
+// `tests/funnel-step-entered-capture.test.tsx`.
+// ---------------------------------------------------------------------------
+
+const captureFn = vi.fn();
+
+vi.mock('posthog-react-native', () => {
+  return {
+    usePostHog: () => ({ capture: captureFn }),
+  };
+});
+
 // Import the route default AFTER the mocks have been registered so the
 // module's `import { useRouter } from 'expo-router'` resolves to the mocked
 // surface above.
@@ -171,27 +190,11 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   return tree;
 }
 
-describe('payment-model route — skip flow (Phase 2.5 AC 10)', () => {
-  // `console.log`'s real signature is
-  // `(message?: any, ...optionalParams: any[]) => void`. We narrow the spy
-  // generics to that exact tuple so `.mock.calls[N]` is typed as
-  // `[any?, ...any[]]` and the variadic-arg assertions below compile under
-  // TS strict.
-  let logSpy: MockInstance<[message?: unknown, ...optionalParams: unknown[]], void>;
-
+describe('payment-model route — skip flow (Phase 2.5 AC 10, Phase 2.6 capture rewire)', () => {
   beforeEach(() => {
     pushSpy.mockClear();
     replaceSpy.mockClear();
-    logSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined) as MockInstance<
-      [message?: unknown, ...optionalParams: unknown[]],
-      void
-    >;
-  });
-
-  afterEach(() => {
-    logSpy.mockRestore();
+    captureFn.mockReset();
   });
 
   it('tap on the skip CTA invokes trackPaymentSkipped({}) and then router.replace(locked result-reveal)', () => {
@@ -207,35 +210,23 @@ describe('payment-model route — skip flow (Phase 2.5 AC 10)', () => {
       onPress?.();
     });
 
-    // Analytics side-effect: the placeholder `console.log` body of
-    // `trackPaymentSkipped` records exactly one call whose arguments
-    // include the snake_case event-name literal AND the empty payload
-    // object. We scan the recorded calls for a payload-skipped log so
-    // the test stays robust against an unrelated `console.log` running
-    // during render (e.g. a dev warning); only the placeholder log
-    // carries the `payment_skipped` literal.
-    const skipLogs = logSpy.mock.calls.filter((args) => args.includes('payment_skipped'));
-    expect(skipLogs).toHaveLength(1);
-
-    const recordedArgs = skipLogs[0] ?? [];
+    // Analytics side-effect (Phase 2.6): the route handler must invoke
+    // `posthog.capture('payment_skipped', {})` exactly once via the
+    // `trackPaymentSkipped` helper. We scan the recorded calls for the
+    // `payment_skipped` literal so the assertion stays robust against
+    // unrelated capture calls (e.g. funnel_step_entered from the
+    // root-layout auto-capture, if it leaked through this mock setup).
+    const skipCaptures = captureFn.mock.calls.filter(
+      (args) => args[0] === 'payment_skipped',
+    );
+    expect(skipCaptures).toHaveLength(1);
     // The empty-object payload is the only value the
     // `TrackPaymentSkippedPayload = Record<string, never>` type permits.
-    // The route must pass `{}` (not `null`, not `undefined`, not a
-    // populated payload) — the helper signature widens to a plain
-    // object so a regression that hands it an undefined would be caught
-    // at the call site, but we double-check here that the OBSERVED log
-    // received an empty plain-object literal.
-    const recordedPayload = recordedArgs.find(
-      (arg): arg is Record<string, never> =>
-        typeof arg === 'object' &&
-        arg !== null &&
-        !Array.isArray(arg) &&
-        // Filter out the call-format prefix object (none expected today,
-        // but if a future placeholder wraps `payload` in `{ payload }`
-        // this assertion will surface the wrapping).
-        Object.keys(arg).length === 0,
-    );
-    expect(recordedPayload).toBeDefined();
+    // The route hands `{}` to the helper, which spreads it into a fresh
+    // literal before invoking `capture(EVENT_NAME, payload)` — so the
+    // recorded second argument is a plain empty object.
+    const recordedPayload = (skipCaptures[0] ?? [])[1];
+    expect(recordedPayload).toEqual({});
 
     // Navigation side-effect: exactly one `router.replace` call, targeting
     // the LOCKED result-reveal — explicitly NO `?premium=true` query
@@ -274,20 +265,15 @@ describe('payment-model route — skip flow (Phase 2.5 AC 10)', () => {
     }
   });
 
-  it('analytics fires BEFORE navigation (recorded order: log then replace)', () => {
+  it('analytics fires BEFORE navigation (recorded order: capture then replace)', () => {
     // Order matters per the file-level JSDoc — analytics-then-navigation
-    // guarantees the placeholder event is observable even if the route
-    // unmounts synchronously after the `router.replace` call (the
-    // `useEffect` cleanup for the in-flight setTimeout ref runs on
-    // unmount and would otherwise race a deferred capture).
+    // guarantees the event is observable even if the route unmounts
+    // synchronously after the `router.replace` call.
     //
-    // We capture both side-effects using `vi.fn().mockReturnValue(...)`
-    // invocation order: `console.log` records a call at logSpy step N,
-    // `replaceSpy` records its call at step M. Synthesising a single
-    // recorded-order array by comparing `.mock.invocationCallOrder`
-    // (a monotonic counter vitest assigns globally to every recorded
-    // call) lets us assert "log ran first, replace ran second"
-    // without coupling to wall-clock timestamps.
+    // We rely on vitest's monotonic `.mock.invocationCallOrder` counter
+    // (assigned globally across every recorded call) to assert
+    // "capture ran first, replace ran second" without coupling to
+    // wall-clock timestamps.
     const tree = render(React.createElement(PaymentModelRoute));
     const skip = findHostByTestId(tree, 'payment-model-skip-cta');
     const onPress = skip?.props.onPress as (() => void) | undefined;
@@ -295,24 +281,28 @@ describe('payment-model route — skip flow (Phase 2.5 AC 10)', () => {
       onPress?.();
     });
 
-    const skipLogCalls = logSpy.mock.invocationCallOrder.filter((_, i) =>
-      (logSpy.mock.calls[i] ?? []).includes('payment_skipped'),
+    const skipCaptureOrders = captureFn.mock.invocationCallOrder.filter((_, i) =>
+      (captureFn.mock.calls[i]?.[0] ?? '') === 'payment_skipped',
     );
     const replaceCallOrder = replaceSpy.mock.invocationCallOrder[0];
 
-    expect(skipLogCalls).toHaveLength(1);
+    expect(skipCaptureOrders).toHaveLength(1);
     expect(replaceCallOrder).toBeDefined();
-    expect((skipLogCalls[0] ?? Infinity) < (replaceCallOrder ?? -Infinity)).toBe(true);
+    expect((skipCaptureOrders[0] ?? Infinity) < (replaceCallOrder ?? -Infinity)).toBe(
+      true,
+    );
   });
 
   it('does NOT fire trackPaymentSkipped on mount (only on explicit skip tap)', () => {
-    // Sanity guard: mounting the route MUST NOT emit a placeholder
-    // `payment_skipped` event. The event is exclusively user-driven —
+    // Sanity guard: mounting the route MUST NOT emit a
+    // `payment_skipped` capture. The event is exclusively user-driven —
     // the contract is "explicit-skip Pressable tap fires the event",
     // never on render, never on unmount.
     render(React.createElement(PaymentModelRoute));
-    const skipLogs = logSpy.mock.calls.filter((args) => args.includes('payment_skipped'));
-    expect(skipLogs).toHaveLength(0);
+    const skipCaptures = captureFn.mock.calls.filter(
+      (args) => args[0] === 'payment_skipped',
+    );
+    expect(skipCaptures).toHaveLength(0);
     expect(replaceSpy).not.toHaveBeenCalled();
   });
 });
