@@ -1,6 +1,9 @@
 import { Stack, Redirect, usePathname } from 'expo-router';
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { ToneStateProvider } from '../../src/providers/ToneStateProvider';
+import { readDiagnosisRevealSeen } from '../../src/storage/post-payment-storage';
 
 /**
  * `(post-payment)` route group layout — Phase 3.3 Sub-AC 1.1.
@@ -88,66 +91,65 @@ import { useState } from 'react';
  *   strictly-additive change with no blast radius into screens.
  */
 export default function PostPaymentLayout(): JSX.Element {
-  // Placeholder for the `DiagnosisRevealSeen` ontology concept. The real
-  // implementation (sibling sub-AC) replaces this with a read from
-  // `readDiagnosisRevealSeen()` exported by
-  // `src/storage/post-payment-storage.ts`, which reads the AsyncStorage
-  // namespaced key `pck.post_payment.diagnosis_reveal_seen`. Until the
-  // wrapper lands, the fail-loud-but-safe default is `false` — i.e. the
-  // reveal fires on every entry, matching the first-install behaviour
-  // the Seed already requires for sub-AC verification.
-  const [diagnosisRevealSeen] = useState<boolean>(false);
+  // First-entry gate — read once from AsyncStorage on mount via the
+  // single import-boundary wrapper. `null` means "still loading"
+  // (don't render the redirect yet); the effect below resolves it to
+  // a concrete `true` / `false`. Default-true on first install is the
+  // fail-loud-but-safe stance: the reveal SHOULD fire on the very
+  // first entry, matching Seed AC 1.
+  const [diagnosisRevealSeen, setDiagnosisRevealSeen] = useState<boolean | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    void readDiagnosisRevealSeen().then((seen) => {
+      if (!cancelled) {
+        setDiagnosisRevealSeen(seen);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Last-segment derivation mirrors the pattern in `app/_layout.tsx`'s
   // `funnel_step_entered` capture so both layouts compute the active
-  // segment the same way. Defensive null/empty handling so a missing
-  // pathname (e.g. during the very first render before the router has
-  // attached) falls through to the redirect path rather than crashing.
+  // segment the same way.
   const pathname = usePathname();
   const segments = pathname?.replace(/^\/+/, '').split('/') ?? [];
   const lastSegment = segments[segments.length - 1] ?? '';
   const onDiagnosisReveal = lastSegment === 'diagnosis-reveal';
 
-  if (!diagnosisRevealSeen && !onDiagnosisReveal) {
+  // While the AsyncStorage read is in flight (`diagnosisRevealSeen ===
+  // null`), suspend the layout body — render nothing — so the gate's
+  // decision is computed exactly once on the resolved value rather than
+  // flickering through a default branch. The void-first-render also
+  // keeps the layout's Stack registry observable by tests with a
+  // deterministic single render once the value resolves.
+  if (diagnosisRevealSeen === null) {
+    return null as unknown as JSX.Element;
+  }
+
+  if (diagnosisRevealSeen === false && !onDiagnosisReveal) {
     return <Redirect href="/(post-payment)/diagnosis-reveal" />;
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      {/*
-       * Diagnosis-reveal — first-touch full-screen experience.
-       *
-       * `presentation: 'fullScreenModal'` is the Expo Router option that
-       * mounts the screen as a true full-screen overlay on iOS (no
-       * status-bar inset, no parent Stack chrome) and a full-screen
-       * activity on Android. Combined with the parent's
-       * `headerShown: false` this yields the "no tab bar, no header"
-       * surface the Seed requires for the first-touch reveal.
-       *
-       * `gestureEnabled: false` blocks the iOS swipe-down-to-dismiss
-       * gesture so the user cannot dismiss the reveal mid-animation.
-       * The screen advances itself (e.g. via a CTA tap or an animation
-       * complete callback) — that wiring lives in the screen body
-       * implemented by a sibling sub-AC.
-       */}
-      <Stack.Screen
-        name="diagnosis-reveal"
-        options={{
-          presentation: 'fullScreenModal',
-          gestureEnabled: false,
+    <ToneStateProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
         }}
-      />
-      {/*
-       * 4-tab content surface, mounted as a nested route group.
-       * Declared here so the parent Stack knows about the child group;
-       * the tab bar, the per-tab routes, and the persisted-last-tab
-       * restoration are owned by `(post-payment)/(tabs)/_layout.tsx`.
-       */}
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+      >
+        <Stack.Screen
+          name="diagnosis-reveal"
+          options={{
+            presentation: 'fullScreenModal',
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </ToneStateProvider>
   );
 }
