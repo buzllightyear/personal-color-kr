@@ -36,7 +36,7 @@
 | ID | 작업 | 비고 |
 |----|------|------|
 | 3.1 | ✅ Fal.ai 실제 API call wiring (FalAiVendorCaller 어댑터: VendorCaller Protocol 구현, 3-step upload→edit→download HTTPS sync, preset→prompt boundary 해상도, deadline_monotonic 예산 분배) | Py |
-| 3.2 | Personal color diagnosis 런타임 wiring (Python invoke) | Py |
+| 3.2 | ✅ Personal color diagnosis 런타임 wiring (`diagnose_personal_color(bytes) -> DiagnosisResult` 진입점, MediaPipe face_detector 단일 경계 파일, Pillow image_decoder 단일 경계 파일, `season_to_preset()` bijection, Callable DI 패턴) | Py |
 | 3.3 | ContentPackage 4종 화면 (진단·편집·가이드·큐레이션) | TS/RN |
 | 3.4 | result_wording 톤 혼합 화면 적용 | TS/RN |
 
@@ -114,7 +114,8 @@
 | 2.5 | 2026-05-19 | 2026-05-20 | `orch_3b575df72faa` | `2de2119` | APPROVED · Stage 2 · 0.92 |
 | 2.6 | 2026-05-20 | 2026-05-20 | `orch_8d132bdbc9aa` | `77282c2` | APPROVED · Stage 2 · 0.93 |
 | 3.1 | 2026-05-20 | 2026-05-21 | `orch_0db1520139ca` | `b3a2deb` | APPROVED · Stage 2 · 0.92 (retry after wireup fix) |
-| 3.x | — | — | | | 다음 단계 (3.2) |
+| 3.2 | 2026-05-21 | 2026-05-21 | `orch_63c91f495e7e` | `17342e7` | APPROVED · Stage 2 · 0.92 |
+| 3.x | — | — | | | 다음 단계 (3.3) |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
@@ -721,6 +722,75 @@
 - result_wording 톤 혼합 (Phase 3.4)
 - Mobile/RN wiring (Phase 4 server 등장 이후)
 - diagnosis runtime (Phase 3.2)
+- fine-tune / LoRA adapter (Seed v0.2.0 금지)
+
+### Phase 3.2 결과 요약 (2026-05-21)
+
+**Personal color diagnosis 런타임 wiring** (PR #17, squash merge `17342e7`, 12 files, +3761 net):
+
+**진입점 + 4 모듈 구조 (Callable DI + 단일 경계 디시플린)**:
+- `packages/core-python/src/personal_color/diagnose_runtime.py` (154L) — public `diagnose_personal_color(selfie_bytes: bytes, *, _decoder=decode_image, _detector=detect_face_regions) -> DiagnosisResult`. 3-step orchestration (decode → detect → diagnose_from_image). Phase 3.1의 Callable DI 패턴 재사용 (private kwargs). NotImplementedError / pass-only body **0건** (Phase 3.1 scaffold-gap 교훈 적용).
+- `packages/core-python/src/personal_color/face_detector.py` (403L) — **단일 MediaPipe import 경계** file. `detect_face_regions(image: Image) -> FaceRegions`. Lazy mediapipe load (module-scope cache after first call). `FaceNotDetectedError(ValueError)` → Phase 4 HTTP 422. Multi-face tie-breaking: 가장 큰 area → topmost (smallest y) → leftmost (smallest x), fully deterministic. `TYPE_CHECKING` 가드 + lazy `_import_mediapipe()`로 import-time 모델 로드 회피.
+- `packages/core-python/src/personal_color/image_decoder.py` (202L) — **단일 Pillow import 경계** file. `decode_image(bytes) -> Image` (PNG/JPEG → rows-first Sequence[Sequence[RGB]]). `InvalidSelfieError(ValueError)` → Phase 4 HTTP 400.
+- `packages/core-python/src/personal_color/preset_mapping.py` (107L) — pure function `season_to_preset(Season) -> Literal['spring-warm','summer-cool','autumn-warm','winter-cool']`. Phase 3.1 `_PRESET_TO_PROMPT` 와 set-equality bijection (drift 0 invariant).
+
+**7개 테스트 파일 (3분리: base lane / integration / contract)**:
+- `test_diagnose_runtime.py` (514L), `test_preset_mapping.py` (128L) — base lane, stdlib + mock callables, mediapipe/Pillow 미설치에서 PASS
+- `test_face_detector.py` (567L), `test_image_decoder.py` (290L) — `@pytest.mark.integration`, mediapipe / Pillow 필요
+- `test_diagnose_runtime_determinism.py` (697L) — version-pin 강제 + composition determinism + 실 MediaPipe determinism (integration tier)
+- `test_diagnose_runtime_fastapi_contract.py` (519L) — Phase 4 HTTP contract surface (status code 매핑 invariant)
+- `test_phase0x_native_dep_isolation.py` (179L) — static grep + runtime sys.modules sentinel 로 mediapipe/PIL single-file 경계 강제
+
+**Phase 0.x core 5 파일 보존 (zero changes)**:
+- region_extractor.py / diagnosis_orchestrator.py / season_classifier.py / tone_classifier.py / contrast_classifier.py 변경 **0건**
+- `[tool.black] force-exclude` 정규식으로 5 파일을 black 외부로 격리 — 940 prior tests baseline (mediapipe/Pillow 미설치에서) 그대로 PASS
+
+**pyproject.toml runtime deps 확장**:
+- `mediapipe==0.10.18` — exact pin (Phase 3.1 `httpx>=0.27` 패턴, CI Python 3.12 wheel 존재 검증)
+- `Pillow>=10.0`
+- `[tool.black] target-version = ["py312"]` + 5 파일 force-exclude
+
+**4중 정합 (Phase 3.2 정의, base lane — mediapipe/Pillow 미설치 환경)**:
+- ✅ pytest: **1338 passed** (image_edit 283 + personal_color 60+ + 기존 940) · 8 skipped (mediapipe absent locally on Python 3.13 — CI Python 3.12 runs integration tier and shows SUCCESS)
+- ✅ mypy `--strict --follow-imports=silent`: 4 new source files clean
+- ✅ ruff check: 11 파일 (4 src + 7 test) pass
+- ✅ black `--check`: 11 파일 clean
+- ✅ PII grep ([distinct_id, transaction_id, receipt_token, customer_email, selfieUri]): **0 matches** in 4 production files
+- ✅ Boundary isolation grep: mediapipe 임포트 face_detector.py 단일, PIL/Pillow 임포트 image_decoder.py 단일
+
+**9번째 MCP-disconnect recovery (Phase 1.2/2.1/2.2/2.3/2.4/2.5/2.6/3.1/3.2)**:
+- Orchestrator AC 13/16, Sub-AC 2/4 도달 (mypy --strict step 실행 중 disconnect)
+- Worktree 직접 commit `16cfe29` → main feature branch cherry-pick `ecc4e68`
+- 수동 완성 (`3ae79e6`):
+  - `test_this_determinism_test_file_does_not_reference_pii_identifiers` 자기-참조 logic 버그 수정 — `forbidden = (` 마커 제거 트릭이 tuple 내부 literal 토큰을 못 지워서 always-fail. chr-style concatenation (`"distinct" + "_" + "id"`)으로 파일 자체에서 PII 토큰 바이트 0건으로 만들어 static guard 정확화.
+  - face_detector.py:236 unused `type: ignore[import-not-found]` 제거 (mediapipe transitive로 numpy resolve 됨)
+- 패턴 재확인: 9회 연속 적용 — orchestrator scaffolding 강점은 일관, edge case 테스트 logic이 두 phase 연속(Phase 3.1 PEP 563 / Phase 3.2 self-referential)으로 수동 완성 필요
+
+**MediaPipe 0.10.18 + Python 버전 호환성 노트**:
+- mediapipe==0.10.18은 Python 3.10/3.11/3.12 wheels 만 제공 (3.13 wheel 없음).
+- 로컬 dev (Python 3.13)에서는 integration tier skip — base lane (mock callables)만 검증.
+- CI Python 3.12 + mediapipe==0.10.18 → integration tier 정상 실행, PR #17 CI checks SUCCESS.
+- 향후 Python 3.13 migration 시 mediapipe upgrade 필요 (0.10.21+에서 `mediapipe.tasks` API 로 마이그레이션 동반).
+
+**Stage 2 평가 APPROVED iter 1 (2026-05-21)**:
+- Score **0.92** / AC compliance YES / Goal alignment 0.90 / Drift 0.05 / Uncertainty 0.15
+- Evaluator 10개 검증 질문 모두 positive — NotImplementedError 0건, MediaPipe single boundary, Pillow single boundary, exact pin, PII grep 0, mock 분기 0, 3-step pipeline orchestrated, behavioral tests, Season.slug FastAPI 호환, _PRESET_TO_PROMPT bijection importable.
+
+**Phase 3.1 vs Phase 3.2 비교 (Python pytest 측 2 phases)**:
+| 측면 | Phase 3.1 (Fal.ai) | Phase 3.2 (diagnose runtime) |
+|---|---|---|
+| Stage 2 1차 결과 | REJECTED 0.78 (NotImplementedError __call__) | APPROVED 0.92 (no NotImplementedError from first commit) |
+| Iterations to APPROVE | 2 (wireup fix follow-up) | 1 |
+| Boundary file count | 1 (fal_ai_vendor_caller.py) | 2 (face_detector + image_decoder) |
+| 수동 완성 작업 | PEP 563 annotation 비교, black 4 files | 자기-참조 PII test logic, 1 unused type ignore |
+
+**Out of scope (Seed 명시)**:
+- FastAPI 서버 구축 (Phase 4.1)
+- Mobile/RN wiring (Phase 4 server 등장 이후)
+- ContentPackage 화면 (Phase 3.3)
+- result_wording 톤 혼합 (Phase 3.4)
+- Phase 4 HTTP status code 매핑 정책 (이번 단위는 ValueError 서브클래스 계층까지만 정의)
+- 새로운 ML 모델 학습 (기존 Phase 0.x 알고리즘 재사용)
 - fine-tune / LoRA adapter (Seed v0.2.0 금지)
 
 ## 참고
