@@ -233,7 +233,7 @@ def _import_mediapipe() -> Any:
 def _import_numpy() -> Any:
     """Lazy import of `numpy`. Transitive dep of mediapipe."""
     try:
-        import numpy  # type: ignore[import-not-found]  # noqa: PLC0415 — lazy boundary import (intentional)
+        import numpy  # noqa: PLC0415 — lazy boundary import (intentional)
     except ImportError as exc:  # pragma: no cover - environment-specific
         raise RuntimeError(
             "numpy is not installed; it is required as a transitive "

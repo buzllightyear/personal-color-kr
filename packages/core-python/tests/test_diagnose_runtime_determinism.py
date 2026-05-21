@@ -598,20 +598,21 @@ def test_this_determinism_test_file_does_not_reference_pii_identifiers() -> None
     leaks tokens into the production code via a "we already have this
     name in the tests" precedent.
     """
+    # Tokens are obfuscated with `chr()` so the literal strings do not
+    # appear in this file's bytes outside of the obfuscation expressions.
+    # That keeps the static guard meaningful: a future regression that
+    # *did* paste a literal token would still be caught, while this guard
+    # file itself remains free of literal-token source bytes.
     forbidden = (
-        "distinct_id",
-        "transaction_id",
-        "receipt_token",
-        "customer_email",
-        "selfieUri",
+        "distinct" + "_" + "id",
+        "transaction" + "_" + "id",
+        "receipt" + "_" + "token",
+        "customer" + "_" + "email",
+        "selfie" + "Uri",
     )
     source = Path(__file__).read_text(encoding="utf-8")
-    # Exclude the forbidden-tokens tuple literal itself: scan only the
-    # non-tuple body. Cheapest way to do that is to scan with the
-    # tuple definition removed.
-    body = source.replace("forbidden = (", "")
     for token in forbidden:
-        assert token not in body, (
+        assert token not in source, (
             f"PII token {token!r} leaked into the determinism test "
             f"file; remove it before commit."
         )
