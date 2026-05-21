@@ -69,7 +69,6 @@ from funnel.window_aggregator import (
     aggregate_conversion_rate,
 )
 
-
 # ---------------------------------------------------------------------------
 # Test fixtures — anchor `now` and tiny event helpers
 # ---------------------------------------------------------------------------

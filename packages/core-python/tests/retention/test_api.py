@@ -33,7 +33,6 @@ from retention.api import (
     get_retention_metrics,
 )
 
-
 # ---------------------------------------------------------------------------
 # 200 normal response — happy-path composition
 # ---------------------------------------------------------------------------
@@ -222,9 +221,9 @@ def test_status_is_one_of_three_values() -> None:
     # The verdict status is a closed enum; any value outside this set is a
     # protocol violation the dashboard would silently mis-render.
     for cohort, active in [
-        (["a", "b", "c", "d"], ["a"]),          # exactly at the bar
-        (["a", "b"], ["a", "b"]),                # above
-        (["a", "b", "c", "d"], []),              # below
+        (["a", "b", "c", "d"], ["a"]),  # exactly at the bar
+        (["a", "b"], ["a", "b"]),  # above
+        (["a", "b", "c", "d"], []),  # below
     ]:
         response = get_retention_metrics(cohort_users=cohort, active_users=active)
         assert response["data"]["status"] in {"below", "at", "above"}

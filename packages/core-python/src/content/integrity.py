@@ -56,7 +56,6 @@ from content.guides import Guide, GuideCategory, load_all_guides
 from content.magazines import load_all_magazines
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Result record
 # ---------------------------------------------------------------------------
@@ -169,12 +168,15 @@ def _validate_one_guide(index: int, item: Any) -> list[ValidationError]:
     # Unified getter that works for both dicts (CMS payloads) and
     # objects with attribute access (Guide dataclasses).
     if isinstance(item, dict):
+
         def getter(name: str) -> Any:
             return item.get(name, _MISSING)
 
         def has(name: str) -> bool:
             return name in item
+
     else:
+
         def getter(name: str) -> Any:
             return getattr(item, name, _MISSING)
 
@@ -202,8 +204,7 @@ def _validate_one_guide(index: int, item: Any) -> list[ValidationError]:
                         index=index,
                         field=field,
                         message=(
-                            f"{field}: must be a string, "
-                            f"got {type(value).__name__}"
+                            f"{field}: must be a string, " f"got {type(value).__name__}"
                         ),
                     )
                 )
@@ -286,7 +287,9 @@ def _validate_one_guide(index: int, item: Any) -> list[ValidationError]:
 
 
 def _validate_image_path(
-    index: int, field: str, value: Any,
+    index: int,
+    field: str,
+    value: Any,
 ) -> list[ValidationError]:
     """Validate one image path. Returns 0 or 1 ValidationError."""
     if not isinstance(value, str):
@@ -295,8 +298,7 @@ def _validate_image_path(
                 index=index,
                 field=field,
                 message=(
-                    f"{field}: must be a string path, "
-                    f"got {type(value).__name__}"
+                    f"{field}: must be a string path, " f"got {type(value).__name__}"
                 ),
             )
         ]
@@ -332,9 +334,7 @@ def _validate_image_path(
             ValidationError(
                 index=index,
                 field=field,
-                message=(
-                    f"{field}: path must use forward slashes, got {value!r}"
-                ),
+                message=(f"{field}: path must use forward slashes, got {value!r}"),
             )
         ]
     if stripped.startswith(("http://", "https://", "//")):
@@ -554,8 +554,7 @@ def _validate_one_curation(
                         index=index,
                         field=field,
                         message=(
-                            f"{field}: must be a string, "
-                            f"got {type(value).__name__}"
+                            f"{field}: must be a string, " f"got {type(value).__name__}"
                         ),
                     )
                 )
@@ -665,7 +664,10 @@ def _validate_one_curation(
             for pos, child in enumerate(items):
                 errors.extend(
                     _validate_one_curation_item(
-                        index, pos, child, known_guide_ids,
+                        index,
+                        pos,
+                        child,
+                        known_guide_ids,
                     ),
                 )
 
@@ -689,9 +691,7 @@ def _validate_one_curation_item(
                 ValidationError(
                     index=parent_index,
                     field=f"{prefix}.{field}",
-                    message=(
-                        f"{prefix}.{field}: required field is missing"
-                    ),
+                    message=(f"{prefix}.{field}: required field is missing"),
                 )
             )
             continue
@@ -751,8 +751,7 @@ def _validate_one_curation_item(
                     index=parent_index,
                     field=f"{prefix}.guide_id",
                     message=(
-                        f"{prefix}.guide_id: must be a non-empty string, "
-                        "got None"
+                        f"{prefix}.guide_id: must be a non-empty string, " "got None"
                     ),
                 )
             )
@@ -1068,8 +1067,7 @@ def _validate_one_magazine(
                         index=index,
                         field=field,
                         message=(
-                            f"{field}: must be a string, "
-                            f"got {type(value).__name__}"
+                            f"{field}: must be a string, " f"got {type(value).__name__}"
                         ),
                     )
                 )
@@ -1102,8 +1100,7 @@ def _validate_one_magazine(
                     index=index,
                     field="month",
                     message=(
-                        f"month: must be a 'YYYY-MM' string, "
-                        f"got {month_value!r}"
+                        f"month: must be a 'YYYY-MM' string, " f"got {month_value!r}"
                     ),
                 )
             )
@@ -1126,7 +1123,10 @@ def _validate_one_magazine(
             for pos, child in enumerate(articles):
                 errors.extend(
                     _validate_one_magazine_article(
-                        index, pos, child, known_curation_ids,
+                        index,
+                        pos,
+                        child,
+                        known_curation_ids,
                     ),
                 )
 
@@ -1161,9 +1161,7 @@ def _validate_one_magazine_article(
                 ValidationError(
                     index=parent_index,
                     field=f"{prefix}.{field}",
-                    message=(
-                        f"{prefix}.{field}: required field is missing"
-                    ),
+                    message=(f"{prefix}.{field}: required field is missing"),
                 )
             )
             continue
@@ -1185,9 +1183,7 @@ def _validate_one_magazine_article(
                     ValidationError(
                         index=parent_index,
                         field=f"{prefix}.{field}",
-                        message=(
-                            f"{prefix}.{field}: must be a non-empty string"
-                        ),
+                        message=(f"{prefix}.{field}: must be a non-empty string"),
                     )
                 )
         elif field == "season":
@@ -1239,9 +1235,7 @@ def _validate_curation_id_field(
             ValidationError(
                 index=index,
                 field=field_path,
-                message=(
-                    f"{field_path}: must be a non-empty string, got None"
-                ),
+                message=(f"{field_path}: must be a non-empty string, got None"),
             )
         ]
     if not isinstance(value, str):
@@ -1250,8 +1244,7 @@ def _validate_curation_id_field(
                 index=index,
                 field=field_path,
                 message=(
-                    f"{field_path}: must be a string, "
-                    f"got {type(value).__name__}"
+                    f"{field_path}: must be a string, " f"got {type(value).__name__}"
                 ),
             )
         ]
@@ -1421,15 +1414,12 @@ class ContentIntegrityReport:
         sees the *root cause* defects (in guides) before the
         *referent-broken* defects (in curations / magazines).
         """
-        return (
-            self.guide_errors
-            + self.curation_errors
-            + self.magazine_errors
-        )
+        return self.guide_errors + self.curation_errors + self.magazine_errors
 
 
 def _materialise_loader_output(
-    loader_name: str, payload: Any,
+    loader_name: str,
+    payload: Any,
 ) -> tuple[Any, ...]:
     """Materialise loader output to a tuple after rejecting wiring bugs.
 

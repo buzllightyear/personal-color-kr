@@ -49,7 +49,6 @@ from content.magazines import (
     get_magazine_by_month,
 )
 
-
 # ---------------------------------------------------------------------------
 # current_month_key — YYYY-MM derivation from a date
 # ---------------------------------------------------------------------------
@@ -97,12 +96,10 @@ def test_get_current_issue_returns_seeded_magazine_for_seeded_month() -> None:
         year_part, month_part = month.split("-")
         today = date(int(year_part), int(month_part), 15)
         issue = get_current_issue(today)
-        assert isinstance(issue, Magazine), (
-            f"get_current_issue returned non-Magazine for {month}"
-        )
-        assert issue.month == month, (
-            f"requested {month!r}, got {issue.month!r}"
-        )
+        assert isinstance(
+            issue, Magazine
+        ), f"get_current_issue returned non-Magazine for {month}"
+        assert issue.month == month, f"requested {month!r}, got {issue.month!r}"
 
 
 @pytest.mark.unit
@@ -173,9 +170,7 @@ def _first_seeded_month_as_date() -> date:
 
 
 @pytest.mark.unit
-def test_evaluate_publish_returns_ready_on_publish_day_with_seeded_issue() -> (
-    None
-):
+def test_evaluate_publish_returns_ready_on_publish_day_with_seeded_issue() -> None:
     today = _first_seeded_month_as_date()
     decision = evaluate_publish(today)
     assert decision.should_publish is True
@@ -239,9 +234,10 @@ def test_evaluate_publish_accepts_iterable_already_published() -> None:
         REASON_ALREADY_PUBLISHED
     )
     # Generator — must not be exhausted by the time the check happens
-    assert evaluate_publish(
-        today, already_published=(m for m in (month,))
-    ).reason == REASON_ALREADY_PUBLISHED
+    assert (
+        evaluate_publish(today, already_published=(m for m in (month,))).reason
+        == REASON_ALREADY_PUBLISHED
+    )
 
 
 @pytest.mark.unit
@@ -257,16 +253,12 @@ def test_evaluate_publish_unrelated_already_published_does_not_block() -> None:
 
 
 @pytest.mark.unit
-def test_evaluate_publish_not_publish_day_takes_priority_over_idempotency() -> (
-    None
-):
+def test_evaluate_publish_not_publish_day_takes_priority_over_idempotency() -> None:
     """Day-check fires first — keeps the reason code stable for analytics."""
     seeded_month = available_months()[0]
     year_part, month_part = seeded_month.split("-")
     today = date(int(year_part), int(month_part), 2)
-    decision = evaluate_publish(
-        today, already_published={seeded_month}
-    )
+    decision = evaluate_publish(today, already_published={seeded_month})
     assert decision.should_publish is False
     assert decision.reason == REASON_NOT_PUBLISH_DAY
 

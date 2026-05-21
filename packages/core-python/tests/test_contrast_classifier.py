@@ -29,7 +29,6 @@ from personal_color.contrast_classifier import (
     classify_contrast_from_lightness,
 )
 
-
 # ---------------------------------------------------------------------------
 # Single-lightness — HIGH branch (high-key, above midpoint)
 # ---------------------------------------------------------------------------
@@ -39,11 +38,11 @@ from personal_color.contrast_classifier import (
 @pytest.mark.parametrize(
     "lightness",
     [
-        0.51,   # just above default midpoint (0.5)
+        0.51,  # just above default midpoint (0.5)
         0.6,
         0.75,
         0.9,
-        1.0,    # max — pure white
+        1.0,  # max — pure white
     ],
 )
 def test_classify_contrast_from_lightness_high(lightness: float) -> None:
@@ -59,11 +58,11 @@ def test_classify_contrast_from_lightness_high(lightness: float) -> None:
 @pytest.mark.parametrize(
     "lightness",
     [
-        0.0,    # min — pure black
+        0.0,  # min — pure black
         0.1,
         0.25,
         0.4,
-        0.49,   # just below default midpoint
+        0.49,  # just below default midpoint
     ],
 )
 def test_classify_contrast_from_lightness_low(lightness: float) -> None:
@@ -145,8 +144,8 @@ def test_classify_contrast_from_lightness_rejects_bool() -> None:
 @pytest.mark.parametrize(
     "pair",
     [
-        (1.0, 0.0),   # max delta — pure white skin vs pure black hair
-        (0.9, 0.2),   # delta 0.7 — clearly high contrast
+        (1.0, 0.0),  # max delta — pure white skin vs pure black hair
+        (0.9, 0.2),  # delta 0.7 — clearly high contrast
         (0.85, 0.4),  # delta 0.45 — just above default 0.4 threshold
         (0.95, 0.1),  # delta 0.85 — winter-type signature
     ],
@@ -166,10 +165,10 @@ def test_classify_contrast_from_delta_high(
 @pytest.mark.parametrize(
     "pair",
     [
-        (0.5, 0.5),   # zero delta — identical samples
-        (0.6, 0.4),   # delta 0.2 — clearly low contrast
-        (0.7, 0.4),   # delta 0.3 — soft summer-type
-        (0.4, 0.1),   # delta 0.3 — dark-on-dark muted autumn
+        (0.5, 0.5),  # zero delta — identical samples
+        (0.6, 0.4),  # delta 0.2 — clearly low contrast
+        (0.7, 0.4),  # delta 0.3 — soft summer-type
+        (0.4, 0.1),  # delta 0.3 — dark-on-dark muted autumn
         (0.3, 0.15),  # delta 0.15 — deep skin, deep features
     ],
 )

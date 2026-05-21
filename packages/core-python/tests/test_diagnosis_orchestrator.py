@@ -45,7 +45,6 @@ from personal_color.region_extractor import (
 from personal_color.season_classifier import Season
 from personal_color.tone_classifier import Tone, ToneThresholds
 
-
 # ---------------------------------------------------------------------------
 # RegionColors fixtures — each one represents a clean archetype for the
 # corresponding season. Coordinates in comments are RGB and luma sketches.
@@ -150,9 +149,9 @@ def test_strong_signals_produce_high_overall_confidence() -> None:
     # Pure-channel extremes: huge |R-B| and huge luma gap → both axes
     # saturate to 1.0, so the geometric mean is 1.0.
     colors = RegionColors(
-        skin=(255, 200, 120),   # |R-B| = 135 → tone axis saturates
+        skin=(255, 200, 120),  # |R-B| = 135 → tone axis saturates
         eyes=(0, 0, 0),
-        hair=(10, 10, 10),      # near-black hair → contrast axis saturates
+        hair=(10, 10, 10),  # near-black hair → contrast axis saturates
     )
     result = diagnose_from_region_colors(colors)
     assert result.tone_confidence == 1.0
@@ -166,7 +165,7 @@ def test_weak_tone_signal_pulls_overall_confidence_down() -> None:
     # scale of 40. Hair contrast is large. Geometric mean must reflect the
     # weaker axis — strictly less than the contrast confidence alone.
     colors = RegionColors(
-        skin=(200, 200, 198),   # |R-B| = 2 → tone_confidence = 2/40 = 0.05
+        skin=(200, 200, 198),  # |R-B| = 2 → tone_confidence = 2/40 = 0.05
         eyes=(50, 50, 50),
         hair=(20, 20, 20),
     )
@@ -185,9 +184,9 @@ def test_weak_tone_signal_pulls_overall_confidence_down() -> None:
 def test_weak_contrast_signal_pulls_overall_confidence_down() -> None:
     # Strong tone signal, but skin and hair have nearly identical luma.
     colors = RegionColors(
-        skin=(220, 180, 120),   # warm, |R-B| = 100 → tone_confidence = 1.0
+        skin=(220, 180, 120),  # warm, |R-B| = 100 → tone_confidence = 1.0
         eyes=(190, 160, 110),
-        hair=(220, 180, 120),   # same as skin → contrast_confidence = 0.0
+        hair=(220, 180, 120),  # same as skin → contrast_confidence = 0.0
     )
     result = diagnose_from_region_colors(colors)
 
@@ -217,7 +216,9 @@ def test_tone_confidence_monotone_in_chroma_signal() -> None:
     # Holding contrast constant, larger |R-B| must not decrease tone_confidence.
     weak_skin = RegionColors(skin=(200, 180, 195), eyes=(50, 50, 50), hair=(20, 20, 20))
     mid_skin = RegionColors(skin=(220, 180, 160), eyes=(50, 50, 50), hair=(20, 20, 20))
-    strong_skin = RegionColors(skin=(245, 180, 120), eyes=(50, 50, 50), hair=(20, 20, 20))
+    strong_skin = RegionColors(
+        skin=(245, 180, 120), eyes=(50, 50, 50), hair=(20, 20, 20)
+    )
 
     weak = diagnose_from_region_colors(weak_skin)
     mid = diagnose_from_region_colors(mid_skin)
@@ -239,7 +240,9 @@ def test_contrast_confidence_monotone_in_luma_delta() -> None:
     mid = diagnose_from_region_colors(mid_hair)
     far = diagnose_from_region_colors(far_hair)
 
-    assert near.contrast_confidence <= mid.contrast_confidence <= far.contrast_confidence
+    assert (
+        near.contrast_confidence <= mid.contrast_confidence <= far.contrast_confidence
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +255,7 @@ def test_neutral_tone_does_not_raise_and_commits_to_warm_or_cool() -> None:
     # |R - B| within chroma floor → primitive returns NEUTRAL → orchestrator
     # commits via sign(R - B). Confidence pulled down (low tone signal).
     colors = RegionColors(
-        skin=(200, 195, 198),   # |R - B| = 2 → primitive NEUTRAL
+        skin=(200, 195, 198),  # |R - B| = 2 → primitive NEUTRAL
         eyes=(50, 50, 50),
         hair=(20, 20, 20),
     )
@@ -270,7 +273,7 @@ def test_neutral_tone_does_not_raise_and_commits_to_warm_or_cool() -> None:
 @pytest.mark.unit
 def test_neutral_tone_with_r_less_than_b_falls_back_to_cool() -> None:
     colors = RegionColors(
-        skin=(198, 195, 200),   # R < B by 2 → primitive NEUTRAL
+        skin=(198, 195, 200),  # R < B by 2 → primitive NEUTRAL
         eyes=(50, 50, 50),
         hair=(20, 20, 20),
     )
@@ -302,7 +305,7 @@ def test_tone_thresholds_override_changes_neutral_band() -> None:
     # still picks WARM by sign, so the season is unchanged — verify by
     # checking tone resolves consistently with the override path).
     colors = RegionColors(
-        skin=(200, 180, 195),   # |R - B| = 5
+        skin=(200, 180, 195),  # |R - B| = 5
         eyes=(50, 50, 50),
         hair=(20, 20, 20),
     )
@@ -325,9 +328,9 @@ def test_contrast_thresholds_override_flips_high_low_contrast() -> None:
     # (LOW), but above a relaxed threshold of 0.1 (HIGH). Verifies the
     # override threads through to the 10.2 primitive.
     colors = RegionColors(
-        skin=(200, 180, 140),   # warm, luma ≈ 0.72
+        skin=(200, 180, 140),  # warm, luma ≈ 0.72
         eyes=(80, 60, 40),
-        hair=(120, 100, 80),    # luma ≈ 0.40 → delta ≈ 0.32
+        hair=(120, 100, 80),  # luma ≈ 0.40 → delta ≈ 0.32
     )
 
     default_result = diagnose_from_region_colors(colors)
@@ -348,7 +351,7 @@ def test_confidence_scales_override_changes_saturation() -> None:
     # Halving the scale to 20 saturates tone_confidence to 1.0 for the same
     # input. Verifies the override is wired.
     colors = RegionColors(
-        skin=(210, 180, 190),   # |R - B| = 20
+        skin=(210, 180, 190),  # |R - B| = 20
         eyes=(50, 50, 50),
         hair=(20, 20, 20),
     )

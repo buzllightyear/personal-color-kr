@@ -70,7 +70,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Final, Mapping, Protocol
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -232,8 +231,7 @@ class VendorCaller(Protocol):
     cannot block past the deadline.
     """
 
-    def __call__(self, request: VendorRequest, attempt_timeout: float) -> bytes:
-        ...
+    def __call__(self, request: VendorRequest, attempt_timeout: float) -> bytes: ...
 
 
 # ---------------------------------------------------------------------------
@@ -285,9 +283,7 @@ def edit_image(
     """
     # ------- eager config validation -------
     if not isinstance(request, VendorRequest):
-        raise TypeError(
-            f"request must be VendorRequest, got {type(request).__name__}"
-        )
+        raise TypeError(f"request must be VendorRequest, got {type(request).__name__}")
     if not callable(vendor_caller):
         raise TypeError("vendor_caller must be callable")
     if timeout_seconds <= 0:
@@ -325,7 +321,7 @@ def edit_image(
             attempts_left = max_retries - attempt_index
             if attempts_left <= 0:
                 raise
-            sleep_seconds = backoff_base_seconds * (2 ** attempt_index)
+            sleep_seconds = backoff_base_seconds * (2**attempt_index)
             next_now = clock()
             if next_now + sleep_seconds >= deadline:
                 # Sleeping would push us past the deadline. Don't

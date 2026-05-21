@@ -94,7 +94,6 @@ from .vendor_client import (
     edit_image,
 )
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -236,8 +235,7 @@ def run_edit_pipeline(
     # microsecond samples that are not user-perceived latency events.
     if not isinstance(selfie_bytes, (bytes, bytearray)):
         raise TypeError(
-            "selfie_bytes must be bytes-like, "
-            f"got {type(selfie_bytes).__name__}"
+            "selfie_bytes must be bytes-like, " f"got {type(selfie_bytes).__name__}"
         )
     if len(selfie_bytes) == 0:
         raise ValueError("selfie_bytes must not be empty")
@@ -245,8 +243,7 @@ def run_edit_pipeline(
         raise ValueError("vendor must be a non-empty string")
     if tracker is not None and not isinstance(tracker, LatencyTracker):
         raise TypeError(
-            "tracker must be a LatencyTracker or None, "
-            f"got {type(tracker).__name__}"
+            "tracker must be a LatencyTracker or None, " f"got {type(tracker).__name__}"
         )
 
     # `params` defaults to an empty mapping — VendorRequest will copy
@@ -256,7 +253,9 @@ def run_edit_pipeline(
 
     # Fresh tracker for one-shot callers. Production passes a shared
     # tracker; the SLO snapshot is only meaningful across calls.
-    effective_tracker: LatencyTracker = tracker if tracker is not None else LatencyTracker()
+    effective_tracker: LatencyTracker = (
+        tracker if tracker is not None else LatencyTracker()
+    )
 
     request = VendorRequest(
         selfie_bytes=bytes(selfie_bytes),

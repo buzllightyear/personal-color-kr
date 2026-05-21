@@ -48,7 +48,6 @@ from .options import (
     get_available_options,
 )
 
-
 # ---------------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------------
@@ -71,8 +70,7 @@ class UnknownScanOptionError(ValueError):
         self.known_ids: tuple[ScanOptionId, ...] = known_ids
         known_csv = ", ".join(opt.value for opt in known_ids)
         super().__init__(
-            f"Unknown scan option id {attempted_id!r}. "
-            f"Known ids: [{known_csv}]",
+            f"Unknown scan option id {attempted_id!r}. " f"Known ids: [{known_csv}]",
         )
 
 
@@ -191,9 +189,7 @@ class ScanOptionHandler:
                 # so call sites can catch a single exception type.
                 raise UnknownScanOptionError(
                     attempted_id=option_id,
-                    known_ids=tuple(
-                        opt.id for opt in get_available_options()
-                    ),
+                    known_ids=tuple(opt.id for opt in get_available_options()),
                 ) from exc
         raise UnknownScanOptionError(
             attempted_id=repr(option_id),

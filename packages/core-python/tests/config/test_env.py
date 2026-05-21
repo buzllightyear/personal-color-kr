@@ -40,7 +40,6 @@ from config.env import (
     load_root_dotenv,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -90,9 +89,9 @@ def test_find_root_dotenv_returns_path_under_repo_root() -> None:
         )
 
     resolved_path = Path(resolved)
-    assert resolved_path.is_absolute(), (
-        f"find_root_dotenv() must return an absolute path; got {resolved!r}"
-    )
+    assert (
+        resolved_path.is_absolute()
+    ), f"find_root_dotenv() must return an absolute path; got {resolved!r}"
     assert resolved_path.name == ".env", (
         f"find_root_dotenv() must point at a file literally named '.env'; "
         f"got {resolved_path.name!r}"
@@ -141,9 +140,9 @@ def test_load_root_dotenv_returns_bool_and_does_not_raise(
     for key in ("POSTHOG_API_KEY", "SUPERWALL_API_KEY", "FAL_API_KEY"):
         monkeypatch.delenv(key, raising=False)
     result = load_root_dotenv()
-    assert isinstance(result, bool), (
-        f"load_root_dotenv() must return bool; got {type(result).__name__}"
-    )
+    assert isinstance(
+        result, bool
+    ), f"load_root_dotenv() must return bool; got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -240,9 +239,9 @@ def test_get_env_raises_lookup_error_when_required_and_missing(
     with pytest.raises(LookupError) as excinfo:
         get_env("FAL_API_KEY", required=True)
     message = str(excinfo.value)
-    assert "FAL_API_KEY" in message, (
-        f"LookupError message must name the missing variable; got {message!r}"
-    )
+    assert (
+        "FAL_API_KEY" in message
+    ), f"LookupError message must name the missing variable; got {message!r}"
 
 
 @pytest.mark.unit

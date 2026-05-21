@@ -24,7 +24,6 @@ from personal_color.tone_classifier import (
     classify_tone_rgb,
 )
 
-
 # ---------------------------------------------------------------------------
 # RGB — warm branch
 # ---------------------------------------------------------------------------
@@ -34,11 +33,11 @@ from personal_color.tone_classifier import (
 @pytest.mark.parametrize(
     "rgb",
     [
-        (255, 0, 0),       # pure red
-        (255, 165, 0),     # orange
-        (255, 220, 100),   # warm yellow
-        (220, 180, 140),   # warm skin tone (R >> B)
-        (200, 150, 120),   # bronze
+        (255, 0, 0),  # pure red
+        (255, 165, 0),  # orange
+        (255, 220, 100),  # warm yellow
+        (220, 180, 140),  # warm skin tone (R >> B)
+        (200, 150, 120),  # bronze
     ],
 )
 def test_classify_tone_rgb_warm(rgb: tuple[int, int, int]) -> None:
@@ -54,11 +53,11 @@ def test_classify_tone_rgb_warm(rgb: tuple[int, int, int]) -> None:
 @pytest.mark.parametrize(
     "rgb",
     [
-        (0, 0, 255),       # pure blue
-        (100, 150, 255),   # sky / cool blue
-        (180, 160, 220),   # cool lavender skin tone
-        (120, 130, 200),   # cool periwinkle
-        (0, 128, 200),     # cool teal-blue
+        (0, 0, 255),  # pure blue
+        (100, 150, 255),  # sky / cool blue
+        (180, 160, 220),  # cool lavender skin tone
+        (120, 130, 200),  # cool periwinkle
+        (0, 128, 200),  # cool teal-blue
     ],
 )
 def test_classify_tone_rgb_cool(rgb: tuple[int, int, int]) -> None:
@@ -74,11 +73,11 @@ def test_classify_tone_rgb_cool(rgb: tuple[int, int, int]) -> None:
 @pytest.mark.parametrize(
     "rgb",
     [
-        (0, 0, 0),         # black — boundary
-        (255, 255, 255),   # white — boundary (R == B)
-        (128, 128, 128),   # mid gray — boundary
-        (200, 180, 200),   # R == B with green channel — neutral
-        (150, 100, 150),   # R == B saturated — neutral
+        (0, 0, 0),  # black — boundary
+        (255, 255, 255),  # white — boundary (R == B)
+        (128, 128, 128),  # mid gray — boundary
+        (200, 180, 200),  # R == B with green channel — neutral
+        (150, 100, 150),  # R == B saturated — neutral
     ],
 )
 def test_classify_tone_rgb_neutral_when_r_equals_b(
@@ -137,12 +136,12 @@ def test_classify_tone_rgb_rejects_non_integer() -> None:
 @pytest.mark.parametrize(
     "hsv",
     [
-        (0.0, 1.0, 1.0),     # pure red
-        (30.0, 0.8, 0.9),    # orange
-        (60.0, 1.0, 1.0),    # yellow — upper warm boundary
-        (15.0, 0.6, 0.7),    # warm skin tone
-        (330.0, 0.5, 0.8),   # warm magenta-pink
-        (360.0, 1.0, 1.0),   # 360 wraps to red — warm
+        (0.0, 1.0, 1.0),  # pure red
+        (30.0, 0.8, 0.9),  # orange
+        (60.0, 1.0, 1.0),  # yellow — upper warm boundary
+        (15.0, 0.6, 0.7),  # warm skin tone
+        (330.0, 0.5, 0.8),  # warm magenta-pink
+        (360.0, 1.0, 1.0),  # 360 wraps to red — warm
     ],
 )
 def test_classify_tone_hsv_warm(hsv: tuple[float, float, float]) -> None:
@@ -158,11 +157,11 @@ def test_classify_tone_hsv_warm(hsv: tuple[float, float, float]) -> None:
 @pytest.mark.parametrize(
     "hsv",
     [
-        (180.0, 1.0, 1.0),   # cyan — lower cool boundary
-        (210.0, 0.9, 0.8),   # azure
-        (240.0, 1.0, 1.0),   # pure blue
-        (270.0, 0.8, 0.7),   # violet — upper cool boundary
-        (200.0, 0.5, 0.6),   # cool muted blue
+        (180.0, 1.0, 1.0),  # cyan — lower cool boundary
+        (210.0, 0.9, 0.8),  # azure
+        (240.0, 1.0, 1.0),  # pure blue
+        (270.0, 0.8, 0.7),  # violet — upper cool boundary
+        (200.0, 0.5, 0.6),  # cool muted blue
     ],
 )
 def test_classify_tone_hsv_cool(hsv: tuple[float, float, float]) -> None:
@@ -178,10 +177,10 @@ def test_classify_tone_hsv_cool(hsv: tuple[float, float, float]) -> None:
 @pytest.mark.parametrize(
     "hsv",
     [
-        (120.0, 1.0, 1.0),   # pure green — between warm/cool
-        (150.0, 0.8, 0.8),   # yellow-green
-        (90.0, 0.7, 0.7),    # chartreuse
-        (285.0, 0.6, 0.6),   # purple between cool and warm
+        (120.0, 1.0, 1.0),  # pure green — between warm/cool
+        (150.0, 0.8, 0.8),  # yellow-green
+        (90.0, 0.7, 0.7),  # chartreuse
+        (285.0, 0.6, 0.6),  # purple between cool and warm
     ],
 )
 def test_classify_tone_hsv_neutral_hue(hsv: tuple[float, float, float]) -> None:
@@ -192,10 +191,10 @@ def test_classify_tone_hsv_neutral_hue(hsv: tuple[float, float, float]) -> None:
 @pytest.mark.parametrize(
     "hsv",
     [
-        (0.0, 0.0, 1.0),     # white — no chroma
-        (0.0, 0.0, 0.0),     # black — no chroma
-        (0.0, 0.0, 0.5),     # gray
-        (45.0, 0.05, 0.8),   # near-gray warm hue — under saturation floor
+        (0.0, 0.0, 1.0),  # white — no chroma
+        (0.0, 0.0, 0.0),  # black — no chroma
+        (0.0, 0.0, 0.5),  # gray
+        (45.0, 0.05, 0.8),  # near-gray warm hue — under saturation floor
         (210.0, 0.04, 0.5),  # near-gray cool hue — under saturation floor
     ],
 )

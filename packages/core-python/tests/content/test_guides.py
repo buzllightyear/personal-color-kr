@@ -38,7 +38,6 @@ from content.guides import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Cardinality — the AC headline invariants
 # ---------------------------------------------------------------------------
@@ -123,7 +122,8 @@ def test_load_guides_for_season_returns_canonical_category_order() -> None:
 @pytest.mark.parametrize("season", list(Season))
 @pytest.mark.parametrize("category", list(GuideCategory))
 def test_load_guide_returns_matching_pair(
-    season: Season, category: GuideCategory,
+    season: Season,
+    category: GuideCategory,
 ) -> None:
     """`load_guide` must return the single Guide for any valid pair."""
     guide = load_guide(season, category)
@@ -177,8 +177,7 @@ def test_every_guide_title_contains_hangul() -> None:
 def test_every_guide_body_contains_hangul() -> None:
     for guide in load_all_guides():
         assert _contains_hangul(guide.body), (
-            f"body without hangul on {guide.season.name}/"
-            f"{guide.category.name}"
+            f"body without hangul on {guide.season.name}/" f"{guide.category.name}"
         )
 
 
@@ -187,12 +186,10 @@ def test_palette_entries_are_valid_hex_colors() -> None:
     """If a palette is present it must be `#RRGGBB` strings only."""
     for guide in load_all_guides():
         for hex_code in guide.palette:
-            assert isinstance(hex_code, str), (
-                f"palette entry not str: {hex_code!r}"
-            )
-            assert hex_code.startswith("#") and len(hex_code) == 7, (
-                f"palette entry malformed: {hex_code!r}"
-            )
+            assert isinstance(hex_code, str), f"palette entry not str: {hex_code!r}"
+            assert (
+                hex_code.startswith("#") and len(hex_code) == 7
+            ), f"palette entry malformed: {hex_code!r}"
             int(hex_code[1:], 16)  # raises ValueError if not hex
 
 

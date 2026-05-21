@@ -32,7 +32,6 @@ import pytest
 from retention.activity_tracker import InMemoryActivityStore, track_user_activity
 from retention.cohort import get_cohort
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -79,7 +78,8 @@ def test_returns_users_with_first_activity_in_window(
 
 @pytest.mark.unit
 def test_empty_store_returns_empty_cohort(
-    window_start: datetime, window_end: datetime,
+    window_start: datetime,
+    window_end: datetime,
 ) -> None:
     cohort = get_cohort(window_start, window_end, store=InMemoryActivityStore())
     assert cohort == frozenset()
@@ -165,7 +165,10 @@ def test_end_date_inclusive_when_flag_set(
     track_user_activity("on-end", window_end, store=store)
 
     cohort = get_cohort(
-        window_start, window_end, store=store, inclusive_end=True,
+        window_start,
+        window_end,
+        store=store,
+        inclusive_end=True,
     )
     assert "on-end" in cohort
 
@@ -182,7 +185,10 @@ def test_just_before_end_date_is_always_included(
     # Both modes include it — the boundary disagreement is only at end_date itself.
     cohort_excl = get_cohort(window_start, window_end, store=store)
     cohort_incl = get_cohort(
-        window_start, window_end, store=store, inclusive_end=True,
+        window_start,
+        window_end,
+        store=store,
+        inclusive_end=True,
     )
     assert "almost-end" in cohort_excl
     assert "almost-end" in cohort_incl
@@ -222,11 +228,15 @@ def test_first_activity_outside_window_excludes_user(
     they belong to an *earlier* cohort, not this one.
     """
     track_user_activity(
-        "veteran", window_start - timedelta(days=30), store=store,
+        "veteran",
+        window_start - timedelta(days=30),
+        store=store,
     )
     # Active inside the window too — but cohort is fixed by first activity.
     track_user_activity(
-        "veteran", window_start + timedelta(days=5), store=store,
+        "veteran",
+        window_start + timedelta(days=5),
+        store=store,
     )
 
     cohort = get_cohort(window_start, window_end, store=store)
@@ -304,7 +314,7 @@ def test_window_can_be_specified_in_kst(
     """A Korean-market caller can pass KST-based windows; events recorded
     in UTC still match correctly."""
     window_start_kst = datetime(2026, 1, 1, 0, 0, 0, tzinfo=KST)  # 2025-12-31 15:00 UTC
-    window_end_kst = datetime(2026, 1, 2, 0, 0, 0, tzinfo=KST)    # 2026-01-01 15:00 UTC
+    window_end_kst = datetime(2026, 1, 2, 0, 0, 0, tzinfo=KST)  # 2026-01-01 15:00 UTC
 
     # UTC 2026-01-01 00:00 = KST 2026-01-01 09:00 → inside the window
     in_window_utc = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -360,7 +370,8 @@ def test_repeated_calls_return_equal_sets(
 
 @pytest.mark.unit
 def test_zero_width_window_exclusive_end_is_empty(
-    store: InMemoryActivityStore, window_start: datetime,
+    store: InMemoryActivityStore,
+    window_start: datetime,
 ) -> None:
     """[t, t) is empty by definition — no instant satisfies t <= x < t."""
     track_user_activity("alice", window_start, store=store)
@@ -371,16 +382,22 @@ def test_zero_width_window_exclusive_end_is_empty(
 
 @pytest.mark.unit
 def test_zero_width_window_inclusive_end_matches_only_exact_instant(
-    store: InMemoryActivityStore, window_start: datetime,
+    store: InMemoryActivityStore,
+    window_start: datetime,
 ) -> None:
     """[t, t] contains exactly the instant t."""
     track_user_activity("exact", window_start, store=store)
     track_user_activity(
-        "near", window_start + timedelta(microseconds=1), store=store,
+        "near",
+        window_start + timedelta(microseconds=1),
+        store=store,
     )
 
     cohort = get_cohort(
-        window_start, window_start, store=store, inclusive_end=True,
+        window_start,
+        window_start,
+        store=store,
+        inclusive_end=True,
     )
     assert cohort == frozenset({"exact"})
 
@@ -402,7 +419,9 @@ def test_zero_width_window_inclusive_end_matches_only_exact_instant(
     ],
 )
 def test_rejects_non_datetime_start(
-    store: InMemoryActivityStore, window_end: datetime, bad: object,
+    store: InMemoryActivityStore,
+    window_end: datetime,
+    bad: object,
 ) -> None:
     with pytest.raises(TypeError):
         get_cohort(bad, window_end, store=store)  # type: ignore[arg-type]
@@ -419,7 +438,9 @@ def test_rejects_non_datetime_start(
     ],
 )
 def test_rejects_non_datetime_end(
-    store: InMemoryActivityStore, window_start: datetime, bad: object,
+    store: InMemoryActivityStore,
+    window_start: datetime,
+    bad: object,
 ) -> None:
     with pytest.raises(TypeError):
         get_cohort(window_start, bad, store=store)  # type: ignore[arg-type]
@@ -427,7 +448,8 @@ def test_rejects_non_datetime_end(
 
 @pytest.mark.unit
 def test_rejects_naive_start(
-    store: InMemoryActivityStore, window_end: datetime,
+    store: InMemoryActivityStore,
+    window_end: datetime,
 ) -> None:
     naive_start = datetime(2026, 1, 1, 0, 0, 0)  # no tzinfo
     with pytest.raises(ValueError):
@@ -436,7 +458,8 @@ def test_rejects_naive_start(
 
 @pytest.mark.unit
 def test_rejects_naive_end(
-    store: InMemoryActivityStore, window_start: datetime,
+    store: InMemoryActivityStore,
+    window_start: datetime,
 ) -> None:
     naive_end = datetime(2026, 2, 1, 0, 0, 0)  # no tzinfo
     with pytest.raises(ValueError):
@@ -465,5 +488,8 @@ def test_rejects_non_bool_inclusive_end(
     """1/0/'yes' silently flipping the boundary is a foot-gun — refuse it."""
     with pytest.raises(TypeError):
         get_cohort(
-            window_start, window_end, store=store, inclusive_end=bad,  # type: ignore[arg-type]
+            window_start,
+            window_end,
+            store=store,
+            inclusive_end=bad,  # type: ignore[arg-type]
         )

@@ -41,7 +41,6 @@ from enum import Enum
 
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Category enum — exactly 4 members. Keeping the values as stable slugs
 # (English) and pairing them with Korean display labels follows the same
@@ -429,8 +428,7 @@ def load_guide(season: Season, category: GuideCategory) -> Guide:
         )
     if not isinstance(category, GuideCategory):
         raise TypeError(
-            f"category must be a GuideCategory enum, "
-            f"got {type(category).__name__}",
+            f"category must be a GuideCategory enum, " f"got {type(category).__name__}",
         )
     for guide in _GUIDES:
         if guide.season is season and guide.category is category:

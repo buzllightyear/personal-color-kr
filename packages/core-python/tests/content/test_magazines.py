@@ -40,7 +40,6 @@ from content.magazines import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Catalogue cardinality — the AC headline ("1-3개월치") invariant
 # ---------------------------------------------------------------------------
@@ -50,17 +49,15 @@ from personal_color.season_classifier import Season
 def test_catalogue_seeds_between_one_and_three_issues() -> None:
     """Seed contract: 1-3개월치 매거진 사전 콘텐츠."""
     count = len(load_all_magazines())
-    assert 1 <= count <= 3, (
-        f"magazine catalogue must seed 1-3 issues, got {count}"
-    )
+    assert 1 <= count <= 3, f"magazine catalogue must seed 1-3 issues, got {count}"
 
 
 @pytest.mark.unit
 def test_available_months_returns_unique_yyyy_mm_keys() -> None:
     months = available_months()
-    assert len(months) == len(set(months)), (
-        "available_months must contain no duplicates"
-    )
+    assert len(months) == len(
+        set(months)
+    ), "available_months must contain no duplicates"
     for month in months:
         assert isinstance(month, str)
         assert len(month) == 7 and month[4] == "-"
@@ -73,9 +70,9 @@ def test_available_months_returns_unique_yyyy_mm_keys() -> None:
 def test_available_months_is_chronologically_ordered() -> None:
     """Canonical order is oldest → newest so the publisher can pop()."""
     months = available_months()
-    assert list(months) == sorted(months), (
-        f"available_months must be ascending; got {months}"
-    )
+    assert list(months) == sorted(
+        months
+    ), f"available_months must be ascending; got {months}"
 
 
 # ---------------------------------------------------------------------------
@@ -86,15 +83,13 @@ def test_available_months_is_chronologically_ordered() -> None:
 @pytest.mark.unit
 def test_every_issue_has_non_empty_required_fields() -> None:
     for magazine in load_all_magazines():
-        assert magazine.issue_title.strip(), (
-            f"empty issue_title on {magazine.month}"
-        )
-        assert magazine.cover_headline.strip(), (
-            f"empty cover_headline on {magazine.month}"
-        )
-        assert magazine.editor_letter.strip(), (
-            f"empty editor_letter on {magazine.month}"
-        )
+        assert magazine.issue_title.strip(), f"empty issue_title on {magazine.month}"
+        assert (
+            magazine.cover_headline.strip()
+        ), f"empty cover_headline on {magazine.month}"
+        assert (
+            magazine.editor_letter.strip()
+        ), f"empty editor_letter on {magazine.month}"
 
 
 @pytest.mark.unit
@@ -110,17 +105,17 @@ def test_every_issue_title_contains_hangul() -> None:
 @pytest.mark.unit
 def test_every_cover_headline_contains_hangul() -> None:
     for magazine in load_all_magazines():
-        assert _contains_hangul(magazine.cover_headline), (
-            f"cover_headline without hangul on {magazine.month}"
-        )
+        assert _contains_hangul(
+            magazine.cover_headline
+        ), f"cover_headline without hangul on {magazine.month}"
 
 
 @pytest.mark.unit
 def test_every_editor_letter_contains_hangul() -> None:
     for magazine in load_all_magazines():
-        assert _contains_hangul(magazine.editor_letter), (
-            f"editor_letter without hangul on {magazine.month}"
-        )
+        assert _contains_hangul(
+            magazine.editor_letter
+        ), f"editor_letter without hangul on {magazine.month}"
 
 
 # ---------------------------------------------------------------------------
@@ -132,8 +127,7 @@ def test_every_editor_letter_contains_hangul() -> None:
 def test_every_issue_has_exactly_four_articles() -> None:
     for magazine in load_all_magazines():
         assert len(magazine.articles) == 4, (
-            f"{magazine.month} must have 4 articles, "
-            f"got {len(magazine.articles)}"
+            f"{magazine.month} must have 4 articles, " f"got {len(magazine.articles)}"
         )
 
 
@@ -142,8 +136,7 @@ def test_every_issue_covers_all_four_seasons_exactly_once() -> None:
     for magazine in load_all_magazines():
         seasons = [a.season for a in magazine.articles]
         assert set(seasons) == set(Season), (
-            f"{magazine.month} missing seasons: "
-            f"{set(Season) - set(seasons)}"
+            f"{magazine.month} missing seasons: " f"{set(Season) - set(seasons)}"
         )
         assert len(set(seasons)) == 4  # no duplicates
 
@@ -153,16 +146,13 @@ def test_every_article_has_non_empty_title_summary_body() -> None:
     for magazine in load_all_magazines():
         for article in magazine.articles:
             assert article.title.strip(), (
-                f"empty article.title on "
-                f"{magazine.month}/{article.season.name}"
+                f"empty article.title on " f"{magazine.month}/{article.season.name}"
             )
             assert article.summary.strip(), (
-                f"empty article.summary on "
-                f"{magazine.month}/{article.season.name}"
+                f"empty article.summary on " f"{magazine.month}/{article.season.name}"
             )
             assert article.body.strip(), (
-                f"empty article.body on "
-                f"{magazine.month}/{article.season.name}"
+                f"empty article.body on " f"{magazine.month}/{article.season.name}"
             )
 
 
@@ -204,9 +194,7 @@ def test_get_magazine_by_month_returns_the_correct_issue() -> None:
     months = available_months()
     for month in months:
         result = get_magazine_by_month(month)
-        assert result.month == month, (
-            f"requested {month!r}, got {result.month!r}"
-        )
+        assert result.month == month, f"requested {month!r}, got {result.month!r}"
 
 
 @pytest.mark.unit

@@ -44,7 +44,6 @@ from content.integrity import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Test fixtures — minimal-valid raw payloads we can mutate per test.
 # ---------------------------------------------------------------------------
@@ -92,9 +91,9 @@ def _valid_dict_curation(**overrides: Any) -> dict[str, Any]:
 def test_real_catalogue_passes_integrity_check() -> None:
     """4-curation catalogue is integrity-clean against the live guide set."""
     errors = validate_curations(load_all_first_curations(), load_all_guides())
-    assert errors == [], (
-        f"runtime curation catalogue must be clean, got defects: {errors}"
-    )
+    assert (
+        errors == []
+    ), f"runtime curation catalogue must be clean, got defects: {errors}"
 
 
 @pytest.mark.unit
@@ -171,9 +170,7 @@ def test_wrong_type_for_string_required_field_is_reported() -> None:
     curation = _valid_dict_curation()
     curation["headline"] = 42
     errors = validate_curations([curation])
-    assert any(
-        e.field == "headline" and "string" in e.message for e in errors
-    )
+    assert any(e.field == "headline" and "string" in e.message for e in errors)
 
 
 # ---------------------------------------------------------------------------
@@ -264,9 +261,9 @@ def test_all_missing_item_fields_are_reported_at_once() -> None:
     errors = validate_curations([curation])
     reported_fields = {e.field for e in errors}
     for field in REQUIRED_CURATION_ITEM_FIELDS:
-        assert f"items[0].{field}" in reported_fields, (
-            f"expected items[0].{field} in {sorted(reported_fields)}"
-        )
+        assert (
+            f"items[0].{field}" in reported_fields
+        ), f"expected items[0].{field} in {sorted(reported_fields)}"
 
 
 @pytest.mark.unit
@@ -326,8 +323,7 @@ def test_unknown_guide_id_is_reported_when_guides_supplied() -> None:
     curation = _valid_dict_curation(items=(bad_item,))
     errors = validate_curations([curation], load_all_guides())
     assert any(
-        e.field == "items[0].guide_id" and "unknown" in e.message
-        for e in errors
+        e.field == "items[0].guide_id" and "unknown" in e.message for e in errors
     ), f"expected unknown-guide_id defect, got {errors}"
 
 
@@ -357,10 +353,7 @@ def test_non_string_guide_id_is_reported() -> None:
         items=(_valid_dict_item(guide_id=123),),
     )
     errors = validate_curations([curation], load_all_guides())
-    assert any(
-        e.field == "items[0].guide_id" and "string" in e.message
-        for e in errors
-    )
+    assert any(e.field == "items[0].guide_id" and "string" in e.message for e in errors)
 
 
 @pytest.mark.unit
@@ -402,9 +395,9 @@ def test_guide_id_resolves_against_all_seasons_and_categories() -> None:
     curation = _valid_dict_curation(items=items_with_refs)
     errors = validate_curations([curation], load_all_guides())
     guide_id_errors = [e for e in errors if "guide_id" in e.field]
-    assert guide_id_errors == [], (
-        f"every live guide id must resolve, got: {guide_id_errors}"
-    )
+    assert (
+        guide_id_errors == []
+    ), f"every live guide id must resolve, got: {guide_id_errors}"
 
 
 # ---------------------------------------------------------------------------
@@ -506,7 +499,9 @@ def test_string_guides_raises_typeerror() -> None:
 @pytest.mark.unit
 def test_validation_error_records_remain_immutable() -> None:
     err = ValidationError(
-        index=0, field="headline", message="headline: missing",
+        index=0,
+        field="headline",
+        message="headline: missing",
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         err.field = "summary"  # type: ignore[misc]

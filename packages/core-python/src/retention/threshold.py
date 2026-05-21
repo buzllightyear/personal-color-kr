@@ -47,7 +47,6 @@ from __future__ import annotations
 
 import math
 
-
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -126,8 +125,7 @@ def _validate_unit_interval(value: object, name: str) -> float:
     # would otherwise sneak through as 0.0 / 1.0 with a confusing trace.
     if isinstance(value, bool):
         raise TypeError(
-            f"{name} must be a real number in [0.0, 1.0], "
-            f"got bool ({value!r})",
+            f"{name} must be a real number in [0.0, 1.0], " f"got bool ({value!r})",
         )
     if not isinstance(value, (int, float)):
         raise TypeError(

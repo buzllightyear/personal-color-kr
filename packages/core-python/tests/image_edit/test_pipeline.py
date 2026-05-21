@@ -81,7 +81,6 @@ from image_edit.vendor_client import (
     VendorTimeoutError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -177,7 +176,9 @@ def _value_error_vendor():
 def test_pipeline_returns_edited_bytes_from_vendor() -> None:
     """The vendor's bytes must arrive verbatim on the result."""
     tracker = LatencyTracker()
-    clock = _FakeClock([0.0, 0.0, 0.0, 1.2, 1.2])  # pipeline-start, measure-start, attempt-probe, success-end, measure-end
+    clock = _FakeClock(
+        [0.0, 0.0, 0.0, 1.2, 1.2]
+    )  # pipeline-start, measure-start, attempt-probe, success-end, measure-end
     sleep = _RecordingSleep()
 
     result = run_edit_pipeline(
