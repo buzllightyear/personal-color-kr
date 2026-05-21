@@ -37,7 +37,7 @@
 |----|------|------|
 | 3.1 | ✅ Fal.ai 실제 API call wiring (FalAiVendorCaller 어댑터: VendorCaller Protocol 구현, 3-step upload→edit→download HTTPS sync, preset→prompt boundary 해상도, deadline_monotonic 예산 분배) | Py |
 | 3.2 | ✅ Personal color diagnosis 런타임 wiring (`diagnose_personal_color(bytes) -> DiagnosisResult` 진입점, MediaPipe face_detector 단일 경계 파일, Pillow image_decoder 단일 경계 파일, `season_to_preset()` bijection, Callable DI 패턴) | Py |
-| 3.3 | ContentPackage 4종 화면 (진단·편집·가이드·큐레이션) | TS/RN |
+| 3.3 | ✅ ContentPackage 4종 화면 (first-touch diagnosis-reveal + 4-tab post-payment shell: edit primary · diagnosis · guide · curation; global+persisted Tone Switcher across 4 seasons; 4 independent per-screen hooks on the DataHook<T>/useDummy<T> contract; AsyncStorage wrapper with namespaced keys; 4 PostHog events; (post-payment) deep-link non-registration invariant) | TS/RN |
 | 3.4 | result_wording 톤 혼합 화면 적용 | TS/RN |
 
 ### Phase 4 — Backend & persistence
@@ -115,7 +115,8 @@
 | 2.6 | 2026-05-20 | 2026-05-20 | `orch_8d132bdbc9aa` | `77282c2` | APPROVED · Stage 2 · 0.93 |
 | 3.1 | 2026-05-20 | 2026-05-21 | `orch_0db1520139ca` | `b3a2deb` | APPROVED · Stage 2 · 0.92 (retry after wireup fix) |
 | 3.2 | 2026-05-21 | 2026-05-21 | `orch_63c91f495e7e` | `17342e7` | APPROVED · Stage 2 · 0.92 |
-| 3.x | — | — | | | 다음 단계 (3.3) |
+| 3.3 | 2026-05-22 | 2026-05-22 | `orch_17968c264a15` | `42952b2` | APPROVED · Stage 2 · 0.95 |
+| 3.x | — | — | | | 다음 단계 (3.4) |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
@@ -792,6 +793,95 @@
 - Phase 4 HTTP status code 매핑 정책 (이번 단위는 ValueError 서브클래스 계층까지만 정의)
 - 새로운 ML 모델 학습 (기존 Phase 0.x 알고리즘 재사용)
 - fine-tune / LoRA adapter (Seed v0.2.0 금지)
+
+### Phase 3.3 결과 요약 (2026-05-22)
+
+**산출물 (TypeScript/RN 측 3번째 phase — 첫 mobile-facing post-payment surface)**:
+
+Routes + screens (`apps/mobile/app/(post-payment)/`):
+- `_layout.tsx` (153L, orch) — first-entry redirect gate via AsyncStorage `readDiagnosisRevealSeen`; mounts `ToneStateProvider` above Stack. Void-render while reveal-seen value resolves to avoid flicker. (post-payment) Stack has exactly 2 children (diagnosis-reveal fullScreenModal + (tabs) nested group).
+- `diagnosis-reveal.tsx` (117L, 신규) — first-touch full-screen reveal (Season + Korean label + confidence + tone/contrast); emits `post_payment_revealed` on mount; writes `diagnosis_reveal_seen=true` on dismiss → `router.replace('/(post-payment)/(tabs)/edit')`.
+- `(tabs)/_layout.tsx` (76L, 신규) — Expo Router Tabs navigator, order `[edit, diagnosis, guide, curation]`, edit as initial route. Cold-start tab restoration from `pck.post_payment.last_tab` + persistence on every focus change.
+- `(tabs)/{edit,diagnosis,guide,curation}.tsx` (90+88+76+81L, 신규) — 4 tab screens. 각자 1개 hook (`useEditContent` / `useDiagnosisContent` / `useGuideContent` / `useCurationContent`) 소비, 3-state `DataHook` exhaustive handling (`Skeleton` / `ErrorRetry` / content). `ToneSwitcher` mounted on every tab. `post_payment_tab_viewed` on mount + `post_payment_content_engaged` on interaction.
+
+Analytics (`apps/mobile/src/analytics/track-*.ts`) — 1-module-per-event 패턴 4건:
+- `track-post-payment-revealed.ts` (134L, orch) — `{ season }`
+- `track-post-payment-tab-viewed.ts` (137L, orch) — `{ tab }`
+- `track-tone-switched.ts` (156L, orch) — `{ from, to }`
+- `track-post-payment-content-engaged.ts` (86L, 신규) — `{ tab, action }`
+
+Contracts + hooks + fixtures (`apps/mobile/src/{contracts,hooks,fixtures}/`):
+- `contracts/post-payment-views.ts` (395L, orch) — `DiagnosisView` / `EditView` / `GuideView` / `CurationView` slice 타입 + `GuideTile` + `CurationItem` + `Season` 닫힌 enum. **Python `ContentPackage` 1:1 미러 금지** (Tone Switcher의 자유 톤 전환 = per-tone slice 필요, coherence는 서버측 책임).
+- `hooks/use-{diagnosis,edit,guide,curation}-content.ts` (각 12-27L, 신규) — 각자 독립 hook, `useDummy<View>(fixture[season])` wrap. Phase 4 swap = hook 내부 1줄 교체로 `usePython<View>` (screen 코드 0건 변경).
+- `fixtures/post-payment-{default-diagnosis,diagnosis,edit,guide,curation}-views.ts` (각 31-37L, 신규) — `DEFAULT_DIAGNOSIS` (summer-cool 예) + `Record<Season, ViewType>` 4건. GuideView는 4 tile 비어있지 않음, CurationView는 정확히 4 item (Python `FirstCuration` 불변량과 일치).
+
+Storage (`apps/mobile/src/storage/post-payment-storage.ts`, 137L, 신규):
+- `@react-native-async-storage/async-storage`의 **단일 import 경계** — typed API `readLastTone` / `writeLastTone` / `readLastPostPaymentTab` / `writeLastPostPaymentTab` / `readDiagnosisRevealSeen` / `writeDiagnosisRevealSeen`.
+- 네임스페이스 키 `pck.post_payment.{last_tone, last_tab, diagnosis_reveal_seen}`.
+- `narrowSeason` / `narrowTab` 방어적 enum 협상 (drift 시 null 반환).
+
+Tone state + UI (`apps/mobile/src/{providers,components}/`):
+- `ToneStateProvider.tsx` (121L, 신규) — React Context 기반 글로벌 atom. 첫 설치 시 default = 주입된 diagnosis season (`source: 'diagnosis-default'`); mount-effect로 AsyncStorage `last_tone` 읽고 존재하면 `source: 'user-switched'`로 surface. `setTone`은 atom 업데이트 + AsyncStorage 즉시 write-through.
+- `ToneSwitcher.tsx` (76L, 신규) — 4-chip Korean label selector (`봄웜` / `여름쿨` / `가을웜` / `겨울쿨`). 현재 active chip tap = idempotent no-op. `tone_switched { from, to }` emit은 실제 변경 시만.
+- `Skeleton.tsx` / `ErrorRetry.tsx` (각 16+23L, 신규) — 단일 loading / error UI 프리미티브.
+
+Tests (`apps/mobile/tests/`) — 신규 14 파일 + 1 modified:
+- 4 tracker tests (각 64-82L) — happy path + degraded mode + 닫힌 enum 커버
+- `post-payment-storage.test.ts` (137L) — 14건: 키 상수, 4 Season + 4 Tab + reveal flag 라운드트립, drift 방어
+- `post-payment-hooks.test.ts` (90L) — 17건: 4 hook × 4 season + cross-coupling
+- `post-payment-tab-screens.test.tsx` (231L) — 12건: 4 탭 × 3 DataHook state
+- `tone-state-provider.test.tsx` (127L) — 4건: 첫 설치, persisted-restore, setTone write-through, provider 밖 사용 throw
+- `tone-switcher.test.tsx` (85L) — 3건: 4 chip 렌더, 변경 시 emit, idempotent no-op
+- `post-payment-event-disjointness.test.ts` (45L) — 2건: 4 post-payment 이벤트가 7-event funnel surface와 disjoint
+- `asyncstorage-boundary-isolation.test.ts` (51L) — 1건: filesystem grep으로 wrapper만 import
+- `post-payment-phase4-portability.test.ts` (92L) — 10건: 보호 surface 10건이 `useDummy` 미import + 4 hook만 consumer
+- `post-payment-layout.test.tsx` (orch 261L, 신규 8건 with AsyncStorage mock + ToneStateProvider Fragment mock)
+- `post-payment-views-contract.test.ts` (orch 546L) — 7건: 슬라이스 타입 immutability
+- `linking-config.test.ts` (+63L) — (post-payment) deep-link allowlist 미등록 invariant
+
+Deleted (relocation, AC 4):
+- `app/(post-payment)/{diagnosis,edit,guide,curation}.tsx` — 기존 ~30-line View+Text 플레이스홀더 stub 4건 (full 구현이 `(tabs)/` 하위로 이동하면서 wholesale 대체)
+- `app/(post-payment)/__tests__/{diagnosis,edit,guide,curation}.test.tsx` — 기존 stub용 sibling test 4건 (obsolete)
+
+Dependency:
+- `apps/mobile/package.json` — `@react-native-async-storage/async-storage@1.23.1` 추가 (Expo SDK 51 호환)
+
+**4중 정합 (프로젝트가 실제 갖춘 surface — eslint/prettier 미설정은 Phase 3.1/3.2와 동일)**:
+- vitest apps/mobile: 985 passed | 2 skipped (regression baseline 보존)
+- vitest packages/core-ts: 809 passed | 1 skipped (regression baseline 보존)
+- tsc `--noEmit -p tsconfig.json`: clean
+- 신규 invariant tests 4건 모두 green (event 이름 disjointness, AsyncStorage 경계 격리, Phase 4 hook-internal-only swap, deep-link 미등록)
+
+**10번째 MCP-disconnect 회복 (Phase 1.2 → 3.3 = 10회 연속 적용)**:
+- Orchestrator `orch_17968c264a15`는 AC 1/19 Sub-AC 2/8에서 classifier 일시 unavailability으로 종료 — Phase 3.2의 13/16 보다 **훨씬 일찍** 실패.
+- Worktree 산출물 (7 파일, 1830 LOC) 수절 → `ea64c1b` (worktree) → `7b7539e` (feature branch cherry-pick) → `2ca0da3` (수작업 완성, ~2500 LOC / 36 파일).
+- Phase 3.1 lesson 재적용: 모든 production code path가 first commit부터 fully implemented (NotImplementedError / pass-only body 0건).
+- 패턴 성숙: 10회 연속 회복으로 회복 자체가 표준 워크플로우의 일부.
+
+**Stage 2 평가 (orch_17968c264a15)**:
+- Score: **0.95** (프로젝트 최고치 — Phase 3.2의 0.92 갱신)
+- AC Compliance: YES · Goal Alignment: 0.95 · Drift: 0.03 · Uncertainty: 0.08
+- Evaluator가 직접 검증한 evidence 12건: 4 탭 모두 `<ToneSwitcher/>` 마운트, useDummy import 4 hook만, AsyncStorage import wrapper 1건만, console.* 0건, 4 stub 모두 deleted, (post-payment) deep-link 미등록, 3-state handling 4 탭 전부, ToneStateProvider DI 매개변수 노출, 슬라이스 타입 readonly + ReadonlyArray, post-payment 이벤트 set이 funnel과 disjoint, DataHook<T> 계약 보존, Phase 4 protected surface 10건 useDummy 미import.
+
+**Phase 3.1 vs 3.2 vs 3.3 비교**:
+| 측면 | Phase 3.1 (Fal.ai) | Phase 3.2 (diagnose) | Phase 3.3 (post-payment shell) |
+|------|-------|-------|-------|
+| 언어 | Python | Python | TypeScript/RN |
+| 산출물 | 1 module + tests | 4 modules + 7 tests + pyproject mods | 28 files (7 orch + 21 manual) + 51 changed total |
+| Net LOC | +1500 | +3761 | +4329 -333 |
+| 4중 정합 | pytest+mypy+ruff+black | pytest+mypy+ruff+black | vitest+tsc (eslint/prettier 미구성) |
+| MCP-disconnect 진단 | 8번째 — AC 12/12 (`__call__` 본체 누락) | 9번째 — AC 13/16 (PII 자기-참조 + unused type ignore) | **10번째 — AC 1/19** (classifier 일시 unavailability, 가장 이른 실패) |
+| 회복 수고 | `__call__` 본체 + import smoke | PEP 563 비교 + 자기-참조 PII fix + 1 unused type ignore | **~2500 LOC / 21 파일 수작업 완성** (전례 없는 규모) |
+| Stage 2 score | 0.92 | 0.92 | **0.95 (프로젝트 최고)** |
+
+**Out of scope (Seed 명시)**:
+- FastAPI 서버 (Phase 4)
+- 실제 진단/Fal.ai 호출 (Phase 4 — fixture-driven 화면 검증)
+- result_wording 톤 혼합 (Phase 3.4)
+- 인증 / 사용자 관리 (Phase 4)
+- AsyncStorage migration 정책 (key 변경 시 — 현 단위는 신규 키 정의만)
+- Tone Switcher UI 디자인 폴리시 (Phase 6.x 폴리시 단위)
+- 매거진 / 푸시 (Phase 5)
 
 ## 참고
 
