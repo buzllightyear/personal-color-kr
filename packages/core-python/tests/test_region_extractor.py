@@ -27,13 +27,14 @@ from personal_color.region_extractor import (
     extract_region_color,
 )
 
-
 # ---------------------------------------------------------------------------
 # Mock image helpers — keep test bodies declarative and small.
 # ---------------------------------------------------------------------------
 
 
-def _solid(width: int, height: int, rgb: tuple[int, int, int]) -> list[list[tuple[int, int, int]]]:
+def _solid(
+    width: int, height: int, rgb: tuple[int, int, int]
+) -> list[list[tuple[int, int, int]]]:
     """Build a width×height image filled with a single RGB color."""
     return [[rgb for _ in range(width)] for _ in range(height)]
 
@@ -105,7 +106,8 @@ def test_extract_subregion_samples_only_inside_box() -> None:
     assert extract_region_color(image, hair_box) == (30, 20, 15)
     # Sanity: the rest of the image is still the skin color.
     assert extract_region_color(
-        image, Region(x=4, y=0, width=4, height=4),
+        image,
+        Region(x=4, y=0, width=4, height=4),
     ) == (220, 180, 140)
 
 
@@ -192,9 +194,9 @@ def test_extract_face_region_colors_on_mock_face() -> None:
     # coordinates and known colors. This is the canonical Sub-AC 10.4
     # contract — given a mock image plus diagnosis region boxes, return
     # the 3-feature color triple that feeds 10.1 / 10.2 / 10.3.
-    skin_rgb = (220, 180, 140)      # warm light skin
-    eye_rgb = (60, 40, 30)          # dark brown iris
-    hair_rgb = (40, 25, 20)         # dark warm hair
+    skin_rgb = (220, 180, 140)  # warm light skin
+    eye_rgb = (60, 40, 30)  # dark brown iris
+    hair_rgb = (40, 25, 20)  # dark warm hair
 
     image = _solid(width=10, height=10, rgb=(0, 0, 0))
     skin_box = Region(x=2, y=2, width=4, height=2)
@@ -328,10 +330,10 @@ def test_extract_rejects_negative_region_origin(region: Region) -> None:
 @pytest.mark.parametrize(
     "region",
     [
-        Region(x=3, y=0, width=2, height=1),   # x + w = 5 > image width 4
-        Region(x=0, y=3, width=1, height=2),   # y + h = 5 > image height 4
-        Region(x=0, y=0, width=5, height=4),   # width too large
-        Region(x=0, y=0, width=4, height=5),   # height too large
+        Region(x=3, y=0, width=2, height=1),  # x + w = 5 > image width 4
+        Region(x=0, y=3, width=1, height=2),  # y + h = 5 > image height 4
+        Region(x=0, y=0, width=5, height=4),  # width too large
+        Region(x=0, y=0, width=4, height=5),  # height too large
     ],
 )
 def test_extract_rejects_region_outside_image(region: Region) -> None:

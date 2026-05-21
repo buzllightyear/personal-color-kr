@@ -35,7 +35,6 @@ import pytest
 from retention.activity_tracker import InMemoryActivityStore, track_user_activity
 from retention.retention_rate import calculate_retention_rate
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -56,7 +55,9 @@ def _join(store: InMemoryActivityStore, user_id: str, when: datetime) -> None:
 
 
 def _revisit(
-    store: InMemoryActivityStore, user_id: str, when: datetime,
+    store: InMemoryActivityStore,
+    user_id: str,
+    when: datetime,
 ) -> None:
     track_user_activity(user_id, when, store=store)
 
@@ -337,7 +338,8 @@ def test_cross_timezone_threshold_uses_utc_instant(
     ],
 )
 def test_accepts_various_cohort_container_types(
-    store: InMemoryActivityStore, container: object,
+    store: InMemoryActivityStore,
+    container: object,
 ) -> None:
     _join(store, "alice", JOIN_TS)
     _revisit(store, "alice", JOIN_TS + timedelta(days=31))
@@ -387,42 +389,51 @@ def test_repeated_calls_return_equal_results(
 @pytest.mark.parametrize(
     "bad",
     [
-        30.0,        # float — must be int (timedelta-days are integer for clarity)
-        "30",        # string
+        30.0,  # float — must be int (timedelta-days are integer for clarity)
+        "30",  # string
         None,
         [30],
         (30,),
     ],
 )
 def test_rejects_non_int_day_offset(
-    store: InMemoryActivityStore, bad: object,
+    store: InMemoryActivityStore,
+    bad: object,
 ) -> None:
     with pytest.raises(TypeError):
         calculate_retention_rate(
-            frozenset({"alice"}), day_offset=bad, store=store,  # type: ignore[arg-type]
+            frozenset({"alice"}),
+            day_offset=bad,
+            store=store,  # type: ignore[arg-type]
         )
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("bad", [True, False])
 def test_rejects_bool_day_offset(
-    store: InMemoryActivityStore, bad: bool,
+    store: InMemoryActivityStore,
+    bad: bool,
 ) -> None:
     """bool is an int subclass — True/False must not silently mean 1/0 days."""
     with pytest.raises(TypeError):
         calculate_retention_rate(
-            frozenset({"alice"}), day_offset=bad, store=store,  # type: ignore[arg-type]
+            frozenset({"alice"}),
+            day_offset=bad,
+            store=store,  # type: ignore[arg-type]
         )
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("bad", [-1, -30, -100])
 def test_rejects_negative_day_offset(
-    store: InMemoryActivityStore, bad: int,
+    store: InMemoryActivityStore,
+    bad: int,
 ) -> None:
     with pytest.raises(ValueError):
         calculate_retention_rate(
-            frozenset({"alice"}), day_offset=bad, store=store,
+            frozenset({"alice"}),
+            day_offset=bad,
+            store=store,
         )
 
 
@@ -447,7 +458,8 @@ def test_rejects_bytes_cohort(store: InMemoryActivityStore) -> None:
 @pytest.mark.unit
 @pytest.mark.parametrize("bad", [123, 1.5, None])
 def test_rejects_non_iterable_cohort(
-    store: InMemoryActivityStore, bad: object,
+    store: InMemoryActivityStore,
+    bad: object,
 ) -> None:
     with pytest.raises(TypeError):
         calculate_retention_rate(bad, store=store)  # type: ignore[arg-type]
@@ -459,14 +471,16 @@ def test_rejects_cohort_with_non_string_member(
 ) -> None:
     with pytest.raises(TypeError):
         calculate_retention_rate(
-            ["alice", 123, "bob"], store=store,  # type: ignore[list-item]
+            ["alice", 123, "bob"],
+            store=store,  # type: ignore[list-item]
         )
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("empty", ["", " ", "\t\n"])
 def test_rejects_cohort_with_empty_user_id(
-    store: InMemoryActivityStore, empty: str,
+    store: InMemoryActivityStore,
+    empty: str,
 ) -> None:
     with pytest.raises(ValueError):
         calculate_retention_rate({"alice", empty}, store=store)

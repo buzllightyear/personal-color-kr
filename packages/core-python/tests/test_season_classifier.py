@@ -33,7 +33,6 @@ from personal_color.season_classifier import (
 )
 from personal_color.tone_classifier import Tone
 
-
 # ---------------------------------------------------------------------------
 # 4 combinations — exhaustive truth table
 # ---------------------------------------------------------------------------

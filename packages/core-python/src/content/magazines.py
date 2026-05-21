@@ -53,7 +53,6 @@ from dataclasses import dataclass
 
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Article value object — one per `Season` inside an issue.
 # ---------------------------------------------------------------------------
@@ -88,8 +87,7 @@ class MagazineArticle:
     def __post_init__(self) -> None:
         if not isinstance(self.season, Season):
             raise TypeError(
-                f"season must be a Season enum, "
-                f"got {type(self.season).__name__}",
+                f"season must be a Season enum, " f"got {type(self.season).__name__}",
             )
         for field_name in ("title", "summary", "body"):
             value = getattr(self, field_name)
@@ -190,9 +188,7 @@ _MAGAZINES: tuple[Magazine, ...] = (
     Magazine(
         month="2026-05",
         issue_title="첫 빛, 첫 한 컷",
-        cover_headline=(
-            "다섯 번째 달, 당신의 첫 셀카를 다시 펼쳐봅니다."
-        ),
+        cover_headline=("다섯 번째 달, 당신의 첫 셀카를 다시 펼쳐봅니다."),
         editor_letter=(
             "안녕하세요, 에디터입니다.\n"
             "5월호는 '첫 빛'을 주제로 골랐어요. "
@@ -250,9 +246,7 @@ _MAGAZINES: tuple[Magazine, ...] = (
     Magazine(
         month="2026-06",
         issue_title="여름 문턱의 한 컷",
-        cover_headline=(
-            "더위가 오기 직전, 가장 잘 나오는 빛이 있어요."
-        ),
+        cover_headline=("더위가 오기 직전, 가장 잘 나오는 빛이 있어요."),
         editor_letter=(
             "6월호는 '여름 문턱'을 주제로 골랐어요.\n"
             "낮이 길어진 만큼 인공 조명에 기대지 않아도 되는 달, "
@@ -309,9 +303,7 @@ _MAGAZINES: tuple[Magazine, ...] = (
     Magazine(
         month="2026-07",
         issue_title="장마, 그래도 잘 나오는 한 컷",
-        cover_headline=(
-            "비 오는 날, 우리에게 어울리는 한 톤이 있어요."
-        ),
+        cover_headline=("비 오는 날, 우리에게 어울리는 한 톤이 있어요."),
         editor_letter=(
             "7월호는 '장마'를 주제로 골랐어요.\n"
             "흐린 빛이 일 주일 내내 이어지는 달, "
@@ -370,12 +362,9 @@ _MAGAZINES: tuple[Magazine, ...] = (
 # Defence-in-depth — the test suite still checks these invariants, but
 # raising at module import keeps a content-rewrite mistake from
 # reaching the magazine screen silently.
-assert len(_MAGAZINES) >= 1, (
-    "magazine catalogue must seed at least one issue"
-)
+assert len(_MAGAZINES) >= 1, "magazine catalogue must seed at least one issue"
 assert len({m.month for m in _MAGAZINES}) == len(_MAGAZINES), (
-    "magazine catalogue must have one entry per month "
-    "(no duplicate 'YYYY-MM' keys)"
+    "magazine catalogue must have one entry per month " "(no duplicate 'YYYY-MM' keys)"
 )
 
 

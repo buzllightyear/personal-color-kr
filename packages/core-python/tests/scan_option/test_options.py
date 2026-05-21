@@ -36,7 +36,6 @@ from scan_option.options import (
     validate_catalogue,
 )
 
-
 # ---------------------------------------------------------------------------
 # Catalogue cardinality & ordering
 # ---------------------------------------------------------------------------
@@ -124,9 +123,9 @@ def test_all_options_have_non_empty_korean_labels_with_hangul() -> None:
         assert opt.display_label_ko.strip()
         # Spot-check that at least one Hangul syllable is present —
         # mirrors the schema.ts Korean-text invariant.
-        assert any("가" <= ch <= "힣" for ch in opt.display_label_ko), (
-            f"{opt.id.value} label has no Hangul"
-        )
+        assert any(
+            "가" <= ch <= "힣" for ch in opt.display_label_ko
+        ), f"{opt.id.value} label has no Hangul"
 
 
 # ---------------------------------------------------------------------------

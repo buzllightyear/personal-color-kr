@@ -39,7 +39,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Final
 
-
 # ---------------------------------------------------------------------------
 # Enumerations — mirror the TS string literal unions in `types.ts`
 # ---------------------------------------------------------------------------

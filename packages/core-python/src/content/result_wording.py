@@ -63,7 +63,6 @@ from content.guides import (
 from personal_color.diagnosis_orchestrator import DiagnosisResult
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Result value object
 # ---------------------------------------------------------------------------
@@ -110,8 +109,7 @@ class ResultWording:
         # construction surfaces the bug at the call site, not in the UI.
         if not isinstance(self.season, Season):
             raise TypeError(
-                "season must be a Season enum, "
-                f"got {type(self.season).__name__}",
+                "season must be a Season enum, " f"got {type(self.season).__name__}",
             )
         for field_name in ("category_line", "combined_text"):
             value = getattr(self, field_name)
@@ -241,8 +239,7 @@ def _validate_guides(guides: tuple[Guide, ...], *, season: Season) -> None:
     for index, guide in enumerate(guides):
         if not isinstance(guide, Guide):
             raise TypeError(
-                f"guides[{index}] must be a Guide, "
-                f"got {type(guide).__name__}",
+                f"guides[{index}] must be a Guide, " f"got {type(guide).__name__}",
             )
         if guide.season is not season:
             raise ValueError(
@@ -254,8 +251,7 @@ def _validate_guides(guides: tuple[Guide, ...], *, season: Season) -> None:
 def _validate_curation(curation: FirstCuration, *, season: Season) -> None:
     if not isinstance(curation, FirstCuration):
         raise TypeError(
-            "curation must be a FirstCuration, "
-            f"got {type(curation).__name__}",
+            "curation must be a FirstCuration, " f"got {type(curation).__name__}",
         )
     if curation.season is not season:
         raise ValueError(
@@ -287,9 +283,7 @@ def _build_guide_lines(guides: tuple[Guide, ...]) -> tuple[str, ...]:
     the tests) can sanity-check coverage of all 4 categories without
     re-parsing the original Guide objects.
     """
-    return tuple(
-        f"{g.category.label} — {g.title}: {g.summary}" for g in guides
-    )
+    return tuple(f"{g.category.label} — {g.title}: {g.summary}" for g in guides)
 
 
 def _build_recommendation_lines(curation: FirstCuration) -> tuple[str, ...]:
@@ -317,10 +311,7 @@ def _format_recommendation_item(item: CurationItem) -> str:
     Korean display label of the CurationItemKind enum (메이크업 룩 /
     코디 픽 / 촬영 씬 / 편집 프리셋).
     """
-    return (
-        f"({item.tone.label}) "
-        f"{item.kind.label} · {item.title} — {item.blurb}"
-    )
+    return f"({item.tone.label}) " f"{item.kind.label} · {item.title} — {item.blurb}"
 
 
 def _build_combined_text(

@@ -20,7 +20,6 @@ import pytest
 
 from retention.calculator import calculate_30day_retention
 
-
 # ---------------------------------------------------------------------------
 # Required AC cases
 # ---------------------------------------------------------------------------

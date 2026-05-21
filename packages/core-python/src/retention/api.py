@@ -85,7 +85,6 @@ from typing import Final
 from .calculator import calculate_30day_retention
 from .threshold import evaluate_retention_threshold
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------

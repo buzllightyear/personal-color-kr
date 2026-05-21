@@ -102,7 +102,6 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------

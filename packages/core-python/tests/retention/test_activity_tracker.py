@@ -27,7 +27,6 @@ from retention.activity_tracker import (
     track_user_activity,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -51,7 +50,8 @@ def ts() -> datetime:
 
 @pytest.mark.unit
 def test_persists_user_id_and_timestamp_exactly(
-    store: InMemoryActivityStore, ts: datetime,
+    store: InMemoryActivityStore,
+    ts: datetime,
 ) -> None:
     track_user_activity("user-123", ts, store=store)
 
@@ -65,7 +65,8 @@ def test_persists_user_id_and_timestamp_exactly(
 
 @pytest.mark.unit
 def test_returns_persisted_event(
-    store: InMemoryActivityStore, ts: datetime,
+    store: InMemoryActivityStore,
+    ts: datetime,
 ) -> None:
     returned = track_user_activity("user-123", ts, store=store)
 
@@ -78,11 +79,14 @@ def test_returns_persisted_event(
 
 @pytest.mark.unit
 def test_event_is_immutable(
-    store: InMemoryActivityStore, ts: datetime,
+    store: InMemoryActivityStore,
+    ts: datetime,
 ) -> None:
     event = track_user_activity("user-123", ts, store=store)
     # Frozen dataclass — mutating user_id must raise.
-    with pytest.raises(Exception):  # FrozenInstanceError is a subclass of AttributeError
+    with pytest.raises(
+        Exception
+    ):  # FrozenInstanceError is a subclass of AttributeError
         event.user_id = "evil"  # type: ignore[misc]
 
 
@@ -110,7 +114,8 @@ def test_multiple_events_preserved_in_insertion_order(
 
 @pytest.mark.unit
 def test_list_events_for_user_returns_only_that_users_events(
-    store: InMemoryActivityStore, ts: datetime,
+    store: InMemoryActivityStore,
+    ts: datetime,
 ) -> None:
     track_user_activity("alice", ts, store=store)
     track_user_activity("bob", ts + timedelta(seconds=1), store=store)
@@ -160,7 +165,13 @@ def test_timezone_preserved_in_stored_event(
     assert event.timestamp == kst_ts
     # Stored timestamp converts to the *same* UTC instant.
     assert event.timestamp.astimezone(timezone.utc) == datetime(
-        2026, 5, 16, 12, 30, 45, tzinfo=timezone.utc,
+        2026,
+        5,
+        16,
+        12,
+        30,
+        45,
+        tzinfo=timezone.utc,
     )
 
 
@@ -175,7 +186,9 @@ def test_timezone_preserved_in_stored_event(
     [123, 12.5, None, b"user-bytes", ["user"], {"id": "x"}],
 )
 def test_rejects_non_string_user_id(
-    store: InMemoryActivityStore, ts: datetime, bad_user_id: object,
+    store: InMemoryActivityStore,
+    ts: datetime,
+    bad_user_id: object,
 ) -> None:
     with pytest.raises(TypeError):
         track_user_activity(bad_user_id, ts, store=store)  # type: ignore[arg-type]
@@ -185,7 +198,9 @@ def test_rejects_non_string_user_id(
 @pytest.mark.unit
 @pytest.mark.parametrize("empty_user_id", ["", " ", "\t\n", "   "])
 def test_rejects_empty_user_id(
-    store: InMemoryActivityStore, ts: datetime, empty_user_id: str,
+    store: InMemoryActivityStore,
+    ts: datetime,
+    empty_user_id: str,
 ) -> None:
     with pytest.raises(ValueError):
         track_user_activity(empty_user_id, ts, store=store)
@@ -201,15 +216,16 @@ def test_rejects_empty_user_id(
 @pytest.mark.parametrize(
     "bad_timestamp",
     [
-        1747405845,            # unix int — must use datetime
-        1747405845.0,          # unix float
-        "2026-05-16T12:30:45", # ISO string — must be parsed by caller
+        1747405845,  # unix int — must use datetime
+        1747405845.0,  # unix float
+        "2026-05-16T12:30:45",  # ISO string — must be parsed by caller
         None,
         (2026, 5, 16),
     ],
 )
 def test_rejects_non_datetime_timestamp(
-    store: InMemoryActivityStore, bad_timestamp: object,
+    store: InMemoryActivityStore,
+    bad_timestamp: object,
 ) -> None:
     with pytest.raises(TypeError):
         track_user_activity("user-1", bad_timestamp, store=store)  # type: ignore[arg-type]

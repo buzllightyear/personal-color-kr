@@ -48,7 +48,6 @@ from content.magazines import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Test fixtures — minimal-valid raw payloads we can mutate per test.
 # ---------------------------------------------------------------------------
@@ -98,9 +97,9 @@ def test_real_catalogue_passes_integrity_check() -> None:
         load_all_magazines(),
         load_all_first_curations(),
     )
-    assert errors == [], (
-        f"runtime magazine catalogue must be clean, got defects: {errors}"
-    )
+    assert (
+        errors == []
+    ), f"runtime magazine catalogue must be clean, got defects: {errors}"
 
 
 @pytest.mark.unit
@@ -177,9 +176,7 @@ def test_wrong_type_for_string_required_field_is_reported() -> None:
     magazine = _valid_dict_magazine()
     magazine["editor_letter"] = 42
     errors = validate_magazines([magazine])
-    assert any(
-        e.field == "editor_letter" and "string" in e.message for e in errors
-    )
+    assert any(e.field == "editor_letter" and "string" in e.message for e in errors)
 
 
 # ---------------------------------------------------------------------------
@@ -191,9 +188,7 @@ def test_wrong_type_for_string_required_field_is_reported() -> None:
 def test_month_non_string_is_reported() -> None:
     magazine = _valid_dict_magazine(month=202605)
     errors = validate_magazines([magazine])
-    assert any(
-        e.field == "month" and "YYYY-MM" in e.message for e in errors
-    )
+    assert any(e.field == "month" and "YYYY-MM" in e.message for e in errors)
 
 
 @pytest.mark.unit
@@ -204,9 +199,9 @@ def test_month_non_string_is_reported() -> None:
 def test_malformed_month_is_reported(bad_month: str) -> None:
     magazine = _valid_dict_magazine(month=bad_month)
     errors = validate_magazines([magazine])
-    assert any(e.field == "month" for e in errors), (
-        f"expected month defect for {bad_month!r}, got {errors}"
-    )
+    assert any(
+        e.field == "month" for e in errors
+    ), f"expected month defect for {bad_month!r}, got {errors}"
 
 
 @pytest.mark.unit
@@ -243,9 +238,9 @@ def test_all_missing_article_fields_are_reported_at_once() -> None:
     errors = validate_magazines([magazine])
     reported_fields = {e.field for e in errors}
     for field in REQUIRED_MAGAZINE_ARTICLE_FIELDS:
-        assert f"articles[0].{field}" in reported_fields, (
-            f"expected articles[0].{field} in {sorted(reported_fields)}"
-        )
+        assert (
+            f"articles[0].{field}" in reported_fields
+        ), f"expected articles[0].{field} in {sorted(reported_fields)}"
 
 
 @pytest.mark.unit
@@ -314,8 +309,7 @@ def test_unknown_article_curation_id_is_reported_when_curations_supplied() -> No
     magazine = _valid_dict_magazine(articles=(bad_article,))
     errors = validate_magazines([magazine], load_all_first_curations())
     assert any(
-        e.field == "articles[0].curation_id" and "unknown" in e.message
-        for e in errors
+        e.field == "articles[0].curation_id" and "unknown" in e.message for e in errors
     ), f"expected unknown-article-curation_id defect, got {errors}"
 
 
@@ -324,9 +318,7 @@ def test_known_article_curation_id_is_accepted() -> None:
     article = _valid_dict_article(curation_id="winter")
     magazine = _valid_dict_magazine(articles=(article,))
     errors = validate_magazines([magazine], load_all_first_curations())
-    assert [
-        e for e in errors if e.field == "articles[0].curation_id"
-    ] == []
+    assert [e for e in errors if e.field == "articles[0].curation_id"] == []
 
 
 @pytest.mark.unit
@@ -341,9 +333,7 @@ def test_curation_id_check_skipped_when_curations_omitted() -> None:
 def test_non_string_curation_id_is_reported() -> None:
     magazine = _valid_dict_magazine(curation_id=42)
     errors = validate_magazines([magazine], load_all_first_curations())
-    assert any(
-        e.field == "curation_id" and "string" in e.message for e in errors
-    )
+    assert any(e.field == "curation_id" and "string" in e.message for e in errors)
 
 
 @pytest.mark.unit
@@ -374,13 +364,11 @@ def test_absent_curation_id_is_accepted() -> None:
 def test_curation_id_resolves_for_every_seeded_season() -> None:
     """Every Season slug in the curation catalogue resolves."""
     curations = load_all_first_curations()
-    magazines = [
-        _valid_dict_magazine(curation_id=c.season.slug) for c in curations
-    ]
+    magazines = [_valid_dict_magazine(curation_id=c.season.slug) for c in curations]
     errors = validate_magazines(magazines, curations)
-    assert [e for e in errors if "curation_id" in e.field] == [], (
-        f"every seeded curation id must resolve, got: {errors}"
-    )
+    assert [
+        e for e in errors if "curation_id" in e.field
+    ] == [], f"every seeded curation id must resolve, got: {errors}"
 
 
 # ---------------------------------------------------------------------------
@@ -485,10 +473,12 @@ def test_string_curations_raises_typeerror() -> None:
 def test_validate_magazines_agrees_with_validate_curations_on_clean_set() -> None:
     """The two sibling validators must concur the prebuilt catalogue is clean."""
     curation_errors = validate_curations(
-        load_all_first_curations(), load_all_guides(),
+        load_all_first_curations(),
+        load_all_guides(),
     )
     magazine_errors = validate_magazines(
-        load_all_magazines(), load_all_first_curations(),
+        load_all_magazines(),
+        load_all_first_curations(),
     )
     assert curation_errors == []
     assert magazine_errors == []
@@ -502,7 +492,9 @@ def test_validate_magazines_agrees_with_validate_curations_on_clean_set() -> Non
 @pytest.mark.unit
 def test_validation_error_records_remain_immutable() -> None:
     err = ValidationError(
-        index=0, field="month", message="month: missing",
+        index=0,
+        field="month",
+        message="month: missing",
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         err.field = "issue_title"  # type: ignore[misc]

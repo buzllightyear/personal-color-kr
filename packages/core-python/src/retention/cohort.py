@@ -54,7 +54,6 @@ from datetime import datetime
 
 from .activity_tracker import ActivityEvent, ActivityStore
 
-
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------

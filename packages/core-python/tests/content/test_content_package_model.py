@@ -45,7 +45,6 @@ from personal_color.diagnosis_orchestrator import (
 from personal_color.region_extractor import RegionColors
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — one diagnosis + pipeline per season. Kept as plain helpers so
 # the parametrized tests below can re-construct fresh instances without

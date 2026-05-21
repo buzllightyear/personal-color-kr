@@ -57,7 +57,6 @@ from personal_color.diagnosis_orchestrator import DiagnosisResult
 from personal_color.region_extractor import RegionColors
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — one RegionColors archetype per season. The diagnosis
 # orchestrator's own test suite already pins these archetypes to the

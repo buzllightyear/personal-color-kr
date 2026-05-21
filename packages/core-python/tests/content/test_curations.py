@@ -39,7 +39,6 @@ from content.curations import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # All 4 colors present — the AC headline invariant
 # ---------------------------------------------------------------------------
@@ -82,9 +81,9 @@ def test_canonical_season_order() -> None:
 def test_every_package_has_non_empty_headline_and_signature() -> None:
     for curation in load_all_first_curations():
         assert curation.headline.strip(), f"empty headline on {curation.season}"
-        assert curation.editor_signature.strip(), (
-            f"empty editor_signature on {curation.season}"
-        )
+        assert (
+            curation.editor_signature.strip()
+        ), f"empty editor_signature on {curation.season}"
 
 
 @pytest.mark.unit
@@ -100,9 +99,9 @@ def test_every_package_headline_contains_hangul() -> None:
 @pytest.mark.unit
 def test_every_package_editor_signature_contains_hangul() -> None:
     for curation in load_all_first_curations():
-        assert _contains_hangul(curation.editor_signature), (
-            f"editor_signature without hangul on {curation.season.name}"
-        )
+        assert _contains_hangul(
+            curation.editor_signature
+        ), f"editor_signature without hangul on {curation.season.name}"
 
 
 @pytest.mark.unit
@@ -111,9 +110,7 @@ def test_every_package_has_at_least_one_mood_keyword() -> None:
         assert len(curation.mood_keywords) >= 1
         for keyword in curation.mood_keywords:
             assert isinstance(keyword, str)
-            assert keyword.strip(), (
-                f"empty mood keyword on {curation.season.name}"
-            )
+            assert keyword.strip(), f"empty mood keyword on {curation.season.name}"
 
 
 @pytest.mark.unit
@@ -134,9 +131,9 @@ def test_every_package_has_non_empty_cover_palette_with_valid_hex() -> None:
 @pytest.mark.unit
 def test_every_package_has_exactly_four_items() -> None:
     for curation in load_all_first_curations():
-        assert len(curation.items) == 4, (
-            f"{curation.season.name} package must have 4 items"
-        )
+        assert (
+            len(curation.items) == 4
+        ), f"{curation.season.name} package must have 4 items"
 
 
 @pytest.mark.unit
@@ -144,8 +141,7 @@ def test_every_package_spans_all_curation_item_kinds() -> None:
     for curation in load_all_first_curations():
         kinds = {item.kind for item in curation.items}
         assert kinds == set(CurationItemKind), (
-            f"{curation.season.name} missing kinds: "
-            f"{set(CurationItemKind) - kinds}"
+            f"{curation.season.name} missing kinds: " f"{set(CurationItemKind) - kinds}"
         )
 
 
@@ -155,8 +151,7 @@ def test_every_package_mixes_all_wording_tones() -> None:
     for curation in load_all_first_curations():
         tones = {item.tone for item in curation.items}
         assert tones == set(WordingTone), (
-            f"{curation.season.name} missing tones: "
-            f"{set(WordingTone) - tones}"
+            f"{curation.season.name} missing tones: " f"{set(WordingTone) - tones}"
         )
 
 
@@ -164,12 +159,12 @@ def test_every_package_mixes_all_wording_tones() -> None:
 def test_every_item_has_non_empty_title_and_blurb() -> None:
     for curation in load_all_first_curations():
         for item in curation.items:
-            assert item.title.strip(), (
-                f"empty title on {curation.season.name}/{item.kind.name}"
-            )
-            assert item.blurb.strip(), (
-                f"empty blurb on {curation.season.name}/{item.kind.name}"
-            )
+            assert (
+                item.title.strip()
+            ), f"empty title on {curation.season.name}/{item.kind.name}"
+            assert (
+                item.blurb.strip()
+            ), f"empty blurb on {curation.season.name}/{item.kind.name}"
 
 
 @pytest.mark.unit
@@ -216,7 +211,8 @@ def test_get_curation_by_color_accepts_season_enum(season: Season) -> None:
     ],
 )
 def test_get_curation_by_color_accepts_english_slug(
-    slug: str, expected: Season,
+    slug: str,
+    expected: Season,
 ) -> None:
     curation = get_curation_by_color(slug)
     assert curation.season is expected
@@ -232,7 +228,8 @@ def test_get_curation_by_color_accepts_english_slug(
     ],
 )
 def test_get_curation_by_color_slug_is_case_and_whitespace_tolerant(
-    slug: str, expected: Season,
+    slug: str,
+    expected: Season,
 ) -> None:
     assert get_curation_by_color(slug).season is expected
 
@@ -248,7 +245,8 @@ def test_get_curation_by_color_slug_is_case_and_whitespace_tolerant(
     ],
 )
 def test_get_curation_by_color_accepts_korean_label(
-    label: str, expected: Season,
+    label: str,
+    expected: Season,
 ) -> None:
     assert get_curation_by_color(label).season is expected
 

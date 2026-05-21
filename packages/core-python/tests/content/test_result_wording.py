@@ -52,7 +52,6 @@ from personal_color.diagnosis_orchestrator import DiagnosisResult
 from personal_color.season_classifier import Season
 from personal_color.tone_classifier import Tone
 
-
 # ---------------------------------------------------------------------------
 # Diagnosis fixture — minimal DiagnosisResult for tests that need one.
 # Built by hand (the orchestrator's full pipeline is exercised in its own
@@ -64,9 +63,7 @@ def _diagnosis(season: Season, confidence: float = 0.84) -> DiagnosisResult:
     """Construct a minimal but contract-valid DiagnosisResult."""
     tone = Tone.WARM if season in (Season.SPRING, Season.AUTUMN) else Tone.COOL
     contrast = (
-        Contrast.HIGH
-        if season in (Season.SPRING, Season.WINTER)
-        else Contrast.LOW
+        Contrast.HIGH if season in (Season.SPRING, Season.WINTER) else Contrast.LOW
     )
     return DiagnosisResult(
         season=season,
@@ -193,13 +190,10 @@ def test_recommendation_lines_mix_all_four_tones(season: Season) -> None:
     rendered = "\n".join(result.recommendation_lines)
     for tone in WordingTone:
         assert f"({tone.label})" in rendered, (
-            f"missing tone label {tone.label!r} in recommendation for "
-            f"{season.name}"
+            f"missing tone label {tone.label!r} in recommendation for " f"{season.name}"
         )
     # And exposed as a tone histogram — exactly one of each.
-    assert sorted(t.slug for t in result.tones) == sorted(
-        t.slug for t in WordingTone
-    )
+    assert sorted(t.slug for t in result.tones) == sorted(t.slug for t in WordingTone)
 
 
 @pytest.mark.unit
@@ -249,13 +243,14 @@ def test_combined_text_contains_every_tone_label(season: Season) -> None:
     result = build_result_wording(season)
     for tone in WordingTone:
         assert tone.label in result.combined_text, (
-            f"tone {tone.label!r} missing from combined_text for "
-            f"{season.name}"
+            f"tone {tone.label!r} missing from combined_text for " f"{season.name}"
         )
 
 
 @pytest.mark.unit
-def test_combined_text_section_order_is_category_then_guide_then_recommendation() -> None:
+def test_combined_text_section_order_is_category_then_guide_then_recommendation() -> (
+    None
+):
     """The three sections must appear in a stable order in the rendered text."""
     result = build_result_wording(Season.SPRING)
     text = result.combined_text

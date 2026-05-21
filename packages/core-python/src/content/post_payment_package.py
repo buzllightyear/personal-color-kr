@@ -52,7 +52,6 @@ from image_edit.pipeline import PipelineResult
 from personal_color.diagnosis_orchestrator import DiagnosisResult
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # ContentPackage value object
 # ---------------------------------------------------------------------------
@@ -111,8 +110,7 @@ class ContentPackage:
         for index, guide in enumerate(self.guides):
             if not isinstance(guide, Guide):
                 raise TypeError(
-                    f"guides[{index}] must be a Guide, "
-                    f"got {type(guide).__name__}",
+                    f"guides[{index}] must be a Guide, " f"got {type(guide).__name__}",
                 )
         if not isinstance(self.curations, FirstCuration):
             raise TypeError(

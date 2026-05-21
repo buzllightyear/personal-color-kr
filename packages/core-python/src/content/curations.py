@@ -54,7 +54,6 @@ from enum import Enum
 
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Kind enum — exactly 4 members. Mirrors `GuideCategory`'s slug+label
 # pattern in `guides.py`.
@@ -94,10 +93,10 @@ class WordingTone(Enum):
     "every tone present exactly once" as a single invariant.
     """
 
-    AFFECTIONATE = ("affectionate", "다정한")   # friendly editor voice
-    EDITORIAL = ("editorial", "에디토리얼")     # magazine-formal
-    PLAYFUL = ("playful", "유쾌한")             # light, witty
-    POETIC = ("poetic", "시적인")               # mood-first, atmospheric
+    AFFECTIONATE = ("affectionate", "다정한")  # friendly editor voice
+    EDITORIAL = ("editorial", "에디토리얼")  # magazine-formal
+    PLAYFUL = ("playful", "유쾌한")  # light, witty
+    POETIC = ("poetic", "시적인")  # mood-first, atmospheric
 
     def __init__(self, slug: str, label: str) -> None:
         self.slug = slug
@@ -135,8 +134,7 @@ class CurationItem:
             )
         if not isinstance(self.tone, WordingTone):
             raise TypeError(
-                f"tone must be a WordingTone enum, "
-                f"got {type(self.tone).__name__}",
+                f"tone must be a WordingTone enum, " f"got {type(self.tone).__name__}",
             )
         for field_name in ("title", "blurb"):
             value = getattr(self, field_name)
@@ -180,8 +178,7 @@ class FirstCuration:
     def __post_init__(self) -> None:
         if not isinstance(self.season, Season):
             raise TypeError(
-                f"season must be a Season enum, "
-                f"got {type(self.season).__name__}",
+                f"season must be a Season enum, " f"got {type(self.season).__name__}",
             )
         for field_name in ("headline", "editor_signature"):
             value = getattr(self, field_name)
@@ -208,8 +205,7 @@ class FirstCuration:
         for hex_code in self.cover_palette:
             if not _is_valid_hex_color(hex_code):
                 raise ValueError(
-                    f"cover_palette entry {hex_code!r} "
-                    "is not a valid #RRGGBB color",
+                    f"cover_palette entry {hex_code!r} " "is not a valid #RRGGBB color",
                 )
 
         if not isinstance(self.items, tuple):
@@ -460,9 +456,9 @@ assert len(_FIRST_CURATIONS) == 4, (
     "first-curation catalogue must have exactly 4 packages "
     "(one per Korean personal-color season)"
 )
-assert {c.season for c in _FIRST_CURATIONS} == set(Season), (
-    "first-curation catalogue must cover all 4 Seasons exactly once"
-)
+assert {c.season for c in _FIRST_CURATIONS} == set(
+    Season
+), "first-curation catalogue must cover all 4 Seasons exactly once"
 
 
 # ---------------------------------------------------------------------------

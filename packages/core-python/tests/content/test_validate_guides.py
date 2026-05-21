@@ -33,7 +33,6 @@ from content.integrity import (
 )
 from personal_color.season_classifier import Season
 
-
 # ---------------------------------------------------------------------------
 # Happy path — the live catalogue must pass
 # ---------------------------------------------------------------------------
@@ -43,9 +42,7 @@ from personal_color.season_classifier import Season
 def test_real_catalogue_passes_integrity_check() -> None:
     """The 16-guide catalogue is the canonical clean reference set."""
     errors = validate_guides(load_all_guides())
-    assert errors == [], (
-        f"runtime catalogue must be clean, got defects: {errors}"
-    )
+    assert errors == [], f"runtime catalogue must be clean, got defects: {errors}"
 
 
 @pytest.mark.unit

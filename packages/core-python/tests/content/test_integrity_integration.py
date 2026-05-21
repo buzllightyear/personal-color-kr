@@ -59,7 +59,6 @@ from content.integrity import (
 from content.magazines import load_all_magazines
 from personal_color.season_classifier import Season
 
-
 # Documented catalogue sizes — the harness uses these as the "expected"
 # numbers when gating a release. If a content rewrite legitimately
 # changes these, the change must be reflected here so the gate stays
@@ -276,9 +275,7 @@ def test_curation_guide_id_unresolved_is_caught_end_to_end() -> None:
     # that calling the validators individually cannot produce.
     assert report.guide_errors == ()
     assert report.magazine_errors == ()
-    assert any(
-        err.field.endswith(".guide_id") for err in report.curation_errors
-    ), (
+    assert any(err.field.endswith(".guide_id") for err in report.curation_errors), (
         "broken curation guide_id must be surfaced as a curation error, "
         f"got {report.curation_errors}"
     )
@@ -302,8 +299,7 @@ def test_curation_guide_id_resolves_against_loaded_guides() -> None:
 
     # No curation defect — and specifically no guide_id defect.
     assert all(
-        not err.field.endswith(".guide_id")
-        for err in report.curation_errors
+        not err.field.endswith(".guide_id") for err in report.curation_errors
     ), f"valid guide_id must not be flagged, got {report.curation_errors}"
 
 
@@ -361,9 +357,7 @@ def test_magazine_curation_id_unresolved_is_caught_end_to_end() -> None:
     # Guide / curation slices stay clean.
     assert report.guide_errors == ()
     assert report.curation_errors == ()
-    assert any(
-        err.field == "curation_id" for err in report.magazine_errors
-    ), (
+    assert any(err.field == "curation_id" for err in report.magazine_errors), (
         "broken magazine curation_id must be surfaced as a magazine error, "
         f"got {report.magazine_errors}"
     )

@@ -71,7 +71,6 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Final, Iterator, TypeVar
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -205,9 +204,7 @@ class LatencyTracker:
         if math.isnan(value):
             raise ValueError("latency_seconds must not be NaN")
         if value < 0:
-            raise ValueError(
-                f"latency_seconds must be >= 0, got {value!r}"
-            )
+            raise ValueError(f"latency_seconds must be >= 0, got {value!r}")
         with self._lock:
             self._samples.append(value)
 
@@ -300,9 +297,7 @@ def track_latency(
             fails at import, not on the first request.
     """
     if not isinstance(tracker, LatencyTracker):
-        raise TypeError(
-            f"tracker must be LatencyTracker, got {type(tracker).__name__}"
-        )
+        raise TypeError(f"tracker must be LatencyTracker, got {type(tracker).__name__}")
     if not callable(clock):
         raise TypeError("clock must be callable")
 
@@ -342,9 +337,7 @@ def measure_latency(
     exit whether the block raised or not.
     """
     if not isinstance(tracker, LatencyTracker):
-        raise TypeError(
-            f"tracker must be LatencyTracker, got {type(tracker).__name__}"
-        )
+        raise TypeError(f"tracker must be LatencyTracker, got {type(tracker).__name__}")
     if not callable(clock):
         raise TypeError("clock must be callable")
 
@@ -383,9 +376,7 @@ def _nearest_rank_percentile(sorted_samples: list[float], percentile: float) -> 
         # divide by zero or index into an empty list.
         return 0.0
     if not 0.0 <= percentile <= 100.0:
-        raise ValueError(
-            f"percentile must be in [0, 100], got {percentile!r}"
-        )
+        raise ValueError(f"percentile must be in [0, 100], got {percentile!r}")
     n = len(sorted_samples)
     # `max(1, ...)` so percentile = 0 still resolves to the smallest
     # element rather than rank 0 (which would be index -1).

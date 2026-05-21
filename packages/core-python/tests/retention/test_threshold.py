@@ -38,7 +38,6 @@ import pytest
 
 from retention.threshold import evaluate_retention_threshold
 
-
 # ---------------------------------------------------------------------------
 # Boundary value tests — rate vs threshold
 # ---------------------------------------------------------------------------
