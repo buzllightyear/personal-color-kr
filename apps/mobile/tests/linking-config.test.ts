@@ -212,3 +212,51 @@ describe('LINKING_CONFIG.screens["magazine/[month]"]', () => {
     expect(FUNNEL_KEBAB_SLUGS_ORDERED).not.toContain('magazine');
   });
 });
+
+// ---------------------------------------------------------------------------
+// (post-payment) absence — Phase 3.3 Sub-AC 1.1 / Exit Condition
+// `deep_link_invariant`.
+//
+// The post-payment surface (diagnosis-reveal + the 4-tab content group at
+// `app/(post-payment)/(tabs)/`) is gated behind a completed payment + a
+// produced diagnosis. Allowing an external deep-link entry into any
+// `(post-payment)` route would bypass the funnel state machine, the
+// Superwall paywall trigger, and the StoreKit purchase verification — which
+// is exactly the security invariant the Seed locks down with
+// `routing_correctness` + `security_compliance`.
+//
+// Compile-time defence already lives in `FunnelLinkingConfig`'s `screens`
+// interface (only `'(funnel)'` and `'magazine/[month]'` are typed). This
+// runtime invariant is a defence-in-depth assertion against a future
+// contributor widening the interface or sneaking a `(post-payment)` entry
+// into the screens block. A regression here surfaces the leak in CI before
+// it ships rather than at deep-link resolution time on production builds.
+// ---------------------------------------------------------------------------
+
+describe('LINKING_CONFIG.screens["(post-payment)"] — security invariant', () => {
+  it('does NOT contain a `(post-payment)` entry under screens', () => {
+    // The post-payment group must never be addressable via an external
+    // deep link. The absence of the key IS the contract.
+    expect(LINKING_CONFIG.screens).not.toHaveProperty('(post-payment)');
+  });
+
+  it('does NOT contain any post-payment screen names (diagnosis-reveal, tabs)', () => {
+    // Defence against an accidentally-hoisted child of the (post-payment)
+    // group ending up flat in the top-level screens block. None of these
+    // names should appear anywhere in the screens map.
+    const screensKeys = Object.keys(LINKING_CONFIG.screens);
+    expect(screensKeys).not.toContain('(post-payment)');
+    expect(screensKeys).not.toContain('diagnosis-reveal');
+    expect(screensKeys).not.toContain('(tabs)');
+    expect(screensKeys).not.toContain('post-payment');
+  });
+
+  it('exactly enumerates the allowed top-level screen keys ((funnel) + magazine/[month])', () => {
+    // Strict allowlist: the only two top-level keys are `(funnel)` and
+    // `magazine/[month]`. Any future addition has to deliberately update
+    // this assertion — making the security-relevant surface change a
+    // pull-request-level conversation rather than a silent commit.
+    const screensKeys = Object.keys(LINKING_CONFIG.screens).sort();
+    expect(screensKeys).toEqual(['(funnel)', 'magazine/[month]']);
+  });
+});
