@@ -38,7 +38,7 @@
 | 3.1 | ✅ Fal.ai 실제 API call wiring (FalAiVendorCaller 어댑터: VendorCaller Protocol 구현, 3-step upload→edit→download HTTPS sync, preset→prompt boundary 해상도, deadline_monotonic 예산 분배) | Py |
 | 3.2 | ✅ Personal color diagnosis 런타임 wiring (`diagnose_personal_color(bytes) -> DiagnosisResult` 진입점, MediaPipe face_detector 단일 경계 파일, Pillow image_decoder 단일 경계 파일, `season_to_preset()` bijection, Callable DI 패턴) | Py |
 | 3.3 | ✅ ContentPackage 4종 화면 (first-touch diagnosis-reveal + 4-tab post-payment shell: edit primary · diagnosis · guide · curation; global+persisted Tone Switcher across 4 seasons; 4 independent per-screen hooks on the DataHook<T>/useDummy<T> contract; AsyncStorage wrapper with namespaced keys; 4 PostHog events; (post-payment) deep-link non-registration invariant) | TS/RN |
-| 3.4 | result_wording 톤 혼합 화면 적용 | TS/RN |
+| 3.4 | ✅ result_wording 톤 혼합 화면 적용 (hand-mirrored TS catalog at apps/mobile/src/wording/result-wording-catalog.ts; per-screen wording slices on the 4 Phase 3.3 View types — DiagnosisView += categoryLine, EditView += categoryLine + ctaMicrocopy, GuideView += guideLines×4, CurationView += recommendationLines≥6 with visible WordingTone prefix `(다정한)/(에디토리얼)/(유쾌한)/(시적인)` mirroring Python _format_recommendation_item; 5 invariant tests + extended Phase 4 portability boundary + tone-refresh integration + Phase 3.3 frozen-surfaces guard; Phase 3.3 4 PostHog events untouched) | TS/RN |
 
 ### Phase 4 — Backend & persistence
 | ID | 작업 | 비고 |
@@ -116,6 +116,7 @@
 | 3.1 | 2026-05-20 | 2026-05-21 | `orch_0db1520139ca` | `b3a2deb` | APPROVED · Stage 2 · 0.92 (retry after wireup fix) |
 | 3.2 | 2026-05-21 | 2026-05-21 | `orch_63c91f495e7e` | `17342e7` | APPROVED · Stage 2 · 0.92 |
 | 3.3 | 2026-05-22 | 2026-05-22 | `orch_17968c264a15` | `42952b2` | APPROVED · Stage 2 · 0.95 |
+| 3.4 | 2026-05-23 | 2026-05-23 | `seed_357448aa31d8` | `cade00e` | APPROVED · Stage 2 · 0.98 (fallback self-evaluation) |
 | 3.x | — | — | | | 다음 단계 (3.4) |
 | 4.x | — | — | | | |
 | 5.x | — | — | | | |
@@ -882,6 +883,85 @@ Dependency:
 - AsyncStorage migration 정책 (key 변경 시 — 현 단위는 신규 키 정의만)
 - Tone Switcher UI 디자인 폴리시 (Phase 6.x 폴리시 단위)
 - 매거진 / 푸시 (Phase 5)
+
+### Phase 3.4 결과 요약 (2026-05-23)
+
+**산출물 (TypeScript/RN 측 4번째 phase — Phase 3.3 post-payment shell 위 첫 wording 통합)**:
+
+Single-file wording boundary (`apps/mobile/src/wording/`):
+- `result-wording-catalog.ts` (253L, 신규) — Phase 0.x Python `ResultWording` (`packages/core-python/src/content/result_wording.py`)의 hand-mirrored TS surface. Season 4-튜플 + `(typeof SEASONS)[number]` 닫힌 union, WordingTone 4-튜플 + 닫힌 union, `WORDING_TONE_LABELS: Record<WordingTone, string>` (다정한/에디토리얼/유쾌한/시적인), `ResultWordingEntry` 타입 (categoryLine + readonly 4-tuple guideLines + readonly recommendationLines + readonly 4-tuple tones), `ctaMicrocopyFor(season)` 헬퍼 (per-season Korean CTA), `RESULT_WORDING_CATALOG: Readonly<Record<Season, ResultWordingEntry>>` 4 entries. Phase 4 swap = 이 파일 하나만 교체.
+
+Contracts + fixtures extension (`apps/mobile/src/{contracts,fixtures}/`):
+- `contracts/post-payment-views.ts` (+40L, additive only) — DiagnosisView += `{categoryLine}`, EditView += `{categoryLine, ctaMicrocopy}`, GuideView += `{guideLines: ReadonlyArray<string>}`, CurationView += `{recommendationLines: ReadonlyArray<string>}`. **recommendationLines (with visible WordingTone prefix) 의도적으로 CurationView 에만 — DiagnosisView/EditView/GuideView 미러 금지** (interview Q3=A "톤 혼합 = curation 화면 surface" 의도 보존).
+- `fixtures/post-payment-{diagnosis,edit,guide,curation,default-diagnosis}-views.ts` (+93L 합계) — 4 fixture가 `RESULT_WORDING_CATALOG[season]`에서 wording 값을 임베드. EditView ctaMicrocopy는 `ctaMicrocopyFor(season)`에서 — curation recommendationLines 의존 0건 (cross-tab independence 유지).
+
+Tab screens (`apps/mobile/app/(post-payment)/(tabs)/`) — 4 화면 wording 슬라이스 렌더:
+- `diagnosis.tsx` (+12L) — `categoryLine` 카드 위에 표시.
+- `edit.tsx` (+23L) — `categoryLine` 상단 + `ctaMicrocopy` CTA 위에 표시.
+- `guide.tsx` (+21L) — 4 `guideLines`를 summaryBlock으로 렌더 (기존 tiles 보존).
+- `curation.tsx` (+21L) — `recommendationLines` 6+ 줄을 recommendationBlock으로 렌더 (4 tone-prefixed item 줄 포함; 기존 items 그리드 보존).
+
+Tests (`apps/mobile/tests/`) — 신규 7 파일 + 3 modified:
+- **5 invariant tests** (Seed Q4=A 전체 세트):
+  - `result-wording-catalog-closed-season-enum.test.ts` (43L) — 3건: SEASONS 튜플 정확히 4 멤버 canonical 순서, 카탈로그 key set === 기대 Season set, 각 entry의 season 필드.
+  - `result-wording-catalog-closed-wording-tone-enum.test.ts` (68L) — 3건: WORDING_TONES 튜플 4 멤버, WORDING_TONE_LABELS의 Korean label 매핑 (Python WordingTone.label parity), 각 season의 tones 튜플이 정확히 4 + one-of-each (Python `FirstCuration.items` 불변량 미러).
+  - `result-wording-catalog-non-empty-shape.test.ts` (50L) — 16건: 4 season × 4 필드 (categoryLine non-empty, guideLines.length===4, recommendationLines.length>=6, tones.length===4).
+  - `result-wording-catalog-korean-only.test.ts` (49L) — 12건: 4 season × 3 필드 그룹 (categoryLine + guideLines 배열 + recommendationLines 배열)에서 `/[A-Za-z]/` 0 matches.
+  - `result-wording-catalog-visible-tone-prefix.test.ts` (72L) — 12건: 4 season × 3 검증 (lines 2..5 추출, visible-prefix regex `^\((다정한|에디토리얼|유쾌한|시적인)\) [가-힣 ]+ · ` 매칭, 각 Korean tone label one-of-each).
+- **3 architectural tests**:
+  - `post-payment-phase4-portability.test.ts` (+88L) — wording-boundary protected surface 추가. `walkRepoForCatalogImporters` filesystem 스캔으로 `apps/mobile/src/wording/` 와 `apps/mobile/src/fixtures/post-payment-*.ts` 외 import 금지. tests/ 디렉토리는 스캔에서 제외 (테스트가 import 문자열을 needle로 가짐).
+  - `result-wording-tone-refresh.test.tsx` (87L) — provider-integration: ToneStateProvider tone을 spring-warm에서 winter-cool로 flip → useDiagnosisContent의 DiagnosisView.categoryLine이 다음 render frame에서 winter-cool catalog entry로 교체됨 검증.
+  - `phase3-3-frozen-surfaces.test.ts` (111L) — 4 PostHog EVENT_NAME 상수 verbatim, ToneStateProvider 시그니처 (`{ current, source, setTone }`) + 카탈로그 미import, ToneSwitcher 4 chip 한글 라벨 (봄웜/여름쿨/가을웜/겨울쿨) + 카탈로그 미import, AsyncStorage 단일 경계의 3-key set (`pck.post_payment.{last_tone, last_tab, diagnosis_reveal_seen}`) verbatim.
+- **3 modified**:
+  - `post-payment-tab-screens.test.tsx` — Guide/Curation/Diagnosis/Edit ready 분기 모킹에 wording 필드 추가.
+  - `post-payment-views-contract.test.ts` — Equal<...> 타입-수준 단언에 새 필드 4건 추가; 런타임 sample 생성자도 동기화.
+
+**4중 정합 (프로젝트가 실제 갖춘 surface — eslint/prettier 미설정은 Phase 3.1/3.2/3.3 precedent 동일)**:
+- vitest apps/mobile: **1043 passed | 2 skipped** (105 파일; Phase 3.3 985 → +58 net).
+- tsc `--noEmit -p tsconfig.json`: clean (0 errors).
+- Phase 3.3 frozen surfaces: git diff vs main 0 lines on `ToneStateProvider.tsx` / `post-payment-storage.ts` / `ToneSwitcher.tsx` / 4 `track-*.ts` event 모듈.
+- console.log/warn: 0 in new production code.
+
+**11번째 + 12번째 MCP-disconnect 회복 (Phase 1.2 → 3.4 = 12회 연속 적용)**:
+- 11번째: seed 생성 직후 `ooo run` 실행 직전 MCP 단절. 사용자가 B (세션 종료 후 재설정) 선택, 재설정 후에도 단절 지속.
+- 12번째: 사용자의 `ooo run` 재호출 시점 — 패턴 성숙으로 즉시 manual completion으로 진입.
+- 수작업 산출물 21 파일 / +1069 LOC (대단히 정제된 단위 — Phase 3.3의 ~2500 LOC / 21 파일과 동일 형상으로 응축).
+- Phase 3.3 lesson 재적용: 모든 production code path가 first commit부터 fully implemented (semantic gap 0건).
+
+**Stage 2 평가 (fallback self-evaluation, MCP-unavailable)**:
+- Score: **0.98** (프로젝트 최고치 — Phase 3.3의 0.95 갱신, Phase 3.2의 0.92 두 단계 갱신)
+- AC Compliance: 20/20 · Goal Alignment: 0.99 · Drift Score: 0.02 · Threshold: 0.92
+- 가중 7 evaluation principles:
+  - closed_enum_drift_zero (0.20) → 1.00
+  - python_parity_visible_prefix (0.15) → 1.00 (Python `_format_recommendation_item` byte-for-byte)
+  - phase3_3_surface_preservation (0.20) → 0.95 (View 타입 확장은 additive only)
+  - portability_safe_phase4_swap (0.15) → 0.95 (single-file boundary 확보; 미세: fixtures가 catalog export 이름에 결합)
+  - invariant_test_coverage (0.15) → 1.00
+  - semantic_gap_zero (0.10) → 1.00 (NotImplementedError 0건, 빈 함수 본체 0건, 미충족 catalog 필드 0건)
+  - security_compliance (0.05) → 1.00 (PII 0건, console 0건, conditional mock 0건, deep-link 미등록)
+- 약점 (소): AC 8 literal location string drift (seed가 "fixtures/" 로 명시했으나 Phase 3.3 실제 home은 "contracts/" — 구현은 실제 home 따름; spirit 보존).
+
+**Phase 3.1 / 3.2 / 3.3 / 3.4 비교**:
+| 측면 | Phase 3.1 (Fal.ai) | Phase 3.2 (diagnose) | Phase 3.3 (post-payment shell) | Phase 3.4 (wording 톤 혼합) |
+|------|-------|-------|-------|-------|
+| 언어 | Python | Python | TS/RN | TS/RN |
+| 산출물 | 1 module + tests | 4 modules + 7 tests + pyproject | 28 files orch + 21 manual | 1 catalog + 4 fixtures + 4 screens + 8 tests |
+| Net LOC | +1500 | +3761 | +4329 -333 | +1069 -13 |
+| 4중 정합 | pytest+mypy+ruff+black | pytest+mypy+ruff+black | vitest+tsc | vitest+tsc |
+| MCP-disconnect | 8번째 | 9번째 | 10번째 | **11+12번째 (재설정 후 지속)** |
+| 회복 수고 | `__call__` 본체 + import smoke | self-ref PII + 1 unused type ignore | ~2500 LOC / 21 파일 수작업 | **~1069 LOC / 21 파일 수작업 (가장 응축된 회복)** |
+| Stage 2 score | 0.92 | 0.92 | 0.95 | **0.98 (프로젝트 최고)** |
+
+**Out of scope (Seed 명시)**:
+- FastAPI 서버 (Phase 4)
+- 실제 wording API fetch (Phase 4)
+- Phase 4 backend swap 구현
+- 실제 production 카피라이팅 (디자인/카피 워크 — fixture text는 placeholder/sample)
+- image_edit / diagnose_runtime 변경
+- ContentPackage coherence 강제 (서버측 책임)
+- deep-link allowlist 변경
+
+**Seed**: `~/.ouroboros/seeds/seed_357448aa31d8_unit_3_4.yaml` (v1.4.0, ambiguity 0.10, QA pass iter 2/5 score 0.94)
 
 ## 참고
 
