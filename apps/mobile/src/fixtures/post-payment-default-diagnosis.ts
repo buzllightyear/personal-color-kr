@@ -23,6 +23,7 @@
  *   screenshots and storybook captures reproducible.
  */
 import type { DiagnosisView } from '../contracts/post-payment-views';
+import { RESULT_WORDING_CATALOG } from '../wording/result-wording-catalog';
 
 /**
  * Default diagnosis used on first-install. Used both:
@@ -30,6 +31,9 @@ import type { DiagnosisView } from '../contracts/post-payment-views';
  *   - as the default tone source for the global ToneState atom (the
  *     `current` field is seeded from `defaultDiagnosis.season` on first
  *     install).
+ *
+ * Phase 3.4 — gains `categoryLine` from the wording catalog so the
+ * first-install reveal carries the 분류 verdict line.
  */
 export const DEFAULT_DIAGNOSIS: DiagnosisView = {
   season: 'summer-cool',
@@ -37,4 +41,5 @@ export const DEFAULT_DIAGNOSIS: DiagnosisView = {
   confidence: 0.85,
   toneLabel: '쿨톤',
   contrastLabel: '저대비',
+  categoryLine: RESULT_WORDING_CATALOG['summer-cool'].categoryLine,
 };

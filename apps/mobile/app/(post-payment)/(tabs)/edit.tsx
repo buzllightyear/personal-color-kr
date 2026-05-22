@@ -40,6 +40,12 @@ export default function EditTab(): React.ReactElement {
   return (
     <View style={styles.container} testID="post-payment-tab-edit">
       <ToneSwitcher />
+      <Text
+        style={styles.categoryLine}
+        testID="post-payment-tab-edit-category-line"
+      >
+        {data.categoryLine}
+      </Text>
       <Image
         source={{ uri: data.previewImageUrl }}
         style={styles.preview}
@@ -47,6 +53,12 @@ export default function EditTab(): React.ReactElement {
       />
       <Text style={styles.caption}>{data.caption}</Text>
       <Text style={styles.vendor}>by {data.vendorName}</Text>
+      <Text
+        style={styles.ctaMicrocopy}
+        testID="post-payment-tab-edit-cta-microcopy"
+      >
+        {data.ctaMicrocopy}
+      </Text>
       <Pressable
         style={styles.cta}
         onPress={() =>
@@ -66,6 +78,17 @@ export default function EditTab(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  categoryLine: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  ctaMicrocopy: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#0058a3',
+  },
   preview: {
     width: '100%',
     aspectRatio: 3 / 4,

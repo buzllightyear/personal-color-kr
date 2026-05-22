@@ -37,6 +37,20 @@ export default function CurationTab(): React.ReactElement {
     <View style={styles.container} testID="post-payment-tab-curation">
       <ToneSwitcher />
       <ScrollView contentContainerStyle={styles.list}>
+        <View
+          style={styles.recommendationBlock}
+          testID="post-payment-tab-curation-recommendation-lines"
+        >
+          {data.recommendationLines.map((line, index) => (
+            <Text
+              key={`recommendation-line-${index}`}
+              style={styles.recommendationLine}
+              testID={`post-payment-tab-curation-recommendation-line-${index}`}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
         {data.items.map((item) => (
           <Pressable
             key={item.id}
@@ -63,6 +77,13 @@ export default function CurationTab(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   list: { padding: 16, gap: 12 },
+  recommendationBlock: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#fafafa',
+    gap: 6,
+  },
+  recommendationLine: { fontSize: 13, color: '#333' },
   item: {
     padding: 16,
     borderRadius: 12,
