@@ -37,6 +37,20 @@ export default function GuideTab(): React.ReactElement {
     <View style={styles.container} testID="post-payment-tab-guide">
       <ToneSwitcher />
       <ScrollView contentContainerStyle={styles.list}>
+        <View
+          style={styles.summaryBlock}
+          testID="post-payment-tab-guide-summary-lines"
+        >
+          {data.guideLines.map((line, index) => (
+            <Text
+              key={`guide-line-${index}`}
+              style={styles.summaryLine}
+              testID={`post-payment-tab-guide-summary-line-${index}`}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
         {data.tiles.map((tile) => (
           <Pressable
             key={tile.id}
@@ -62,6 +76,13 @@ export default function GuideTab(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   list: { padding: 16, gap: 12 },
+  summaryBlock: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#fafafa',
+    gap: 8,
+  },
+  summaryLine: { fontSize: 13, color: '#333' },
   tile: {
     padding: 16,
     borderRadius: 12,

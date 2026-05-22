@@ -36,6 +36,12 @@ export default function DiagnosisTab(): React.ReactElement {
   return (
     <View style={styles.container} testID="post-payment-tab-diagnosis">
       <ToneSwitcher />
+      <Text
+        style={styles.categoryLine}
+        testID="post-payment-tab-diagnosis-category-line"
+      >
+        {data.categoryLine}
+      </Text>
       <View style={styles.card}>
         <Text style={styles.label}>{data.koreanLabel}</Text>
         <Text style={styles.confidence}>
@@ -65,6 +71,12 @@ export default function DiagnosisTab(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  categoryLine: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
   card: {
     marginTop: 16,
     padding: 24,

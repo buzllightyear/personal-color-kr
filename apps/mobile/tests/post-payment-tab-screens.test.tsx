@@ -110,6 +110,8 @@ describe('Edit tab — 3-state DataHook handling', () => {
         previewImageUrl: 'https://placeholder.invalid/preview/summer-cool.jpg',
         caption: 'cap',
         vendorName: 'Fal.ai',
+        categoryLine: '편1',
+        ctaMicrocopy: '편2',
       },
     });
     const { getByTestId } = render(wrap(<EditTab />));
@@ -147,6 +149,7 @@ describe('Diagnosis tab — 3-state DataHook handling', () => {
         confidence: 0.85,
         toneLabel: '쿨톤',
         contrastLabel: '저대비',
+        categoryLine: '진1',
       },
     });
     const { getByTestId } = render(wrap(<DiagnosisTab />));
@@ -181,6 +184,7 @@ describe('Guide tab — 3-state DataHook handling', () => {
       data: {
         season: 'summer-cool',
         tiles: [{ id: 't1', title: 'T1', body: 'B1' }],
+        guideLines: ['지1', '지2', '지3', '지4'],
       },
     });
     const { getByTestId } = render(wrap(<GuideTab />));
@@ -220,6 +224,7 @@ describe('Curation tab — 3-state DataHook handling', () => {
           { id: 'c3', name: 'I3', blurb: 'B3', toneTag: 'T3' },
           { id: 'c4', name: 'I4', blurb: 'B4', toneTag: 'T4' },
         ],
+        recommendationLines: ['헤1', '서1', '아1', '아2', '아3', '아4'],
       },
     });
     const { getByTestId } = render(wrap(<CurationTab />));

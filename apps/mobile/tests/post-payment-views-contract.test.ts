@@ -100,6 +100,8 @@ type _DiagnosisView_IsExactShape = Expect<
       readonly confidence: number;
       readonly toneLabel: string;
       readonly contrastLabel: string;
+      // Phase 3.4 wording slice
+      readonly categoryLine: string;
     }
   >
 >;
@@ -111,6 +113,7 @@ type MutableDiagnosisView = {
   confidence: number;
   toneLabel: string;
   contrastLabel: string;
+  categoryLine: string;
 };
 type _DiagnosisView_IsReadonly = Expect<
   Equal<Equal<MutableDiagnosisView, DiagnosisView>, false>
@@ -132,6 +135,9 @@ type _EditView_IsExactShape = Expect<
       readonly previewImageUrl: string;
       readonly caption: string;
       readonly vendorName: string;
+      // Phase 3.4 wording slice
+      readonly categoryLine: string;
+      readonly ctaMicrocopy: string;
     }
   >
 >;
@@ -141,6 +147,8 @@ type MutableEditView = {
   previewImageUrl: string;
   caption: string;
   vendorName: string;
+  categoryLine: string;
+  ctaMicrocopy: string;
 };
 type _EditView_IsReadonly = Expect<
   Equal<Equal<MutableEditView, EditView>, false>
@@ -183,6 +191,8 @@ type _GuideView_IsExactShape = Expect<
     {
       readonly season: Season;
       readonly tiles: ReadonlyArray<GuideTile>;
+      // Phase 3.4 wording slice
+      readonly guideLines: ReadonlyArray<string>;
     }
   >
 >;
@@ -190,6 +200,7 @@ type _GuideView_IsExactShape = Expect<
 type MutableGuideView = {
   season: Season;
   tiles: GuideTile[];
+  guideLines: string[];
 };
 type _GuideView_IsReadonly = Expect<
   Equal<Equal<MutableGuideView, GuideView>, false>
@@ -232,6 +243,8 @@ type _CurationView_IsExactShape = Expect<
     {
       readonly season: Season;
       readonly items: ReadonlyArray<CurationItem>;
+      // Phase 3.4 wording slice
+      readonly recommendationLines: ReadonlyArray<string>;
     }
   >
 >;
@@ -239,6 +252,7 @@ type _CurationView_IsExactShape = Expect<
 type MutableCurationView = {
   season: Season;
   items: CurationItem[];
+  recommendationLines: string[];
 };
 type _CurationView_IsReadonly = Expect<
   Equal<Equal<MutableCurationView, CurationView>, false>
@@ -415,15 +429,17 @@ describe('PostPaymentViews contract (AC 12)', () => {
     expect(new Set(allSeasons).size).toBe(4);
   });
 
-  it('constructs a DiagnosisView with exactly the five declared fields', () => {
+  it('constructs a DiagnosisView with exactly the declared fields (Phase 3.3 + Phase 3.4 categoryLine)', () => {
     const value: DiagnosisView = {
       season: 'summer-cool',
       koreanLabel: '여름쿨',
       confidence: 0.85,
       toneLabel: 'Cool',
       contrastLabel: 'Low',
+      categoryLine: '당신은 여름 쿨톤입니다.',
     };
     expect(Object.keys(value).sort()).toEqual([
+      'categoryLine',
       'confidence',
       'contrastLabel',
       'koreanLabel',
@@ -435,15 +451,19 @@ describe('PostPaymentViews contract (AC 12)', () => {
     expect(value.confidence).toBeLessThanOrEqual(1);
   });
 
-  it('constructs an EditView with exactly the four declared fields', () => {
+  it('constructs an EditView with exactly the declared fields (Phase 3.3 + Phase 3.4 categoryLine + ctaMicrocopy)', () => {
     const value: EditView = {
       season: 'summer-cool',
       previewImageUrl: 'https://example.invalid/preview.jpg',
       caption: '여름쿨 톤으로 보정된 미리보기',
       vendorName: 'Fal.ai',
+      categoryLine: '당신은 여름 쿨톤입니다.',
+      ctaMicrocopy: '여름 쿨톤은 이렇게 편집하세요',
     };
     expect(Object.keys(value).sort()).toEqual([
       'caption',
+      'categoryLine',
+      'ctaMicrocopy',
       'previewImageUrl',
       'season',
       'vendorName',
@@ -454,15 +474,17 @@ describe('PostPaymentViews contract (AC 12)', () => {
     expect(value).not.toHaveProperty('pipelineStatus');
   });
 
-  it('constructs a GuideView with a non-empty readonly tile array', () => {
+  it('constructs a GuideView with a non-empty readonly tile array and the Phase 3.4 guideLines slice', () => {
     const value: GuideView = {
       season: 'summer-cool',
       tiles: [
         { id: 'guide-1', title: '메이크업', body: '쿨톤 메이크업 팁…' },
         { id: 'guide-2', title: '코디', body: '쿨톤 코디 팁…' },
       ],
+      guideLines: ['지1', '지2', '지3', '지4'],
     };
     expect(value.tiles.length).toBeGreaterThan(0);
+    expect(value.guideLines.length).toBe(4);
     for (const tile of value.tiles) {
       expect(Object.keys(tile).sort()).toEqual(['body', 'id', 'title']);
       // The deliberate Python-divergence fields are absent.
@@ -472,7 +494,7 @@ describe('PostPaymentViews contract (AC 12)', () => {
     }
   });
 
-  it('constructs a CurationView with exactly four items per the FirstCuration invariant', () => {
+  it('constructs a CurationView with exactly four items per the FirstCuration invariant + Phase 3.4 recommendationLines slice', () => {
     const value: CurationView = {
       season: 'summer-cool',
       items: [
@@ -496,13 +518,22 @@ describe('PostPaymentViews contract (AC 12)', () => {
         },
         {
           id: 'cur-4',
-          name: '쿨톤 룩 4',
+          name: '시적인 톤의 추천',
           blurb: '시적인 톤의 추천',
           toneTag: '시적인',
         },
       ],
+      recommendationLines: [
+        '헤드라인',
+        '에디터 한 줄',
+        '(다정한) 메이크업 룩 · 1 — 블러브',
+        '(에디토리얼) 코디 픽 · 2 — 블러브',
+        '(유쾌한) 촬영 씬 · 3 — 블러브',
+        '(시적인) 편집 프리셋 · 4 — 블러브',
+      ],
     };
     expect(value.items).toHaveLength(4);
+    expect(value.recommendationLines.length).toBeGreaterThanOrEqual(6);
     for (const item of value.items) {
       expect(Object.keys(item).sort()).toEqual([
         'blurb',
@@ -530,12 +561,15 @@ describe('PostPaymentViews contract (AC 12)', () => {
       confidence: 0.85,
       toneLabel: 'Cool',
       contrastLabel: 'Low',
+      categoryLine: '당신은 여름 쿨톤입니다.',
     };
     const edit: EditView = {
       season: 'winter-cool',
       previewImageUrl: 'https://example.invalid/winter.jpg',
       caption: '겨울쿨 미리보기',
       vendorName: 'Fal.ai',
+      categoryLine: '당신은 겨울 쿨톤입니다.',
+      ctaMicrocopy: '겨울 쿨톤은 이렇게 편집하세요',
     };
     expect(diagnosis.season).not.toBe(edit.season);
     // Both are valid `Season` values — neither is a sub-field of a

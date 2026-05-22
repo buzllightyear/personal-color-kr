@@ -245,6 +245,15 @@ export type DiagnosisView = {
   readonly confidence: number;
   readonly toneLabel: string;
   readonly contrastLabel: string;
+  /**
+   * Phase 3.4 wording slice — the 분류 verdict line for this season
+   * (e.g. "당신은 봄 웜톤입니다."). Sourced from
+   * `apps/mobile/src/wording/result-wording-catalog.ts`. The visible
+   * WordingTone prefix (the 4-voice mix) is deliberately NOT on this
+   * slice — it lives on `CurationView.recommendationLines` so the
+   * "톤 혼합" surface stays localized to the curation tab.
+   */
+  readonly categoryLine: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -283,6 +292,20 @@ export type EditView = {
   readonly previewImageUrl: string;
   readonly caption: string;
   readonly vendorName: string;
+  /**
+   * Phase 3.4 wording slice — the 분류 verdict line for this season
+   * (e.g. "당신은 봄 웜톤입니다."), displayed at the top of the edit
+   * tab.
+   */
+  readonly categoryLine: string;
+  /**
+   * Phase 3.4 wording slice — per-season Korean CTA microcopy derived
+   * from the catalog for the same season
+   * (e.g. "봄 웜톤은 이렇게 편집하세요"). It does NOT borrow from
+   * `CurationView.recommendationLines` — cross-tab independence is a
+   * Phase 3.3 constraint preserved in Phase 3.4.
+   */
+  readonly ctaMicrocopy: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -334,6 +357,13 @@ export type GuideTile = {
 export type GuideView = {
   readonly season: Season;
   readonly tiles: ReadonlyArray<GuideTile>;
+  /**
+   * Phase 3.4 wording slice — exactly 4 Korean guide summary lines in
+   * makeup → outfit → hair → accessory order, sourced from the
+   * result-wording catalog. Mirrors Python `ResultWording.guide_lines`
+   * length contract.
+   */
+  readonly guideLines: ReadonlyArray<string>;
 };
 
 // ---------------------------------------------------------------------------
@@ -392,4 +422,14 @@ export type CurationItem = {
 export type CurationView = {
   readonly season: Season;
   readonly items: ReadonlyArray<CurationItem>;
+  /**
+   * Phase 3.4 wording slice — at least 6 Korean lines per season:
+   * line 0 = curation headline, line 1 = editor signature line,
+   * lines 2..5 = 4 tone-prefixed item lines each carrying the visible
+   * WordingTone label ("(다정한) 메이크업 룩 · 제목 — blurb" etc.)
+   * mirroring Python `_format_recommendation_item`. This is the home
+   * of the "톤 혼합" (4-voice mix) surface — DiagnosisView/EditView/
+   * GuideView deliberately do NOT carry these lines.
+   */
+  readonly recommendationLines: ReadonlyArray<string>;
 };
