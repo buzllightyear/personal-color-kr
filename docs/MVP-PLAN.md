@@ -117,8 +117,8 @@
 | 3.2 | 2026-05-21 | 2026-05-21 | `orch_63c91f495e7e` | `17342e7` | APPROVED · Stage 2 · 0.92 |
 | 3.3 | 2026-05-22 | 2026-05-22 | `orch_17968c264a15` | `42952b2` | APPROVED · Stage 2 · 0.95 |
 | 3.4 | 2026-05-23 | 2026-05-23 | `seed_357448aa31d8` | `cade00e` | APPROVED · Stage 2 · 0.98 (fallback self-evaluation) |
-| 3.x | — | — | | | 다음 단계 (3.4) |
-| 4.x | — | — | | | |
+| 4.1 | 2026-05-23 | 2026-05-23 | `orch_236de36fef47` + manual | `db188c0` | CI PASS · 13/19 orch + manual completion (Q00 #1202) |
+| 4.2-4.5 | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
 | 7.x | — | — | | | |
@@ -962,6 +962,79 @@ Tests (`apps/mobile/tests/`) — 신규 7 파일 + 3 modified:
 - deep-link allowlist 변경
 
 **Seed**: `~/.ouroboros/seeds/seed_357448aa31d8_unit_3_4.yaml` (v1.4.0, ambiguity 0.10, QA pass iter 2/5 score 0.94)
+
+### Phase 4.1 결과 요약 (2026-05-23)
+
+**산출물 (Python 측 3번째 phase — Phase 3.x 모두 끝낸 후 첫 backend foundation)**:
+
+apps/api/ 신규 pnpm workspace member (sibling to apps/mobile) — FastAPI HTTP surface + local Postgres 16 dev DB + Alembic empty baseline + 3 unauthenticated `/v1/` endpoints.
+
+Source (apps/api/src/api/):
+- `main.py` — `create_app()` factory: `configure_json_logging()` + `app.add_middleware(RequestIdMiddleware)` + `app.include_router(prefix='/v1')` × 2 (health + diagnose). 모듈-수준 `app: FastAPI = create_app()` 으로 uvicorn entry 지원.
+- `routers/health.py` — `GET /v1/health` (200 `{status: 'ok'}`, no DB) + `GET /v1/db-health` (200 `{status: 'ok', db: 'ok'}` after `SELECT 1` / 503 on SQLAlchemyError).
+- `routers/diagnose.py` (172L) — `POST /v1/diagnose` multipart selfie → `await asyncio.to_thread(diagnose_fn, selfie_bytes)` → `DiagnoseResponse.from_dataclass(result)`. Phase 3.2 docstring contract honored verbatim (InvalidSelfieError→400 / FaceNotDetectedError→422 / other→500 stable wire constants, zero traceback leak).
+- `dependencies/selfie_validation.py` — multipart parse + content-type ∈ {image/jpeg, image/png} (415) + byte length ≤ 10MB (413). 단일 검증 seam.
+- `dependencies/diagnose.py` — `get_diagnose_fn() -> Callable[[bytes], DiagnosisResult]`. 기본은 Phase 3.2 `diagnose_personal_color`; 테스트가 `app.dependency_overrides[get_diagnose_fn] = lambda: stub_fn` 으로 override.
+- `schemas/diagnose.py` — Pydantic v2 `DiagnoseResponse` 정확히 9 필드 + `from_dataclass(result: DiagnosisResult)` classmethod. 단일 변환 seam, raw dataclass는 handler에서 직접 반환되지 않음.
+- `middleware/request_id.py` (102L) — `BaseHTTPMiddleware` 서브클래스. uuid4 per request → `request.state.request_id` + `X-Request-ID` 응답 header + `apps.api` 로거에 `extra={request_id, method, path, status, latency_ms}` 로 한 줄 emit. 5xx에서도 헤더 부착됨 (exception 전에 로깅 후 re-raise).
+- `config/logging.py` (90L) — `JsonFormatter` (정확히 8 키: timestamp/level/message/request_id/method/path/status/latency_ms) + `configure_json_logging()` idempotent (handler 중복 등록 방지, `propagate=False`로 uvicorn root에 누출 안 됨).
+- `db/{engine,session,health,migrations}.py` — SQLAlchemy 2.0 async engine + AsyncSession factory + `check_db_health()` + alembic env.py (async wiring). 단일 SQLAlchemy import 경계 (grep으로 검증).
+- `db/migrations/versions/2026_01_01_0000-phase_4_1_baseline_phase_4_1_baseline.py` — empty baseline (`down_revision = None`, no-op upgrade/downgrade). Phase 4.2가 첫 table 추가하는 시작점.
+
+Tests (49 파일):
+- `tests/unit/` (15 파일) — `httpx.AsyncClient` + `ASGITransport` + `app.dependency_overrides` 패턴 균일 사용. test_diagnose_endpoint × 6 (success/415/413/400/422/500), test_diagnose_runs_in_thread (thread-identity spy, AC10), test_diagnose_response_schema (9-field exact + round-trip), test_selfie_validation, test_alembic_env/baseline_revision/db_health.
+- **3개 수동 추가** (orchestrator 누락): `test_request_id_middleware.py` (UUID4 regex on /v1/health + 404 + uniqueness across requests, AC16), `test_json_log_schema.py` (`set(record.keys()) == JSON_LOG_KEYS` exact + latency_ms isinstance(int,float), AC15), `test_selfie_zero_persistence.py` (magic-byte sentinel → /tmp snapshot diff + log payloads grep, AC13).
+- `tests/integration/` (2 파일) — `@pytest.mark.integration` markers. test_alembic_upgrade_head + test_db_health 둘 다 CI postgres:16 service 대상.
+- `tests/test_*.py` (7 파일) — diff invariants. test_sqlalchemy_import_boundary (AC11), test_fal_api_key_absence (AC12), test_diff_no_mobile_changes/forbidden_modules/docker_or_deploy_files/new_runtime_deps (AC19).
+
+Infrastructure 신규/수정:
+- `docker-compose.yml` (root, 신규) — exactly one postgres:16 service, env_file ./.env, port 127.0.0.1:5432, named volume `pck_postgres_data`, healthcheck.
+- `.env.example` (+25L) — POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB + DATABASE_URL + DATABASE_URL_TEST (`postgresql+asyncpg://` driver scheme).
+- `.github/workflows/ci.yml` (+46L, additive only) — `services: postgres: postgres:16` 블록 + DATABASE_URL_TEST env + `pip install -e apps/api` + `alembic upgrade head` step + `python -m pytest apps/api` step. 기존 7 step (Setup pnpm/Node/Python, Install Node deps, Install Python deps, Typecheck × 2, vitest × 2, pytest core-python) byte-for-byte 보존.
+
+**Ouroboros workflow (Q00/ouroboros 0.39.1 fat-harness 회귀 발견 + 우회)**:
+
+- Interview: Path B fallback (no MCP); 20 decisions + 7 invariants + Restate-approved one-sentence goal.
+- Seed: `~/.ouroboros/seeds/seed_c4f1a02b9d8e_unit_4_1.yaml` (QA PASS iter 1, score 0.93, threshold 0.90).
+- Run #1-3 (실패): 모두 AC1에서 `dependency_failed` cascade. 진단 결과 `Q00/ouroboros#1202` 출시 0.39.1에서 `mcp/tools/execution_handlers.py:501` 의 `fat_harness_mode = True` 하드코딩 + PR #978의 incomplete migration (execution-side만 강화, seed-architect/qa-judge/subagent prompts는 0.36 그대로). 모든 layered AC seed가 `code.yaml` profile의 `evidence_schema.rejected_if: tests_passed == []` 에서 무조건 거절. 13번째 연속 MCP-orchestrator 회복 패턴 (Phase 1.2 / 2.1-2.6 / 3.1-3.4 precedent).
+- 운용수준 패치: `~/.cache/uv/archive-v0/.../execution_handlers.py:501` 의 `True → False` 1-line edit + Claude Code restart로 MCP fresh spawn. `.mcp.json` 에 `--python 3.12` 인자 추가 (uvx가 Python 3.10 디폴트로 의존성 해결 실패하는 별개 이슈).
+- Run #4 (post-patch): 13/19 COMPLETED, 4 FAILED (AC10/13/15/16), 2 SKIPPED (AC17/18 dependency cascade). 패치 효과 결정적 검증 — 이전 3회 0/19에서 13/19로 점프.
+- Manual completion (~340 LOC / 90분): 운영적으로 빠진 6 항목 직접 구현 — request_id middleware + JSON logger + zero-persistence test + docker-compose.yml + .env.example diff + ci.yml diff. `test_diff_no_new_runtime_deps.py` 의 ALLOWLIST에서 `core-python @ file://...` 항목 제거 (PEP 508 invalid + Python 3.13 wheel 없음, 그 자리에 사유 설명 주석 추가).
+
+**4중 정합 (Python 측 정의: pytest + mypy --strict + ruff + black + docker-compose smoke; 5번째 smoke는 CI postgres:16 service로 검증)**:
+- `python -m pytest -q apps/api/tests -m 'not integration'` → **122 passed**, 2 deselected
+- `python -m mypy --strict apps/api/src` → **no issues found in 22 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **49 files unchanged**
+- CI: postgres:16 service + alembic upgrade head + apps/api pytest → **PASS** (push 1m51s + pull_request 1m39s)
+
+**Git**:
+- Feature branch: `ooo/run/4.1-apps-api` (auto-deleted post-merge)
+- 핵심 commit: `db188c0` (55 files, +~7000 LOC)
+- PR #23 merge commit: `5f641f4` (no-ff)
+
+**상류 issue 등록**:
+- Q00/ouroboros#1202 — "0.39.1 fat_harness_mode hardcoded ON without updating seed authoring guides — breaks all layered-AC seeds generated by ouroboros's own seed-architect". 재현 가능 시나리오 + byte-level diff 증거 + 3 fix 옵션 (authoring tighten / fat-harness relax / opt-in revert) + workaround 명세 포함.
+
+**Out of scope (Seed 명시, AC19 diff invariant로 검증)**:
+- apps/mobile/ 변경 0건 (mobile useDummy → useApi swap은 ≥4.3에서 auth와 함께)
+- Supabase Auth, Apple Sign In (Phase 4.3)
+- users/events/magazine/referral 테이블 (Phase 4.2/4.3/4.4/4.5/5)
+- /v1/edit, /v1/guide, /v1/curation, /v1/wording (이후 phase들)
+- Sentry, posthog-python, CORS, rate limiting
+- Dockerfile, fly.toml, railway.toml, render.yaml (Production deploy = Phase 7)
+
+**Phase 3.1/3.2 (Python 측 이전 phases)와 비교**:
+| 측면 | Phase 3.1 (Fal.ai) | Phase 3.2 (diagnose) | Phase 4.1 (FastAPI shell) |
+|---|---|---|---|
+| 산출물 | 1 vendor adapter + 14 tests | 4 modules + 7 tests + pyproject | 19 src + 30 tests + 55 files total |
+| Net LOC | +7676 | +3761 | +~7000 |
+| 4중 정합 | pytest+mypy+ruff+black | + native dep boundary isolation | + docker-compose smoke (5th) |
+| MCP-orchestrator 회복 | 8번째 (__call__ wireup) | 9번째 (PEP 563 self-ref) | **13번째 (fat_harness 회귀, upstream issue 등록)** |
+| 회복 수고 | 부분 wireup + smoke 추가 | self-ref logic fix | **~340 LOC / 6 항목 + cache 패치 + restart** |
+| Stage 2 평가 | 0.92 | 0.92 | PR #23 CI PASS (Ouroboros Stage 2 평가는 fat-harness 회귀로 미실행) |
+
+**Seed**: `~/.ouroboros/seeds/seed_c4f1a02b9d8e_unit_4_1.yaml` (v1.0.0, ambiguity 0.06, QA PASS iter 1/5 score 0.93)
 
 ## 참고
 
