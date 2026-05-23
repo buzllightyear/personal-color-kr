@@ -80,18 +80,34 @@ def test_alembic_env_module_imports_outside_alembic_runtime() -> None:
 
 
 @pytest.mark.unit
-def test_alembic_env_exposes_empty_target_metadata() -> None:
-    """target_metadata is an empty SQLAlchemy MetaData (zero Phase 4.1 tables)."""
+def test_alembic_env_exposes_events_target_metadata() -> None:
+    """target_metadata is a SQLAlchemy MetaData containing the events table.
+
+    Phase 4.1 shipped this assertion as ``len(metadata.tables) == 0``
+    (the empty-baseline invariant). Phase 4.2 introduces the first
+    declarative model (:class:`api.db.models.event.Event`), so the
+    registry must now contain exactly one table named ``events``.
+
+    A later phase that adds a second model (e.g. ``users`` in Phase 4.3)
+    will need to update this assertion. The expected-table set is
+    therefore captured as a literal here so any drift fails fast with a
+    diff-friendly message.
+    """
     env_module = importlib.import_module("api.db.migrations.env")
     metadata = env_module.target_metadata
 
     assert isinstance(
         metadata, MetaData
     ), f"target_metadata must be a sqlalchemy.MetaData; got {type(metadata)!r}."
-    # Phase 4.1 ships zero application tables. Phase 4.2+ extends this
-    # registry; if a later phase forgets to update this test, the assertion
-    # will signal the schema drift.
-    assert len(metadata.tables) == 0, (
-        "Phase 4.1 baseline must expose an empty MetaData (zero tables); "
-        f"found {sorted(metadata.tables)!r}."
+
+    # Phase 4.2 registers exactly the ``events`` table on ``Base.metadata``.
+    # Asserting the full table-name set (rather than ``"events" in ...``)
+    # catches both kinds of drift: a missing model registration AND an
+    # unintended Phase 4.3+ table sneaking into Phase 4.2.
+    expected_tables = {"events"}
+    assert set(metadata.tables) == expected_tables, (
+        f"Phase 4.2 target_metadata must contain exactly {expected_tables!r}; "
+        f"found {sorted(metadata.tables)!r}. An extra table indicates a "
+        "premature Phase 4.3+ model landed here; a missing table indicates "
+        "the events model was not imported by api.db.models.__init__."
     )

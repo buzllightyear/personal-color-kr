@@ -1,19 +1,25 @@
-"""Unit test for the Phase 4.1 baseline Alembic migration (Sub-AC 2).
+"""Unit tests for the Alembic migration chain (Phase 4.1 + Phase 4.2).
 
-Verifies two invariants of the migration chain root via :mod:`pathlib` +
-:mod:`ast` — without importing the migration module itself (which would
-trigger ``from alembic import op`` and require an active alembic runtime):
+The two assertions in this module verify the structural shape of the
+``apps/api/src/api/db/migrations/versions/`` directory without importing
+any migration module (which would trigger ``from alembic import op`` and
+require an active alembic runtime).
 
-    1. ``apps/api/src/api/db/migrations/versions/`` contains EXACTLY one
-       ``.py`` file (the baseline migration; no ``__init__.py``, no other
-       revisions in Phase 4.1).
-    2. That file's parsed AST assigns ``down_revision = None`` at module
-       scope, making it the chain root that Phase 4.2+ migrations extend.
+Phase 4.1 (chain root)
+----------------------
+    1. The baseline migration is the chain root — ``down_revision = None``.
 
-The AST-based approach is deliberate: it avoids importing alembic-runtime
-symbols (``op``, ``context``) during a unit-tier test run and gives us a
-static, side-effect-free guarantee that the seed's "down_revision = None"
-constraint is honored verbatim in the source file.
+Phase 4.2 (events)
+------------------
+    2. The events migration chains on the baseline —
+       ``down_revision = "phase_4_1_baseline"``.
+    3. The versions directory contains exactly two ``.py`` files
+       (baseline + events) — no orphan revisions, no ``__init__.py``.
+
+The AST-based approach is deliberate: it avoids importing
+alembic-runtime symbols (``op``, ``context``) during a unit-tier test
+run and gives us a static, side-effect-free guarantee that the Seed's
+chain constraints are honored verbatim in the source files.
 """
 
 from __future__ import annotations
@@ -31,62 +37,88 @@ import pytest
 _APPS_API_ROOT = Path(__file__).resolve().parents[2]
 _VERSIONS_DIR = _APPS_API_ROOT / "src" / "api" / "db" / "migrations" / "versions"
 
+# Pinned filenames for the two Phase 4.x revisions. The deterministic
+# alembic file_template (``%(year)d_%(month).2d_%(day).2d_%(hour).2d%(minute).2d-%(rev)s_%(slug)s``)
+# makes these names stable across regenerations.
+_BASELINE_FILENAME = "2026_01_01_0000-phase_4_1_baseline_phase_4_1_baseline.py"
+_EVENTS_FILENAME = "2026_01_02_0000-phase_4_2_events_create_events_table.py"
+
+# Pinned revision identifiers — single source of truth for the chain
+# topology. Any test that asserts a specific ``down_revision`` value reads
+# from these constants so a rename anywhere in the chain fails fast.
+_BASELINE_REVISION_ID = "phase_4_1_baseline"
+_EVENTS_REVISION_ID = "phase_4_2_events"
+
 
 def _collect_py_files() -> list[Path]:
     """Return the sorted list of ``.py`` files in the versions directory."""
     return sorted(_VERSIONS_DIR.glob("*.py"))
 
 
-def _extract_down_revision_value(tree: ast.Module) -> tuple[bool, ast.expr | None]:
-    """Locate the module-scope ``down_revision`` assignment in a parsed AST.
+def _extract_module_constant(
+    tree: ast.Module, name: str
+) -> tuple[bool, ast.expr | None]:
+    """Locate a module-scope assignment named ``name`` in a parsed AST.
 
-    Handles both annotated (``down_revision: Union[str, None] = None``) and
-    plain (``down_revision = None``) forms.
+    Handles both annotated (``name: Union[str, None] = ...``) and plain
+    (``name = ...``) forms.
 
     Returns
     -------
     tuple[bool, ast.expr | None]
-        ``(found, value_node)`` — ``found`` is ``True`` when an assignment
-        was located, in which case ``value_node`` is the right-hand-side AST
-        expression. When ``found`` is ``False``, ``value_node`` is ``None``.
+        ``(found, value_node)`` — ``found`` is ``True`` when an
+        assignment was located, in which case ``value_node`` is the
+        right-hand-side AST expression. When ``found`` is ``False``,
+        ``value_node`` is ``None``.
     """
     for node in tree.body:
         if isinstance(node, ast.AnnAssign):
             target = node.target
-            if isinstance(target, ast.Name) and target.id == "down_revision":
+            if isinstance(target, ast.Name) and target.id == name:
                 return True, node.value
         elif isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "down_revision":
+                if isinstance(target, ast.Name) and target.id == name:
                     return True, node.value
     return False, None
 
 
 @pytest.mark.unit
-def test_versions_directory_contains_exactly_one_py_file() -> None:
-    """The versions/ directory holds exactly one revision file in Phase 4.1."""
+def test_versions_directory_contains_exactly_two_py_files() -> None:
+    """The versions/ directory holds exactly two revision files in Phase 4.2.
+
+    Phase 4.1 shipped a single empty baseline migration. Phase 4.2 adds
+    the events table as the first declarative model + migration. Any
+    third file in this directory is an orphan revision (regression) and
+    must be removed or rolled into the chain explicitly.
+    """
     py_files = _collect_py_files()
-    assert len(py_files) == 1, (
-        "Phase 4.1 baseline must be the only migration: expected exactly "
-        f"one .py file under {_VERSIONS_DIR}; found {len(py_files)}: "
-        f"{[p.name for p in py_files]}."
+    actual_names = sorted(p.name for p in py_files)
+    expected_names = sorted([_BASELINE_FILENAME, _EVENTS_FILENAME])
+    assert actual_names == expected_names, (
+        "Phase 4.2 must ship exactly two migrations: the empty baseline "
+        f"and the events table. Expected files {expected_names!r}; found "
+        f"{actual_names!r}. An extra file indicates an orphan revision; "
+        "a missing file indicates a regression in the migration chain."
     )
 
 
 @pytest.mark.unit
 def test_baseline_migration_ast_sets_down_revision_to_none() -> None:
-    """The baseline migration's AST assigns ``down_revision = None``."""
-    py_files = _collect_py_files()
-    assert len(py_files) == 1, (
-        "Cannot inspect baseline AST: expected exactly one .py file under "
-        f"{_VERSIONS_DIR}; found {len(py_files)}: "
-        f"{[p.name for p in py_files]}."
+    """The baseline migration's AST assigns ``down_revision = None``.
+
+    This is the chain-root invariant from Phase 4.1: the baseline must
+    remain the chain root so Phase 4.2+ revisions can extend the chain
+    without re-doing the alembic scaffolding.
+    """
+    baseline_path = _VERSIONS_DIR / _BASELINE_FILENAME
+    assert baseline_path.is_file(), (
+        f"Baseline migration must live at {baseline_path}; missing file "
+        "indicates a regression."
     )
 
-    baseline_path = py_files[0]
     tree = ast.parse(baseline_path.read_text(encoding="utf-8"))
-
-    found, value_node = _extract_down_revision_value(tree)
+    found, value_node = _extract_module_constant(tree, "down_revision")
     assert found, (
         f"Baseline migration {baseline_path.name} must assign "
         "`down_revision` at module scope; no such assignment found."
@@ -95,4 +127,50 @@ def test_baseline_migration_ast_sets_down_revision_to_none() -> None:
         f"Baseline migration {baseline_path.name} must set "
         "`down_revision = None` (the chain root); got "
         f"{ast.dump(value_node) if value_node is not None else 'None'!r}."
+    )
+
+
+@pytest.mark.unit
+def test_events_migration_chains_on_baseline() -> None:
+    """The events migration's AST asserts ``down_revision = "phase_4_1_baseline"``.
+
+    The Phase 4.2 Seed constraint "Must chain on top of
+    phase_4_1_baseline alembic revision (down_revision preserved)" is
+    encoded here as a static AST check. Any rewrite of the chain
+    topology (collapsing the baseline, inserting a sibling migration)
+    flips this assertion red before integration tests run.
+    """
+    events_path = _VERSIONS_DIR / _EVENTS_FILENAME
+    assert events_path.is_file(), (
+        f"Events migration must live at {events_path}; missing file "
+        "indicates the Phase 4.2 migration was not added correctly."
+    )
+
+    tree = ast.parse(events_path.read_text(encoding="utf-8"))
+
+    # First, confirm the events migration's own revision id matches the
+    # Seed-pinned string.
+    rev_found, rev_value = _extract_module_constant(tree, "revision")
+    assert rev_found and isinstance(rev_value, ast.Constant), (
+        f"Events migration {events_path.name} must assign `revision` to a "
+        "string literal at module scope."
+    )
+    assert rev_value.value == _EVENTS_REVISION_ID, (
+        f"Events migration `revision` id must equal "
+        f"{_EVENTS_REVISION_ID!r}; got {rev_value.value!r}."
+    )
+
+    # Then, confirm the events migration chains on the baseline. The
+    # value lives on the right-hand side of a Union[str, None] annotated
+    # assignment, so the ast.Constant check is identical to the baseline
+    # case.
+    down_found, down_value = _extract_module_constant(tree, "down_revision")
+    assert down_found and isinstance(down_value, ast.Constant), (
+        f"Events migration {events_path.name} must assign `down_revision` "
+        "to a string literal at module scope."
+    )
+    assert down_value.value == _BASELINE_REVISION_ID, (
+        f"Events migration `down_revision` must equal "
+        f"{_BASELINE_REVISION_ID!r} (preserves the Phase 4.1 chain); "
+        f"got {down_value.value!r}."
     )

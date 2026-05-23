@@ -81,9 +81,20 @@ jobs:
         # apps/api adds pytest-asyncio (for the async http test client) and
         # is installed editable so the `api` package resolves on sys.path
         # for the apps/api tests below.
+        # mypy is installed as a CI-only requirement so the Phase 4.2
+        # `mypy --strict` gate (Sub-AC 9.2) can run against
+        # `apps/api/src/` without forcing the runtime image to carry it.
+        # ruff is installed as a CI-only requirement so the Phase 4.2
+        # `ruff check` gate (Sub-AC 9.3) can run against `apps/api/{src,tests}`
+        # without forcing the runtime image to carry it.
+        # black is installed as a CI-only requirement so the Phase 4.2
+        # `black --check` gate (Sub-AC 9.4) can run against
+        # `apps/api/{src,tests}` without forcing the runtime image to carry
+        # it. Config (target-version py312, line-length 88) lives in
+        # `apps/api/pyproject.toml` under `[tool.black]`.
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-asyncio
+          python -m pip install pytest pytest-asyncio mypy ruff black
           python -m pip install -e packages/core-python
           python -m pip install -e apps/api
 
@@ -118,6 +129,42 @@ jobs:
       - name: Run pytest (core-python)
         working-directory: packages/core-python
         run: python -m pytest -q
+
+      - name: Format check (apps/api, black --check)
+        # Phase 4.2 Sub-AC 9.4: 4중 정합 CI gate requires `black --check`
+        # against the apps/api source + tests trees. The formatter
+        # configuration lives in `apps/api/pyproject.toml`
+        # (`[tool.black] target-version = ["py312"]`, `line-length = 88`)
+        # so the CLI invocation only needs to point at the package roots.
+        # `--check` exits non-zero (and fails the step + the job) when any
+        # file would be reformatted, giving the formatter a discrete
+        # pass/fail signal in the Actions UI alongside the ruff / mypy /
+        # pytest gates. Black runs before ruff so a formatting regression
+        # surfaces before the lint/typecheck noise it can mask.
+        working-directory: apps/api
+        run: python -m black --check src tests
+
+      - name: Lint (apps/api, ruff check)
+        # Phase 4.2 Sub-AC 9.3: 4중 정합 CI gate requires `ruff check` against
+        # the apps/api source + tests trees. The lint configuration lives in
+        # `apps/api/pyproject.toml` (`[tool.ruff.lint] select = ["E","F","W"]`,
+        # `ignore = ["E501"]`) so the CLI invocation only needs to point at
+        # the package roots. A non-zero exit fails this step (and the job),
+        # giving the lint a discrete pass/fail signal in the Actions UI
+        # alongside the mypy / pytest / vitest gates.
+        working-directory: apps/api
+        run: python -m ruff check src tests
+
+      - name: Typecheck (apps/api, mypy --strict)
+        # Phase 4.2 Sub-AC 9.2: 4중 정합 CI gate requires `mypy --strict`
+        # against the apps/api source tree. The strict configuration lives
+        # in `apps/api/pyproject.toml` (`[tool.mypy] strict = true`,
+        # `files = ["src"]`) so the CLI invocation only needs to point at
+        # the package root. A non-zero exit fails this step (and the job),
+        # giving the typecheck a discrete pass/fail signal in the Actions
+        # UI alongside the existing core-ts / mobile typechecks.
+        working-directory: apps/api
+        run: python -m mypy --strict src
 
       - name: Alembic upgrade head (apps/api)
         # AC14 verifies the empty baseline migration applies cleanly against

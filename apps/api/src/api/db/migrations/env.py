@@ -51,14 +51,23 @@ from sqlalchemy import MetaData, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# Import the declarative ``Base`` so importing this env module pulls every
+# concrete model into ``Base.metadata`` as a side effect. Phase 4.2 ships
+# the first model (``Event``); Phase 4.3+ extends the same registry without
+# touching this file again. The import lives inside the SQLAlchemy boundary
+# (``apps/api/src/api/db/models/``), matching the AC11 invariant.
+from api.db.models import Base  # noqa: E402 — must follow sqlalchemy imports
+
 # ---------------------------------------------------------------------------
 # Target metadata
 # ---------------------------------------------------------------------------
-# Phase 4.1 ships zero application tables — the baseline migration is a no-op
-# whose sole purpose is to establish the migration chain (``down_revision =
-# None``) so Phase 4.2+ migrations can extend it. Later phases will register
-# declarative models against this same ``MetaData`` instance.
-target_metadata: MetaData = MetaData()
+# Phase 4.2 introduces the ``events`` table as the first declarative model.
+# Pointing ``target_metadata`` at ``Base.metadata`` (rather than a fresh
+# ``MetaData()`` instance) lets alembic autogenerate diff the live database
+# against every model registered under ``api.db.models.*``. The single
+# shared registry guarantees Phase 4.3+ models (users, etc.) land in the
+# same migration chain without further wiring.
+target_metadata: MetaData = Base.metadata
 
 
 # ---------------------------------------------------------------------------
