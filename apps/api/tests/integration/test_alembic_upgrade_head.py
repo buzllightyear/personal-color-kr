@@ -1,16 +1,22 @@
-"""Integration test for ``alembic upgrade head`` (Phase 4.1, Sub-AC 3).
+"""Integration test for the Phase 4.1 baseline alembic upgrade.
 
-Acceptance criterion (Sub-AC 3) being verified
-----------------------------------------------
+Acceptance criterion (Phase 4.1 Sub-AC 3) being verified
+--------------------------------------------------------
 Running
 
-    alembic -c apps/api/alembic.ini upgrade head
+    alembic -c apps/api/alembic.ini upgrade phase_4_1_baseline
 
 against a freshly provisioned Postgres 16 container (docker-compose locally,
 GitHub Actions ``services: postgres:`` in CI) succeeds, and the resulting
 ``alembic_version`` bookkeeping table contains exactly one row whose
 ``version_num`` equals the Phase 4.1 baseline migration's deterministic
 revision id (``phase_4_1_baseline``).
+
+The target was tightened from ``head`` to the explicit baseline revision
+once Phase 4.2 introduced the ``events`` migration: ``upgrade head`` now
+runs past the baseline, so testing the baseline in isolation requires
+naming it explicitly. The Phase 4.2 head behavior (``upgrade head`` →
+``phase_4_2_events``) is covered by ``test_events_migration.py``.
 
 Verification technique
 ----------------------
@@ -154,6 +160,11 @@ async def test_alembic_upgrade_head_succeeds_and_writes_baseline_revision() -> N
     setup_engine = create_async_engine(_RESOLVED_URL, future=True)
     try:
         async with setup_engine.begin() as conn:
+            # Drop any Phase 4.2+ tables alongside the alembic bookkeeping
+            # table so a re-run after the events migration shipped doesn't
+            # collide on ``CREATE TABLE events`` (which is what alembic
+            # would emit if a previous test left the table behind).
+            await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     finally:
         await setup_engine.dispose()
@@ -174,7 +185,7 @@ async def test_alembic_upgrade_head_succeeds_and_writes_baseline_revision() -> N
             "-c",
             str(_ALEMBIC_INI_PATH),
             "upgrade",
-            "head",
+            _EXPECTED_BASELINE_REVISION_ID,
         ],
         env=env,
         capture_output=True,
@@ -185,8 +196,8 @@ async def test_alembic_upgrade_head_succeeds_and_writes_baseline_revision() -> N
 
     # ----- Step 3: assert exit code 0 with a diagnostic message on failure.
     assert result.returncode == 0, (
-        f"`alembic -c {_ALEMBIC_INI_PATH} upgrade head` exited with "
-        f"{result.returncode}; expected 0. Common failure modes are: "
+        f"`alembic -c {_ALEMBIC_INI_PATH} upgrade {_EXPECTED_BASELINE_REVISION_ID}` "
+        f"exited with {result.returncode}; expected 0. Common failure modes are: "
         f"(a) Postgres container not running, (b) DATABASE_URL points at a "
         f"DB that refuses connections, (c) env.py raised during async engine "
         f"construction.\n"
@@ -206,14 +217,15 @@ async def test_alembic_upgrade_head_succeeds_and_writes_baseline_revision() -> N
             rows = cursor.all()
 
         # Exactly one row — the baseline migration is the only revision
-        # shipped in Phase 4.1, so ``upgrade head`` must produce exactly
-        # one stamp in alembic_version.
+        # shipped at the head when upgrading to phase_4_1_baseline, so
+        # ``upgrade phase_4_1_baseline`` must produce exactly one stamp
+        # in alembic_version.
         assert len(rows) == 1, (
             f"`alembic_version` must contain exactly one row after "
-            f"`upgrade head`; found {len(rows)} row(s): {rows!r}. More than "
-            f"one row indicates the migration chain branched (which Phase "
-            f"4.1 explicitly disallows); zero rows indicates the upgrade "
-            f"silently no-op'd without stamping."
+            f"`upgrade {_EXPECTED_BASELINE_REVISION_ID}`; found {len(rows)} "
+            f"row(s): {rows!r}. More than one row indicates the migration "
+            f"chain branched (which Phase 4.1 explicitly disallows); zero "
+            f"rows indicates the upgrade silently no-op'd without stamping."
         )
 
         # The single row's version_num must equal the deterministic
