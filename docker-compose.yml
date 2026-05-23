@@ -1,0 +1,43 @@
+# docker-compose for personal-color-kr local development (Phase 4.1).
+#
+# Defines exactly one service: a Postgres 16 instance backing the apps/api
+# FastAPI server. Env vars come from the root `.env` via `env_file` so the
+# same DATABASE_URL the FastAPI app reads (via python-dotenv) also drives
+# the container's superuser / database bootstrap.
+#
+# Phase 4.1 scope locks this stack to a single service; users / events
+# schema (Phase 4.2), auth (Phase 4.3), retention API (Phase 4.4), and
+# referral wiring (Phase 4.5) all extend this file (not replace it) in
+# subsequent phases.
+#
+# Local dev only — no production registry, no public ports, no TLS.
+# Production Postgres host (Supabase managed) is decided in Phase 4.3 when
+# Apple Sign In + the Supabase Auth project provision together.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pck_postgres
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      # `env_file` above already loads POSTGRES_USER / POSTGRES_PASSWORD /
+      # POSTGRES_DB from root `.env`. Listing them here is defensive — if
+      # `.env` is missing the explicit defaults below keep the container
+      # from booting with a blank password (which Postgres refuses).
+      POSTGRES_USER: ${POSTGRES_USER:-pck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pck_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-pck}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pck_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pck}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pck_postgres_data:
