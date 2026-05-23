@@ -118,7 +118,8 @@
 | 3.3 | 2026-05-22 | 2026-05-22 | `orch_17968c264a15` | `42952b2` | APPROVED · Stage 2 · 0.95 |
 | 3.4 | 2026-05-23 | 2026-05-23 | `seed_357448aa31d8` | `cade00e` | APPROVED · Stage 2 · 0.98 (fallback self-evaluation) |
 | 4.1 | 2026-05-23 | 2026-05-23 | `orch_236de36fef47` + manual | `db188c0` | CI PASS · 13/19 orch + manual completion (Q00 #1202) |
-| 4.2-4.5 | — | — | | | |
+| 4.2 | 2026-05-24 | 2026-05-24 | `orch_f2d949d559b5` | `0aad534` | CI PASS · **12/12 orch, 14/14 sub-AC, 0 manual** (Q00 #1202 우회 검증) |
+| 4.3-4.5 | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
 | 7.x | — | — | | | |
@@ -1035,6 +1036,77 @@ Infrastructure 신규/수정:
 | Stage 2 평가 | 0.92 | 0.92 | PR #23 CI PASS (Ouroboros Stage 2 평가는 fat-harness 회귀로 미실행) |
 
 **Seed**: `~/.ouroboros/seeds/seed_c4f1a02b9d8e_unit_4_1.yaml` (v1.0.0, ambiguity 0.06, QA PASS iter 1/5 score 0.93)
+
+### Phase 4.2 결과 요약 (2026-05-24)
+
+**산출물 (Python 측 4번째 phase — Phase 4.1 FastAPI shell 위 첫 persistence table)**:
+
+apps/api/ 에 첫 영속 테이블 (`events`, append-only, 6 columns) + 첫 alembic revision (`phase_4_1_baseline` 위) + 통합 테스트 인프라 (real postgres:16 backed). 단일 PR로 24 files 변경 (6 modified / 18 new), 0 manual completion — Phase 4.1 대비 Q00#1202 회귀 회피 확인.
+
+Source (apps/api/src/api/db/):
+- `models/__init__.py` (39L) — `Base` + `Event` 재익스포트 (단일 ORM import seam).
+- `models/base.py` (39L) — `DeclarativeBase` 서브클래스. Phase 4.3+ models가 동일 `Base.metadata` 에 등록되도록 single shared registry.
+- `models/event.py` (183L) — 6-column ORM 모델: `id` UUID PK (app-side `uuid4`, no DB extension), `anonymous_id` TEXT (indexed), `event_name` TEXT (composite-indexed), `properties` JSONB (`'{}'::jsonb` default), `occurred_at` TIMESTAMPTZ, `server_received_at` TIMESTAMPTZ (`now()` default). PostHog 매핑 표 + append-only invariant + boundary contract 모두 module docstring 에 명시. `__repr__` 가 properties JSONB 값 자체는 노출 안 함 (key count만, PII 방어).
+- `migrations/env.py` (수정) — `target_metadata: MetaData = MetaData()` → `Base.metadata`. `from api.db.models import Base` 가 SQLAlchemy boundary 내부에 위치 (AC11 invariant 유지).
+- `migrations/versions/2026_01_02_0000-phase_4_2_events_create_events_table.py` (152L) — `down_revision = "phase_4_1_baseline"` 으로 chain. `op.create_table` + `op.create_index` × 2. downgrade는 mirror 순서 (인덱스 → 테이블), `IF EXISTS` 의도적 생략 (실수로 잘못된 단계에서 호출 시 silent no-op 대신 loud failure).
+
+Tests (5 unit 추가/수정 + 8 integration 신규 + 1 smoke):
+- `tests/unit/test_alembic_baseline_revision.py` (수정) — Phase 4.1의 "exactly ONE revision file" → "exactly TWO" + chain root 검증. AST 기반 (alembic runtime import 회피).
+- `tests/unit/test_alembic_env.py` (수정) — `target_metadata` 가 `Base.metadata` 인지 (빈 `MetaData()` 가 아닌지) AST 검증.
+- `tests/unit/test_alembic_history_chain.py` (149L, NEW) — `alembic.script.ScriptDirectory.walk_revisions` 로 chain DAG 검증 (alembic CLI 와 동일 내부 경로, postgres 연결 불필요 → unit tier 유지).
+- `tests/unit/test_events_composite_index.py` (NEW) — Event ORM `__table_args__` 의 `Index` 객체 inspection (column names + order).
+- `tests/unit/test_event_model_repr.py` (NEW) — `__repr__` 출력에 properties 값이 leak 되지 않고 key count만 보이는지 verify (PII 방어 lock-in).
+- `tests/unit/test_ci_workflow_quad_gate.py` (NEW) — `.github/workflows/ci.yml` 의 4중 정합 4개 step (pytest/mypy/ruff/black) 모두 존재하는지 정적 검증 (meta-test).
+- `tests/integration/conftest.py` (466L, NEW) — Sub-AC 8.1/8.2/8.3 fixture 3종: `async_engine`/`async_session_factory`/`async_session` (function scope), `alembic_upgraded_database_url` (session scope), `transactional_async_session` (outer txn + nested SAVEPOINT via SQLAlchemy 2.0 `join_transaction_mode="create_savepoint"`).
+- `tests/integration/test_events_migration.py` (600L, NEW) — `subprocess.run(["alembic", "upgrade", "head"])` → `information_schema.columns` 6-column 검증 (type/nullable/default 모두) + `pg_indexes` 2-index + `alembic_version` stamp + downgrade 시 events 테이블 잔여물 없음 + 원시 SQL round-trip (JSONB/TIMESTAMPTZ/UUID type fidelity, ORM 의존성 없이).
+- `tests/integration/test_events_model_roundtrip.py` (299L, NEW) — ORM 경로 `session.add(Event(...))` + 새 session 에서 `select(Event)` re-fetch (identity map 우회). UUID/dict/datetime tzinfo 보존 검증. `properties` 인자 생략 시 Python `default=dict` fire 검증.
+- `tests/integration/test_events_ddl_information_schema.py` (NEW) — DDL introspection만 standalone focused.
+- `tests/integration/test_events_migration_inprocess.py` (NEW) — in-process alembic API variant (coverage 측정 용).
+- `tests/integration/test_events_composite_index_columns.py` (NEW) — `pg_indexes` 의 composite index column 순서 / inclusion 검증.
+- `tests/integration/test_alembic_upgrade_fixture.py` + `test_async_session_fixture.py` + `test_transactional_rollback_fixture.py` (NEW) — conftest fixture 자체 verification (메타-테스트). transactional rollback fixture는 fresh non-transactional session 에서 insert 행이 조회 안 되는지 확인.
+- `tests/test_smoke.py` (NEW) — root-level smoke test (AC11 docker-compose smoke).
+
+Infrastructure 수정:
+- `.github/workflows/ci.yml` (+12L additive) — `pip install ... mypy` 추가 + 새 step `Typecheck (apps/api, mypy --strict)` (working-directory: apps/api, `python -m mypy --strict src`). 기존 7 step 블록 모두 보존.
+- `apps/api/pyproject.toml` (수정) — mypy strict 설정 (`[tool.mypy] strict = true, files = ["src"]`).
+
+**Ouroboros workflow (Q00#1202 패치 효과 검증)**:
+- Interview: `interview_20260523_165507` — 3 round Socratic (users 테이블 deferral / PostHog-shaped 결정 / endpoint+repository 모두 deferral) → ambiguity 0.07 (Phase 4.1 의 0.06 다음으로 낮음).
+- Seed: `~/.ouroboros/seeds/seed_892439d5fdf7_unit_4_2.yaml` (12 ACs / 13 constraints / 6 ontology fields / 4 exit conditions).
+- Run: orch_f2d949d559b5, ~60분, fat_harness_mode=False 확인 (Q00#1202 패치 정상 작동). 12/12 ACs + 14/14 sub-ACs complete, 0 failed, 2093 messages, 673 tool calls.
+- **Manual completion 0건** — Phase 4.1 (~340 LOC 수동 추가) 대비 명확한 개선. 운용수준 cache 패치 (`~/.cache/uv/archive-v0/.../execution_handlers.py:501` 의 `True → False`) 가 새 orchestrator spawn 전반에 걸쳐 안정 작동 확인.
+
+**4중 정합 (local pre-push)**:
+- `python -m pytest -q apps/api/tests` → **137 passed, 20 skipped** (skip은 모두 integration tier, `DATABASE_URL_TEST` 미설정)
+- `python -m mypy --strict apps/api/src` → **no issues found in 26 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **67 files unchanged**
+- CI: postgres:16 service + alembic upgrade head + apps/api pytest (now phase_4_2_events 도 적용) + 신규 `mypy --strict` step → **PASS** (push + pull_request 모두)
+
+**Git**:
+- Feature branch: `ooo/orch_f2d949d559b5` (auto-deleted post-merge)
+- 핵심 commit: `0aad534` (24 files: +18 new / -0 / 6 modified)
+- PR #25 merge commit: `3225abd` (no-ff)
+
+**Phase 4.1 과 비교 (Q00#1202 회복 패턴)**:
+| 측면 | Phase 4.1 | Phase 4.2 |
+|---|---|---|
+| Orchestrator 결과 | 13/19 (3회 fail 후 patch + 4번째 run) | **12/12 (1회 성공)** |
+| Manual completion | 6 항목 / ~340 LOC | **0** |
+| Ambiguity | 0.06 | 0.07 |
+| 패치 검증 | 결정적 (0/19 → 13/19) | **재현 검증 (12/12)** |
+| Net 산출 | 49 files / +~7000 LOC | 24 files / +~3800 LOC (90% 가 tests) |
+| 회복 수고 | cache patch + restart + 6 manual items | **cache patch 재사용만** |
+| CI 시간 | push 1m51s + pull_request 1m39s | (Phase 4.2 CI 결과 동일 범주) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- users 테이블 / auth 컬럼 / FK 제약 — Phase 4.3 (Apple Sign In + Supabase auth)
+- POST /v1/events endpoint / repository layer — Phase 4.4 (retention API)
+- PostHog cohort sync — Phase 4.4
+- referral wiring — Phase 4.5
+- request_id / source 를 top-level 컬럼화 — 필요 시 `properties` JSONB 안에 넣고, 쿼리 패턴이 굳어지면 별도 컬럼 promotion
+
+**Seed**: `~/.ouroboros/seeds/seed_892439d5fdf7_unit_4_2.yaml` (v1.0.0, ambiguity 0.07, orch 12/12 ACs)
 
 ## 참고
 
