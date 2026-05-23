@@ -27,6 +27,27 @@ jobs:
   test:
     name: Test (Node 20 / Python 3.12)
     runs-on: ubuntu-latest
+    # Postgres 16 service container — required by the apps/api integration
+    # tier (AC3 /v1/db-health, AC14 alembic upgrade head) added in Phase 4.1.
+    # Existing core-ts / mobile / core-python steps do not depend on it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pck
+          POSTGRES_PASSWORD: pck_dev_only
+          POSTGRES_DB: pck_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pck"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # apps/api integration tier consumes DATABASE_URL_TEST; unit tier
+      # (AC2/AC4/AC5–AC10/AC15/AC16) is in-memory and does not touch the DB.
+      DATABASE_URL_TEST: postgresql+asyncpg://pck:pck_dev_only@127.0.0.1:5432/pck_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,10 +78,14 @@ jobs:
         # install pytest separately since it is a CI-only requirement.
         # `-e` editable install wires `src/` onto sys.path so the test
         # suite can import the package without a build step.
+        # apps/api adds pytest-asyncio (for the async http test client) and
+        # is installed editable so the `api` package resolves on sys.path
+        # for the apps/api tests below.
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest pytest-asyncio
           python -m pip install -e packages/core-python
+          python -m pip install -e apps/api
 
       - name: Typecheck (core-ts)
         # Dedicated step so the core-ts typecheck has its own
@@ -92,4 +117,23 @@ jobs:
 
       - name: Run pytest (core-python)
         working-directory: packages/core-python
+        run: python -m pytest -q
+
+      - name: Alembic upgrade head (apps/api)
+        # AC14 verifies the empty baseline migration applies cleanly against
+        # a fresh Postgres 16. Runs after Python deps install so alembic is
+        # available, and before apps/api pytest so the integration tier has
+        # a migrated schema (currently empty — Phase 4.2 adds tables).
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+asyncpg://pck:pck_dev_only@127.0.0.1:5432/pck_test
+        run: alembic -c alembic.ini upgrade head
+
+      - name: Run pytest (apps/api)
+        # Runs the apps/api unit + integration tiers. The integration tier
+        # (marked `@pytest.mark.integration`) hits the postgres:16 service
+        # via DATABASE_URL_TEST; the unit tier exercises the FastAPI app
+        # in-memory through httpx.AsyncClient + ASGITransport with
+        # `app.dependency_overrides` stubbing the diagnose callable.
+        working-directory: apps/api
         run: python -m pytest -q

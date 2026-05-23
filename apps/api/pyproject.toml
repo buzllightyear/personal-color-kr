@@ -1,0 +1,84 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "FastAPI HTTP surface for personal-color-kr (Phase 4.1 — three /v1/ endpoints over local Postgres 16)."
+requires-python = ">=3.12"
+dependencies = [
+    # FastAPI is the HTTP framework; constructed once in apps/api/src/api/main.py.
+    "fastapi",
+    # Uvicorn[standard] is the ASGI server used by the local dev command and the
+    # docker-compose smoke (`uvicorn api.main:app --host 127.0.0.1 --port 8000`).
+    "uvicorn[standard]",
+    # SQLAlchemy 2.0 async engine + AsyncSession power the single DB import
+    # boundary inside `apps/api/src/api/db/`. The `[asyncio]` extra is required
+    # for the async runtime; pinned at >=2.0 so the new declarative API is
+    # available.
+    "sqlalchemy[asyncio]>=2.0",
+    # asyncpg is the async PostgreSQL driver consumed via the
+    # `postgresql+asyncpg://` URL scheme; no synchronous psycopg2 fallback.
+    "asyncpg",
+    # Alembic manages the migration chain; the empty baseline migration lives
+    # in `apps/api/src/api/db/migrations/versions/` and is the only migration
+    # in Phase 4.1.
+    "alembic",
+    # python-dotenv loads the Phase 1.2 root `.env` via `find_dotenv()` so the
+    # FastAPI process resolves `DATABASE_URL` without hardcoding values.
+    "python-dotenv",
+    # Pydantic v2 powers the single `DiagnoseResponse` response_model that
+    # serializes the 9-field DiagnosisResult dataclass at the HTTP boundary.
+    "pydantic>=2",
+    # python-multipart is the FastAPI dependency that parses
+    # `multipart/form-data` bodies for the selfie upload field.
+    "python-multipart",
+    # NOTE: `core-python` (Phase 3.2 diagnose pipeline) is NOT a runtime
+    # dependency here. PEP 508 relative `file://` URLs are not portable
+    # (pip rejects them as "non-local file URI") and `mediapipe==0.10.18`
+    # lacks a Python 3.13 wheel, so locking it transitively breaks local
+    # dev on 3.13 (Phase 3.2 documents the same constraint). CI and local
+    # dev install both editably in order:
+    #     pip install -e packages/core-python && pip install -e apps/api
+    # The `from personal_color.* import ...` calls resolve at runtime
+    # because core-python is installed into the same site-packages.
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+asyncio_mode = "auto"
+markers = [
+    "unit: fast, no I/O",
+    "integration: cross-module / external I/O (real Postgres, real MediaPipe, real Pillow)",
+]
+
+[tool.black]
+# Match the Phase 0.x `[tool.black] target-version` so the same Python 3.12
+# CI runner formats both packages consistently.
+target-version = ["py312"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src"]
+
+# `personal_color` is installed as an editable path dep but does not yet
+# ship a PEP 561 `py.typed` marker. The package is fully type-annotated, but
+# mypy --strict refuses to follow untyped third-party packages by default.
+# The override below tells mypy to trust the inline annotations of the
+# `personal_color` sub-package (where DiagnosisResult / Season / Tone /
+# Contrast live and are consumed by `api.schemas.diagnose`).
+[[tool.mypy.overrides]]
+module = ["personal_color.*"]
+ignore_missing_imports = true
+follow_imports = "silent"
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]
