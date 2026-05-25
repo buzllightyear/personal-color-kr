@@ -30,6 +30,28 @@ dependencies = [
     # python-multipart is the FastAPI dependency that parses
     # `multipart/form-data` bodies for the selfie upload field.
     "python-multipart",
+    # PyJWT[crypto] (Phase 4.3 Apple Sign In) is required for two
+    # cryptographic operations on the auth boundary:
+    #   1. Verifying Apple-issued ID tokens (RS256 signature against
+    #      Apple's JWKS at https://appleid.apple.com/auth/keys) inside
+    #      POST /v1/auth/sign-in-with-apple. PyJWT's `[crypto]` extra
+    #      pulls in `cryptography`, which is what powers the RSA public
+    #      key verification path; without it, PyJWT raises
+    #      `PyJWTError: Algorithm 'RS256' could not be found` on the
+    #      Apple token's signature check.
+    #   2. Issuing the backend's own stateless HS256 session token
+    #      (sub=users.id, 24h TTL, claims iss/aud/iat/exp/jti), signed
+    #      with the JWT_SECRET env var, and verified on every
+    #      POST /v1/diagnose request via the require_current_user
+    #      dependency. HS256 verification does not technically require
+    #      the `[crypto]` extra, but pinning the extra keeps a single
+    #      dependency line covering both algorithms and matches how the
+    #      FastAPI/Apple-auth ecosystem documents the install.
+    # This is NOT supabase-py / firebase-admin / authlib — Phase 4.3 is
+    # explicitly self-managed Apple Sign In (no Supabase SDK, no Firebase
+    # SDK, no third-party identity broker). PyJWT is the minimum surface
+    # area to validate Apple's JWT and mint our own.
+    "PyJWT[crypto]",
     # NOTE: `core-python` (Phase 3.2 diagnose pipeline) is NOT a runtime
     # dependency here. PEP 508 relative `file://` URLs are not portable
     # (pip rejects them as "non-local file URI") and `mediapipe==0.10.18`

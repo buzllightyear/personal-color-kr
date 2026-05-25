@@ -17,6 +17,7 @@ Boundary invariants (Phase 4.1 Seed):
       strings — ``Season.slug``, ``Tone.name.lower()``, ``Contrast.name.lower()``.
 """
 
+from api.schemas.auth import SignInWithAppleRequest
 from api.schemas.diagnose import DiagnoseResponse
 
-__all__ = ["DiagnoseResponse"]
+__all__ = ["DiagnoseResponse", "SignInWithAppleRequest"]

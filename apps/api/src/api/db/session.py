@@ -30,14 +30,26 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.sql import func
 
 from api.db.engine import get_engine
 
 # Public symbols re-exported so router/dependency modules can import the
-# ``AsyncSession`` type without touching ``sqlalchemy.*`` (which would
-# violate the AC11 single-import-boundary invariant).
-__all__ = ["AsyncSession", "get_session"]
+# ``AsyncSession`` type, query builders, and SQL helpers without touching
+# ``sqlalchemy.*`` directly (which would violate the AC11 single-import-
+# boundary invariant). Phase 4.3 added ``select``/``pg_insert``/``func``
+# so the auth router can build the atomic ON CONFLICT upsert without
+# importing sqlalchemy itself.
+__all__ = [
+    "AsyncSession",
+    "func",
+    "get_session",
+    "pg_insert",
+    "select",
+]
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

@@ -42,6 +42,7 @@ _VERSIONS_DIR = _APPS_API_ROOT / "src" / "api" / "db" / "migrations" / "versions
 # makes these names stable across regenerations.
 _BASELINE_FILENAME = "2026_01_01_0000-phase_4_1_baseline_phase_4_1_baseline.py"
 _EVENTS_FILENAME = "2026_01_02_0000-phase_4_2_events_create_events_table.py"
+_USERS_FILENAME = "2026_01_03_0000-phase_4_3_users_create_users_table.py"
 
 # Pinned revision identifiers — single source of truth for the chain
 # topology. Any test that asserts a specific ``down_revision`` value reads
@@ -84,22 +85,23 @@ def _extract_module_constant(
 
 
 @pytest.mark.unit
-def test_versions_directory_contains_exactly_two_py_files() -> None:
-    """The versions/ directory holds exactly two revision files in Phase 4.2.
+def test_versions_directory_contains_exactly_three_py_files() -> None:
+    """The versions/ directory holds exactly three revision files in Phase 4.3.
 
-    Phase 4.1 shipped a single empty baseline migration. Phase 4.2 adds
-    the events table as the first declarative model + migration. Any
-    third file in this directory is an orphan revision (regression) and
-    must be removed or rolled into the chain explicitly.
+    Phase 4.1 shipped a single empty baseline migration. Phase 4.2 added
+    the events table. Phase 4.3 adds the users table + events.user_id FK.
+    Any fourth file in this directory is an orphan revision (regression)
+    and must be removed or rolled into the chain explicitly.
     """
     py_files = _collect_py_files()
     actual_names = sorted(p.name for p in py_files)
-    expected_names = sorted([_BASELINE_FILENAME, _EVENTS_FILENAME])
+    expected_names = sorted([_BASELINE_FILENAME, _EVENTS_FILENAME, _USERS_FILENAME])
     assert actual_names == expected_names, (
-        "Phase 4.2 must ship exactly two migrations: the empty baseline "
-        f"and the events table. Expected files {expected_names!r}; found "
-        f"{actual_names!r}. An extra file indicates an orphan revision; "
-        "a missing file indicates a regression in the migration chain."
+        "Phase 4.3 must ship exactly three migrations: the empty "
+        "baseline, the events table, and the users table. Expected "
+        f"files {expected_names!r}; found {actual_names!r}. An extra "
+        "file indicates an orphan revision; a missing file indicates a "
+        "regression in the migration chain."
     )
 
 
