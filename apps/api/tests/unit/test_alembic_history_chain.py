@@ -65,12 +65,13 @@ from alembic.script import ScriptDirectory
 _APPS_API_ROOT: Path = Path(__file__).resolve().parents[2]
 _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 
-# Single source of truth for the two Phase 4.x revision ids. Mirroring
+# Single source of truth for the three Phase 4.x revision ids. Mirroring
 # the same literals used by ``test_alembic_baseline_revision.py`` so a
 # rename anywhere in the chain breaks both the AST check and the
 # alembic-runtime check in the same commit.
 _BASELINE_REVISION_ID: str = "phase_4_1_baseline"
 _EVENTS_REVISION_ID: str = "phase_4_2_events"
+_USERS_REVISION_ID: str = "phase_4_3_users"
 
 
 def _load_script_directory() -> ScriptDirectory:
@@ -106,13 +107,13 @@ def test_alembic_history_reports_single_head_at_events_revision() -> None:
     # ``tuple`` for the equality assertion so the message reads naturally
     # regardless of the concrete container type alembic chose.
     heads = tuple(script.get_heads())
-    assert heads == (_EVENTS_REVISION_ID,), (
+    assert heads == (_USERS_REVISION_ID,), (
         f"alembic must report exactly one head and it must be "
-        f"{_EVENTS_REVISION_ID!r} (the Phase 4.2 events migration); "
+        f"{_USERS_REVISION_ID!r} (the Phase 4.3 users migration); "
         f"got {heads!r}. More than one head indicates the migration "
         f"chain branched (e.g. two migrations both set "
-        f"``down_revision = 'phase_4_1_baseline'`` without merging); a "
-        f"different head indicates a Phase 4.3+ migration sneaked in "
+        f"``down_revision = 'phase_4_2_events'`` without merging); a "
+        f"different head indicates a Phase 4.4+ migration sneaked in "
         f"prematurely."
     )
 
@@ -172,37 +173,37 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
     # index + count.
     walk = list(script.walk_revisions())
 
-    assert len(walk) == 2, (
-        f"alembic chain must contain exactly two revisions in Phase 4.2 "
-        f"(baseline + events); walk_revisions() yielded {len(walk)}: "
-        f"{[r.revision for r in walk]!r}. A third revision indicates an "
-        f"orphan or Phase 4.3+ migration landed prematurely; one "
-        f"revision indicates the events migration is missing from the "
-        f"chain."
+    assert len(walk) == 3, (
+        f"alembic chain must contain exactly three revisions in Phase 4.3 "
+        f"(baseline + events + users); walk_revisions() yielded {len(walk)}: "
+        f"{[r.revision for r in walk]!r}. A fourth revision indicates an "
+        f"orphan or Phase 4.4+ migration landed prematurely; fewer "
+        f"revisions indicate a missing chain link."
     )
 
-    head_script, base_script = walk
+    head_script, events_script, base_script = walk
 
-    # ---- Head position: the events migration sits on top.
-    assert head_script.revision == _EVENTS_REVISION_ID, (
-        f"The head of walk_revisions() must be {_EVENTS_REVISION_ID!r} "
-        f"(the events migration); got {head_script.revision!r}. The "
+    # ---- Head position: the users migration sits on top.
+    assert head_script.revision == _USERS_REVISION_ID, (
+        f"The head of walk_revisions() must be {_USERS_REVISION_ID!r} "
+        f"(the users migration); got {head_script.revision!r}. The "
         f"walk order is head-to-base, so the first element is the head."
     )
 
-    # ---- Events migration chains on the baseline.
-    # ``Script.down_revision`` is typed as ``str | tuple[str, ...] | None``
-    # in alembic (a tuple for merge migrations, a str for a normal chain
-    # link, None for the chain root). The events migration is a normal
-    # chain link, so the value must be the baseline revision id as a
-    # plain string.
-    assert head_script.down_revision == _BASELINE_REVISION_ID, (
+    # ---- Users migration chains on the events migration.
+    assert head_script.down_revision == _EVENTS_REVISION_ID, (
+        f"Users migration's down_revision must equal "
+        f"{_EVENTS_REVISION_ID!r}; got {head_script.down_revision!r}."
+    )
+
+    # ---- Events migration chains on the baseline (Phase 4.2 invariant).
+    assert events_script.revision == _EVENTS_REVISION_ID, (
+        f"Middle script in walk must be {_EVENTS_REVISION_ID!r}; "
+        f"got {events_script.revision!r}."
+    )
+    assert events_script.down_revision == _BASELINE_REVISION_ID, (
         f"Events migration's down_revision must equal "
-        f"{_BASELINE_REVISION_ID!r} at the alembic-runtime layer "
-        f"(``Script.down_revision``); got {head_script.down_revision!r}. "
-        f"This is the Phase 4.2 chain-preservation Seed constraint — "
-        f"any rewrite that breaks this link silently invalidates every "
-        f"downstream Phase 4.3+ migration."
+        f"{_BASELINE_REVISION_ID!r}; got {events_script.down_revision!r}."
     )
 
     # ---- Base position: the baseline migration is still the root.

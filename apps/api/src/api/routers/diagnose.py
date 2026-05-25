@@ -46,6 +46,8 @@ from typing import Final
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from api.db.models.user import User
+from api.dependencies.auth import require_current_user
 from api.dependencies.diagnose import DiagnoseFn, get_diagnose_fn
 from api.dependencies.selfie_validation import validate_selfie_upload
 from api.schemas.diagnose import DiagnoseResponse
@@ -97,6 +99,7 @@ router: APIRouter = APIRouter(tags=["diagnose"])
 async def post_diagnose(
     selfie_bytes: bytes = Depends(validate_selfie_upload),
     diagnose_fn: DiagnoseFn = Depends(get_diagnose_fn),
+    current_user: User = Depends(require_current_user),
 ) -> DiagnoseResponse:
     """Diagnose a selfie payload and return the 9-field result.
 

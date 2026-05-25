@@ -115,3 +115,73 @@ def get_database_url() -> str | None:
     if value is None or value == "":
         return None
     return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 4.3 — auth-layer env vars (JWT_SECRET, APPLE_BUNDLE_ID)
+# ---------------------------------------------------------------------------
+# These two env vars are required at app startup; missing values raise
+# at import / dependency-resolution time so the app fails fast in CI and
+# in production rather than at the first authenticated request.
+
+
+def get_jwt_secret() -> str | None:
+    """Return ``JWT_SECRET`` from env, or ``None`` if unset or empty.
+
+    The backend HS256 signing secret. Used by
+    :func:`api.auth.backend_jwt.issue_backend_jwt` and
+    :func:`api.auth.backend_jwt.verify_backend_jwt`. Empty strings count
+    as "unset" so a stray ``JWT_SECRET=`` line in ``.env`` doesn't
+    propagate to a broken signing call.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("JWT_SECRET")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_jwt_secret() -> str:
+    """Return ``JWT_SECRET`` or raise :class:`LookupError`.
+
+    Convenience for surfaces (auth router, ``require_current_user``
+    dependency) that cannot operate without the secret. The error
+    message names the env var but NOT its value — secrets never appear
+    in exception text.
+    """
+    value = get_jwt_secret()
+    if value is None:
+        raise LookupError(
+            "JWT_SECRET is required for the auth layer. "
+            "Set the env var in .env or the deployment environment."
+        )
+    return value
+
+
+def get_apple_bundle_id() -> str | None:
+    """Return ``APPLE_BUNDLE_ID`` from env, or ``None`` if unset/empty.
+
+    The iOS app's bundle identifier. Used by
+    :func:`api.auth.apple_verifier.verify_apple_id_token` to enforce
+    the ``aud`` claim on Apple ID tokens.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("APPLE_BUNDLE_ID")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_apple_bundle_id() -> str:
+    """Return ``APPLE_BUNDLE_ID`` or raise :class:`LookupError`.
+
+    Convenience for the auth router. The error message names the env
+    var but not its value.
+    """
+    value = get_apple_bundle_id()
+    if value is None:
+        raise LookupError(
+            "APPLE_BUNDLE_ID is required for the auth layer. "
+            "Set the env var in .env or the deployment environment."
+        )
+    return value

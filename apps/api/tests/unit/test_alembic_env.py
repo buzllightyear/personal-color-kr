@@ -100,14 +100,16 @@ def test_alembic_env_exposes_events_target_metadata() -> None:
         metadata, MetaData
     ), f"target_metadata must be a sqlalchemy.MetaData; got {type(metadata)!r}."
 
-    # Phase 4.2 registers exactly the ``events`` table on ``Base.metadata``.
-    # Asserting the full table-name set (rather than ``"events" in ...``)
-    # catches both kinds of drift: a missing model registration AND an
-    # unintended Phase 4.3+ table sneaking into Phase 4.2.
-    expected_tables = {"events"}
+    # Phase 4.3 registers exactly two tables on ``Base.metadata``:
+    # ``events`` (Phase 4.2) + ``users`` (Phase 4.3). Asserting the full
+    # table-name set (rather than membership checks) catches both kinds
+    # of drift: a missing model registration AND an unintended Phase
+    # 4.4+ table sneaking in.
+    expected_tables = {"events", "users"}
     assert set(metadata.tables) == expected_tables, (
-        f"Phase 4.2 target_metadata must contain exactly {expected_tables!r}; "
+        f"Phase 4.3 target_metadata must contain exactly {expected_tables!r}; "
         f"found {sorted(metadata.tables)!r}. An extra table indicates a "
-        "premature Phase 4.3+ model landed here; a missing table indicates "
-        "the events model was not imported by api.db.models.__init__."
+        "premature Phase 4.4+ model landed here; a missing table indicates "
+        "either the events or users model was not imported by "
+        "api.db.models.__init__."
     )

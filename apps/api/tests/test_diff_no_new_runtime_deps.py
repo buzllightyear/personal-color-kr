@@ -159,6 +159,25 @@ AC1_RUNTIME_DEP_ALLOWLIST: frozenset[str] = frozenset(
         "python-dotenv",
         "pydantic>=2",
         "python-multipart",
+        # Phase 4.3 (Apple Sign In) addition — PyJWT[crypto] is the
+        # ONLY new runtime dep introduced for the self-managed Apple
+        # Sign In flow. Justification:
+        #   * Verifies Apple-issued ID tokens (RS256 against Apple's
+        #     JWKS) inside POST /v1/auth/sign-in-with-apple. The
+        #     ``[crypto]`` extra pulls in ``cryptography``, which is
+        #     mandatory for RS256 signature verification — without it,
+        #     PyJWT raises an algorithm-not-found error.
+        #   * Signs/verifies the backend's own stateless HS256 session
+        #     token (sub=users.id, 24h TTL, JWT_SECRET env var) consumed
+        #     by the ``require_current_user`` dependency on POST
+        #     /v1/diagnose.
+        # This is intentionally NOT supabase-py / firebase-admin /
+        # authlib — Phase 4.3 is self-managed Apple Sign In (no Supabase
+        # SDK, no Firebase SDK, no third-party identity broker).
+        # PyJWT[crypto] is the minimum surface area covering both the
+        # Apple-side RS256 verification and the backend-side HS256
+        # mint/verify operations on a single dependency line.
+        "PyJWT[crypto]",
         # NOTE: ``core-python`` is intentionally NOT listed here. The
         # original AC1 seed declared it as a PEP 508 editable path
         # dependency (``core-python @ file://../../packages/core-python``),

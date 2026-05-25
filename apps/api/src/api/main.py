@@ -19,8 +19,10 @@ from fastapi import FastAPI
 
 from api.config.logging import configure_json_logging
 from api.middleware.request_id import RequestIdMiddleware
+from api.routers import auth as auth_router
 from api.routers import diagnose as diagnose_router
 from api.routers import health as health_router
+from api.routers import version as version_router
 
 
 def create_app() -> FastAPI:
@@ -49,12 +51,15 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="personal-color-kr API",
         version="0.1.0",
-        # Disable the default docs surface; the three v1 endpoints are
-        # documented in the Seed contract, not via OpenAPI's auto-docs page,
-        # because Phase 4.1 is local-only (no public docs surface).
+        # Phase 4.3 promotes the machine-readable OpenAPI document to a public
+        # surface so the contract gate (test_openapi_*.py) can assert security
+        # schemes, request/response shapes, and which endpoints are public —
+        # this is the only place the spec is exposed; the human-facing Swagger
+        # UI / ReDoc surfaces remain disabled until a later phase ships a
+        # public docs site.
         docs_url=None,
         redoc_url=None,
-        openapi_url=None,
+        openapi_url="/openapi.json",
     )
 
     # Register the request_id middleware (AC16) — single source of the
@@ -68,6 +73,8 @@ def create_app() -> FastAPI:
     # at ``/v1/health`` (AC2) and ``/v1/db-health`` (AC3); the diagnose
     # endpoint is exposed exclusively at ``/v1/diagnose`` (Sub-AC 5.3).
     app.include_router(health_router.router, prefix="/v1")
+    app.include_router(version_router.router, prefix="/v1")
+    app.include_router(auth_router.router, prefix="/v1")
     app.include_router(diagnose_router.router, prefix="/v1")
 
     return app

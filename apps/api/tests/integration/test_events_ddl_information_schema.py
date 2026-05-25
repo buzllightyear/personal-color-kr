@@ -236,6 +236,8 @@ async def _reset_db_to_blank(db_url: str) -> None:
     try:
         async with engine.begin() as conn:
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
+
+            await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     finally:
         await engine.dispose()
@@ -309,18 +311,23 @@ async def test_alembic_upgrade_head_events_columns_match_seed_ddl_via_informatio
     finally:
         await engine.dispose()
 
-    # Step 4 — exactly six columns.
-    assert len(rows) == 6, (
-        "Phase 4.2 DDL drift: the events table must report exactly 6 "
+    # Step 4 — exactly seven columns (Phase 4.2: 6 + Phase 4.3 user_id).
+    assert len(rows) == 7, (
+        "Phase 4.3 DDL drift: the events table must report exactly 7 "
         "columns in information_schema.columns after `alembic upgrade "
-        f"head`; got {len(rows)} row(s). Raw rows: {rows!r}."
+        "head` (6 Phase 4.2 columns + the Phase 4.3 user_id FK); "
+        f"got {len(rows)} row(s). Raw rows: {rows!r}."
     )
 
     # Step 5 — ordered column-name sequence matches the Seed contract.
+    # Phase 4.2 pinned the first six; Phase 4.3 added ``user_id`` as the
+    # seventh via ``op.add_column`` so the ordinal_position 7 is stable.
     actual_names_in_order: tuple[str, ...] = tuple(row[0] for row in rows)
-    expected_names_in_order: tuple[str, ...] = tuple(_EXPECTED_COLUMN_DDL.keys())
+    expected_names_in_order: tuple[str, ...] = tuple(
+        list(_EXPECTED_COLUMN_DDL.keys()) + ["user_id"]
+    )
     assert actual_names_in_order == expected_names_in_order, (
-        "Phase 4.2 DDL drift: column declaration order in events does "
+        "Phase 4.3 DDL drift: column declaration order in events does "
         "not match the Seed-pinned sequence. Expected (by ordinal "
         f"position): {expected_names_in_order!r}; got: "
         f"{actual_names_in_order!r}."
