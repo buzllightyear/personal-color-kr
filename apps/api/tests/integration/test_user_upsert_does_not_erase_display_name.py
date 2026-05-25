@@ -25,9 +25,14 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-# Set required env vars before importing api.main.
+# Set required env vars before importing api.main. The api.db.engine
+# module reads DATABASE_URL at first get_engine() call; CI sets
+# DATABASE_URL_TEST but not DATABASE_URL, so we fall back here.
 os.environ.setdefault("JWT_SECRET", "test-secret-for-upsert-integration")
 os.environ.setdefault("APPLE_BUNDLE_ID", "com.personalcolorkr.app.test")
+_test_url = os.environ.get("DATABASE_URL_TEST") or ""
+if _test_url and not os.environ.get("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = _test_url
 
 from api.auth.apple_verifier import VerifiedAppleToken  # noqa: E402
 from api.main import create_app  # noqa: E402

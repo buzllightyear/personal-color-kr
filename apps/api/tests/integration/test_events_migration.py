@@ -312,13 +312,14 @@ async def test_alembic_upgrade_head_creates_events_table_with_six_columns_of_cor
         # by ordinal position.
         actual: dict[str, tuple[str, str]] = {row[0]: (row[1], row[2]) for row in rows}
 
-        # ---- Step 3a: exact column-name set (neither more nor fewer).
+        # ---- Step 3a: exact column-name set (Phase 4.2's 6 + Phase 4.3 user_id).
         # Asserting against a literal set surfaces both missing and extra
         # columns in a single diff so reviewers see the full delta.
-        assert set(actual.keys()) == set(_EXPECTED_COLUMN_TYPES.keys()), (
-            f"Phase 4.2 Sub-AC 3 violated: events table column NAMES drifted "
-            f"from the 6-column Seed spec. Expected exactly: "
-            f"{sorted(_EXPECTED_COLUMN_TYPES.keys())!r}; got: "
+        expected_column_names = set(_EXPECTED_COLUMN_TYPES.keys()) | {"user_id"}
+        assert set(actual.keys()) == expected_column_names, (
+            f"Phase 4.3 events table column NAMES drifted from the spec "
+            f"(6 Phase 4.2 + Phase 4.3 user_id). Expected exactly: "
+            f"{sorted(expected_column_names)!r}; got: "
             f"{sorted(actual.keys())!r}."
         )
 
@@ -388,7 +389,7 @@ async def test_alembic_upgrade_head_creates_events_table_with_exact_schema() -> 
                 row[0]: (row[1], row[2], row[3], row[4]) for row in rows
             }
 
-            # Exact column set — neither more nor fewer than the 6 pinned.
+            # Exact column set — Phase 4.2's 6 + Phase 4.3 user_id.
             assert set(cols.keys()) == {
                 "id",
                 "anonymous_id",
@@ -396,11 +397,12 @@ async def test_alembic_upgrade_head_creates_events_table_with_exact_schema() -> 
                 "properties",
                 "occurred_at",
                 "server_received_at",
+                "user_id",
             }, (
-                f"events table column set drifted from the Seed spec. "
-                f"Expected exactly six columns "
+                f"events table column set drifted from the Phase 4.3 spec. "
+                f"Expected seven columns "
                 f"(id, anonymous_id, event_name, properties, occurred_at, "
-                f"server_received_at); got: {sorted(cols.keys())!r}."
+                f"server_received_at, user_id); got: {sorted(cols.keys())!r}."
             )
 
             # ---- id: UUID NOT NULL, no default.

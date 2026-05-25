@@ -63,7 +63,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, Index, String, func, text
+from sqlalchemy import DateTime, ForeignKey, Index, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -176,6 +176,17 @@ class Event(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+    )
+
+    # ----- user_id: nullable FK to users.id, ON DELETE SET NULL (Phase 4.3) -----
+    # Phase 4.3 adds the FK column so authenticated event ingest (Phase 4.4+)
+    # can link rows back to a user. Nullable so pre-auth anonymous events
+    # still ingest unchanged. ON DELETE SET NULL preserves analytics history
+    # when a user is deleted (GDPR right-to-delete in Phase 7+).
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", name="fk_events_user_id"),
+        nullable=True,
     )
 
     __table_args__ = (
