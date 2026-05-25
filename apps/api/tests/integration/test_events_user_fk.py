@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 
 import pytest
-from sqlalchemy import insert, select, text
+from sqlalchemy import insert, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -78,12 +78,20 @@ async def test_deleting_user_sets_event_user_id_null() -> None:
                 text("DELETE FROM users WHERE id = :id"), {"id": user_id}
             )
             # ---- 4. Verify: the event row still exists, with user_id NULL.
-            result = await conn.execute(select(Event).where(Event.id == event_id))
-            event_row = result.scalar_one()
-            assert event_row is not None
-            assert event_row.user_id is None, (
-                f"events.user_id must be NULL after user delete; "
-                f"got {event_row.user_id!r}"
+            # ``conn`` is an AsyncConnection (Core, not ORM), so we query
+            # the column directly via ``text(...)`` and read the scalar
+            # rather than constructing an ORM-mapped Event instance.
+            result = await conn.execute(
+                text("SELECT user_id FROM events WHERE id = :id"),
+                {"id": event_id},
+            )
+            row = result.fetchone()
+            assert row is not None, (
+                f"events row with id={event_id!r} must still exist after "
+                f"user delete; the ON DELETE SET NULL FK preserves the row."
+            )
+            assert row[0] is None, (
+                f"events.user_id must be NULL after user delete; " f"got {row[0]!r}"
             )
             # Cleanup.
             await conn.execute(

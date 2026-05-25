@@ -60,6 +60,9 @@ _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 # here instead of a confusing test failure deep in an assertion message.
 _BASELINE_REVISION: str = "phase_4_1_baseline"
 _EVENTS_REVISION: str = "phase_4_2_events"
+# Phase 4.3 added the users migration on top of events; ``alembic upgrade
+# head`` now stamps the alembic_version table to this revision.
+_HEAD_REVISION: str = "phase_4_3_users"
 
 # Generous timeout — the events migration emits two ``CREATE INDEX``
 # statements but no data backfill; 60s protects against a wedged asyncpg
@@ -106,7 +109,11 @@ def _run_alembic(target: str, db_url: str) -> subprocess.CompletedProcess[str]:
     message can interpolate stdout + stderr (a richer failure signal than
     the default ``CalledProcessError`` traceback).
     """
-    cmd = "upgrade" if target in ("head", _EVENTS_REVISION) else "downgrade"
+    cmd = (
+        "upgrade"
+        if target in ("head", _EVENTS_REVISION, _HEAD_REVISION)
+        else "downgrade"
+    )
 
     env = os.environ.copy()
     env["DATABASE_URL"] = db_url
@@ -535,10 +542,10 @@ async def test_alembic_upgrade_head_creates_events_table_with_exact_schema() -> 
                 f"alembic_version must contain exactly one row after "
                 f"upgrade head; found {len(ver_rows)}: {ver_rows!r}."
             )
-            assert ver_rows[0][0] == _EVENTS_REVISION, (
+            assert ver_rows[0][0] == _HEAD_REVISION, (
                 f"alembic_version.version_num must equal "
-                f"{_EVENTS_REVISION!r} after upgrade head; got "
-                f"{ver_rows[0][0]!r}."
+                f"{_HEAD_REVISION!r} (Phase 4.3 head) after upgrade head; "
+                f"got {ver_rows[0][0]!r}."
             )
     finally:
         await engine.dispose()
