@@ -133,6 +133,8 @@ async def _reset_db_and_upgrade_head(url: str) -> None:
     try:
         async with setup_engine.begin() as conn:
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
+
+            await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     finally:
         await setup_engine.dispose()

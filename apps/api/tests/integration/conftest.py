@@ -353,6 +353,8 @@ async def _reset_db_to_blank_for_session(db_url: str) -> None:
     try:
         async with engine.begin() as conn:
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
+
+            await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     finally:
         await engine.dispose()
