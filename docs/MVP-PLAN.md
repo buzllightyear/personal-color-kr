@@ -119,7 +119,8 @@
 | 3.4 | 2026-05-23 | 2026-05-23 | `seed_357448aa31d8` | `cade00e` | APPROVED · Stage 2 · 0.98 (fallback self-evaluation) |
 | 4.1 | 2026-05-23 | 2026-05-23 | `orch_236de36fef47` + manual | `db188c0` | CI PASS · 13/19 orch + manual completion (Q00 #1202) |
 | 4.2 | 2026-05-24 | 2026-05-24 | `orch_f2d949d559b5` | `0aad534` | CI PASS · **12/12 orch, 14/14 sub-AC, 0 manual** (Q00 #1202 우회 검증) |
-| 4.3-4.5 | — | — | | | |
+| 4.3 | 2026-05-25 | 2026-05-26 | `orch_d5968c5a063b` + manual | `f87cf76` | CI PASS · 2/21 orch + manual hybrid (~1,400 LOC) — rate-limit cascade recovery |
+| 4.4-4.5 | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
 | 7.x | — | — | | | |
@@ -1107,6 +1108,91 @@ Infrastructure 수정:
 - request_id / source 를 top-level 컬럼화 — 필요 시 `properties` JSONB 안에 넣고, 쿼리 패턴이 굳어지면 별도 컬럼 promotion
 
 **Seed**: `~/.ouroboros/seeds/seed_892439d5fdf7_unit_4_2.yaml` (v1.0.0, ambiguity 0.07, orch 12/12 ACs)
+
+### Phase 4.3 결과 요약 (2026-05-26)
+
+**산출물 (Python 측 5번째 phase — Phase 4.2 events table 위 첫 인증 surface)**:
+
+apps/api/ 에 자체 관리 Apple Sign In 인증 + users 테이블 (7 cols) + events.user_id FK (ON DELETE SET NULL) + Apple JWKS 클라이언트 (1h cache + circuit breaker) + 백엔드 HS256 JWT (24h TTL) + `POST /v1/auth/sign-in-with-apple` 엔드포인트 + `require_current_user` 의존성으로 `POST /v1/diagnose` 보호. Supabase/Firebase 도입 없음, 모바일 변경 없음.
+
+Source (apps/api/src/api/):
+- `db/models/user.py` (237L) — User SQLAlchemy 모델 7 cols (id uuid pk app-side uuid4, apple_sub TEXT UNIQUE, email TEXT NULL (NOT unique — relay-email semantics), email_verified BOOLEAN DEFAULT false, display_name TEXT NULL, created_at/updated_at TIMESTAMPTZ DEFAULT now() with ORM onupdate). `__repr__`이 email/display_name PII 노출 안 함.
+- `db/models/event.py` (수정) — `user_id` Mapped[uuid.UUID | None] + `ForeignKey("users.id", ondelete="SET NULL", name="fk_events_user_id")` 컬럼 추가.
+- `db/migrations/versions/2026_01_03_0000-phase_4_3_users_create_users_table.py` (180L) — `down_revision = "phase_4_2_events"` 체인 + `op.create_table("users", ...)` + `op.add_column("events", user_id)` + `op.create_foreign_key(...ondelete="SET NULL")`. Downgrade는 mirror 순서.
+- `auth/__init__.py` (44L) — 패키지 경계: AppleJwksClient + AppleTokenError + BackendJwtError + 4 helpers 재익스포트.
+- `auth/apple_jwks.py` (197L) — `AppleJwksClient` 싱글톤. `https://appleid.apple.com/auth/keys` JWKS fetch + 1h 인-프로세스 캐시 + `asyncio.Lock` refresh 동기화 + 회복 fallback (refresh 실패 시 stale 캐시 반환, 캐시 비어있고 fetch 실패면 raise).
+- `auth/apple_verifier.py` (179L) — `verify_apple_id_token(identity_token, apple_bundle_id, jwks_client)` → `VerifiedAppleToken(sub, email, email_verified)`. RS256 서명 검증 + iss=`https://appleid.apple.com` + aud=APPLE_BUNDLE_ID + exp ±60s leeway. `email_verified`이 bool 또는 "true"/"false" 문자열 모두 수용 (Apple 인코딩 불일치 방어).
+- `auth/backend_jwt.py` (236L) — `issue_backend_jwt(user_id, jwt_secret, ttl=86400, now=None)` + `verify_backend_jwt(token, jwt_secret)` → `BackendJwtClaims(sub: UUID, iss, aud, iat, exp, jti)`. HS256, 정확히 6 claims (PII 없음 — email/display_name/apple_sub 절대 토큰에 안 들어감). Exception code mapping (expired/invalid_audience/invalid_issuer/invalid_signature/invalid_sub/malformed).
+- `dependencies/auth.py` (94L) — `require_current_user(credentials, session) -> User`. HTTPBearer scheme + JWT 검증 + DB lookup. 401 (missing/invalid JWT) vs 403 (valid JWT but user 미존재) 명확히 구분. Generic `detail="invalid_authorization"` (validation hints 누설 X).
+- `routers/auth.py` (170L) — `POST /v1/auth/sign-in-with-apple`. Apple 검증 → body-vs-token email cross-validation (400 mismatch) → atomic `INSERT ... ON CONFLICT ON CONSTRAINT uq_users_apple_sub DO UPDATE` with COALESCE(NULLIF(...)) display_name 보존 규칙 → backend JWT 발급 → 인라인 UserPublic 응답.
+- `routers/version.py` (101L NEW) — `/v1/version` 을 health.py에서 분리, 독립 router로 (cleaner architecture).
+- `schemas/auth.py` (수정) — `UserPublic(id, email, display_name, created_at)` + `SignInWithAppleResponse(access_token, token_type, expires_in, user)` + 기존 `SignInWithAppleRequest`. 모두 `extra="forbid"`.
+- `config/env.py` (수정) — `get_jwt_secret() / require_jwt_secret()` + `get_apple_bundle_id() / require_apple_bundle_id()`. require_* 는 missing 시 LookupError (값 자체는 에러 메시지에 안 들어감).
+- `db/session.py` (수정) — `select` / `pg_insert` (postgresql dialect) / `func` 재익스포트. AC11 single-import-boundary 유지 (auth router/dep에서 `from sqlalchemy ...` 직접 import 안 함).
+- `main.py` (수정) — `app.include_router(auth_router.router, prefix="/v1")` 추가 (4th router); `openapi_url="/openapi.json"` (Phase 4.1의 None → 공개) → contract test가 OpenAPI 검증 가능.
+- `routers/diagnose.py` (수정) — `current_user: User = Depends(require_current_user)` 추가 → POST /v1/diagnose 인증 필요.
+
+Tests (Phase 4.2 38 → Phase 4.3 49+):
+- `tests/unit/test_backend_jwt.py` (NEW, 189L) — sign/verify round-trip + 모든 failure mode (expired/invalid_audience/invalid_issuer/invalid_signature/invalid_sub/malformed) + PII guard (email/display_name 등이 토큰에 없는지) + leeway 검증.
+- `tests/unit/test_openapi_auth_contract.py` (NEW, 130L) — `/openapi.json` 검증: sign-in request schema (identity_token 필수, full_name/email optional), response schema (access_token/token_type/expires_in/user), POST /v1/diagnose 가 HTTPBearer security 선언, GET /v1/health + /v1/version 는 security 없음.
+- `tests/unit/test_user_model.py` (NEW, 387L orchestrator 산출) — User ORM 구조 (column types, nullability, uniqueness) AST + introspect 기반 검증.
+- `tests/unit/test_auth_request_schema.py` (NEW, 134L orchestrator) — Pydantic v2 validation.
+- `tests/unit/test_apple_bundle_id_config.py` + `test_jwt_secret_config.py` (NEW) — env var startup fail-fast 검증.
+- `tests/unit/conftest.py` (NEW) — 모듈 import 시점에 `api.main.create_app` 을 wrap 하여 모든 unit test의 fresh app에 `require_current_user` stub 자동 주입 → Phase 4.1/4.2 의 diagnose endpoint test가 새 auth 의존성에 깨지지 않음.
+- `tests/integration/test_events_user_fk.py` (NEW) — SET NULL cascade (user 삭제 시 event.user_id NULL) + orphan blocked (존재하지 않는 user_id INSERT 시 IntegrityError) 검증.
+- `tests/integration/test_user_upsert_does_not_erase_display_name.py` (NEW) — 2회 sign-in (1회 full_name 제공, 2회 None) → display_name 보존 검증 (`COALESCE(NULLIF(...))` 규칙).
+- 기존 Phase 4.2 tests 다수 갱신 — `test_alembic_baseline_revision.py` (2 → 3 revisions), `test_alembic_history_chain.py` (chain length + head revision), `test_alembic_env.py` (table set {events} → {events, users}), `test_events_*` (6 columns → 7), `test_diff_no_forbidden_modules.py` (auth prefix 제거 — 정당하게 land), 8개 integration test의 reset helpers (users CASCADE drop 추가).
+
+Infrastructure 수정:
+- `pyproject.toml` — `pyjwt[crypto]` 추가 (Apple RS256 + 백엔드 HS256). `httpx` test-only → runtime 승격 (Apple JWKS fetch).
+- `tests/test_diff_no_new_runtime_deps.py` (수정) — ALLOWLIST 갱신, 각 dep 추가 사유 주석 포함.
+- `.env.example` — `JWT_SECRET` + `APPLE_BUNDLE_ID` placeholders (실제 값 없음, secrets.token_hex(32) 안내 + bundle id mirror 안내).
+- `apps/api/uv.lock` — orchestrator가 uv로 venv 셋업하면서 생성. modern Python reproducibility 위해 commit.
+
+**Ouroboros workflow (4번째 Q00#1202 회귀 + Claude Code rate limit 이중 장애)**:
+
+- Interview: `interview_20260525_064658` — 3 round Socratic (self-managed direct JWKS / 인증 scope on diagnose only / upsert COALESCE rules / 24h TTL / HS256 / ON DELETE SET NULL / OpenAPI contract). Ambiguity 0.0785.
+- Seed: `~/.ouroboros/seeds/seed_28f5e2ba1307_unit_4_3.yaml` (22 ACs / 22 constraints / 13 ontology fields / 8 evaluation principles / 7 exit conditions).
+- Run #1 (`orch_0ba73c1359e5`, FAILED): 0/21 ACs. `fat_harness_mode: True` 확인 — Claude Code 재시작으로 MCP가 새 uvx archive `OQfr-vAg70Zp3_3Dou2qp` 사용 시작, Phase 4.1/4.2 패치된 `w0-6KTvdfTAlFTpb78yfi` 와 별개. 새 archive에 패치 적용.
+- Run #2 (`orch_7a7c55d56177`, CANCELLED): 실행 즉시 진단 — 새 archive 패치했지만 활성 MCP는 `Qe_O4tdvPgeAVtDlHr5Al` archive 사용 중 (uvx 가 또 다른 archive 추출). Cancel 후 4개 active archive 모두 일괄 패치 (OQfr/w0/Qe_/sWoR).
+- Run #3 (`orch_d5968c5a063b`, FAILED): `fat_harness_mode: False` 확인 — Q00#1202 회피 성공. 2/21 AC 완료 (AC3 sign-in request schema, AC17 PyJWT) 후 last_message_type=result "Task execution failed: Claude Code returned an error result: success" 발생. Claude Code (구현용 backend session) 의 rate limit이 implementation 단계 중간에 hit. orchestrator는 정상 동작했으나 backend session 종료로 fail.
+- **Hybrid completion** (~30분, ~1,400 LOC manual): orchestrator scaffold (1,256 LOC) 위에 alembic migration + Apple JWKS client + Apple verifier + backend JWT + auth dependency + auth router (atomic upsert) + integration tests (FK 2개, upsert preservation) + OpenAPI contract test + backend JWT unit tests + auth-stub conftest + env extension + SQLAlchemy boundary re-exports + .env.example placeholders.
+- CI 회복 3 round: ① users table reset CASCADE 추가 (8 integration files), ② Event ORM user_id 컬럼 + Phase 4.2 column-count tests 갱신 + forbidden modules에서 auth prefix 제거 + DATABASE_URL fallback, ③ head revision `phase_4_2_events` → `phase_4_3_users` + FK test conn.execute(select) 대신 raw text() 사용.
+
+**4중 정합 (local pre-push)**:
+- `python -m pytest -q apps/api/tests` → **181 passed, 23 skipped** (integration tier, DATABASE_URL_TEST 미설정)
+- `python -m mypy --strict apps/api/src` → **no issues found in 36 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **85 files unchanged**
+- CI: postgres:16 service + alembic upgrade head (이제 `phase_4_3_users` 까지 적용) + apps/api pytest (FK 통합 테스트 포함) → **PASS** (3차 fix 후)
+
+**Git**:
+- Feature branch: `ooo/orch_d5968c5a063b` (auto-deleted post-merge)
+- 핵심 commit: `f87cf76` (28 files), CI 회복 commits: `77f3320` + `17166a6` + `86bc431`
+- PR #27 merge commit: `f10b8d9` (no-ff)
+
+**Phase 4.2 비교 (Q00#1202 회복 패턴 진화)**:
+| 측면 | Phase 4.2 | Phase 4.3 |
+|---|---|---|
+| Orchestrator 결과 | 12/12 (1회 성공) | 2/21 (3회 실패 — Q00 + rate limit 이중) |
+| Manual completion | 0 | ~1,400 LOC (hybrid) |
+| Ambiguity | 0.07 | 0.0785 |
+| Q00#1202 회귀 | 처음 검증 | uvx 새 archive 추출로 재발 — multi-archive 패치 필요 |
+| 새 실패 모드 | — | Claude Code (구현 backend) rate limit |
+| 회복 수고 | cache patch 재사용 | multi-archive patch + hybrid manual + 3 round CI fix |
+| 산출 합계 | 24 files / +~3,800 LOC | 28 files / +~2,650 LOC (orchestrator 1,256 + manual ~1,400) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- Supabase Auth / Supabase SDK / Firebase Auth (self-managed 영구)
+- Refresh tokens / session revocation / rotation (Phase 5+)
+- POST /v1/events endpoint + repository layer (Phase 4.4)
+- Optional auth dependency / GET /v1/me (Phase 4.4+)
+- Email merge across auth providers / 패스워드 auth (Phase 5+)
+- Apple Sign In on web (모바일 only)
+- GDPR right-to-delete endpoint (Phase 7)
+- users admin UI / dashboards
+
+**Seed**: `~/.ouroboros/seeds/seed_28f5e2ba1307_unit_4_3.yaml` (v1.0.0, ambiguity 0.0785)
 
 ## 참고
 
