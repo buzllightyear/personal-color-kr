@@ -16,21 +16,74 @@ Validated:
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from api.db.models.user import User
 from api.db.repositories.events_repository import insert_event
 from api.db.session import get_session
 from api.dependencies.auth import require_current_user
 from api.main import create_app
+
+# ``parents[2]`` from apps/api/tests/integration/test_*.py resolves to apps/api/
+# so the alembic CLI subprocess receives an absolute path regardless of pytest cwd.
+_APPS_API_ROOT: Path = Path(__file__).resolve().parents[2]
+_ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
+_ALEMBIC_CLI_TIMEOUT_SECONDS: int = 60
+
+
+async def _reset_db_and_upgrade_head(url: str) -> None:
+    """Drop ``events`` + ``users`` + ``alembic_version`` and run ``alembic upgrade head``.
+
+    The seeded_app fixture needs both tables at head; ``test_alembic_upgrade_head.py``
+    (alphabetically prior) leaves the DB at the baseline revision, so we cannot
+    assume the schema is already at head. Mirrors the pattern in
+    ``test_events_model_roundtrip.py``.
+    """
+    setup_engine = create_async_engine(url, future=True)
+    try:
+        async with setup_engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    finally:
+        await setup_engine.dispose()
+
+    env = os.environ.copy()
+    env["DATABASE_URL"] = url
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "alembic",
+            "-c",
+            str(_ALEMBIC_INI_PATH),
+            "upgrade",
+            "head",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=_ALEMBIC_CLI_TIMEOUT_SECONDS,
+        check=False,
+    )
+    if result.returncode != 0:  # pragma: no cover — exercised only on failure
+        raise RuntimeError(
+            f"alembic upgrade head failed (exit {result.returncode}): "
+            f"{result.stdout}\n{result.stderr}"
+        )
 
 
 async def _make_user(session: AsyncSession, apple_sub: str) -> User:
@@ -51,9 +104,16 @@ async def _make_user(session: AsyncSession, apple_sub: str) -> User:
 
 @pytest_asyncio.fixture(name="seeded_app")
 async def seeded_app_fixture(
+    resolved_test_database_url: str,
     transactional_async_session: AsyncSession,
 ) -> AsyncIterator[tuple[Any, User]]:
-    """Seed 4 cohort users (1 active) and yield an app bound to the session."""
+    """Seed 4 cohort users (1 active) and yield an app bound to the session.
+
+    Calls ``_reset_db_and_upgrade_head`` first so the test is robust to whatever
+    schema state prior tests left behind (e.g. ``test_alembic_upgrade_head.py``
+    intentionally downgrades to baseline).
+    """
+    await _reset_db_and_upgrade_head(resolved_test_database_url)
     session = transactional_async_session
     cohort_users = [await _make_user(session, f"sub-{i}") for i in range(4)]
 
