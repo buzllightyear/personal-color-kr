@@ -107,6 +107,17 @@ module = ["personal_color.*"]
 ignore_missing_imports = true
 follow_imports = "silent"
 
+# `retention` is the core-python package hosting the pure, HTTP-ignorant
+# 30-day retention handler (`retention.api.get_retention_metrics`) consumed
+# by `api.routers.metrics` in Phase 4.4. Like `personal_color`, it is an
+# editable path dep without a PEP 561 `py.typed` marker, so mypy --strict
+# would otherwise refuse to follow it. The override trusts its inline
+# annotations (the handler returns an untyped `dict` envelope by design).
+[[tool.mypy.overrides]]
+module = ["retention.*"]
+ignore_missing_imports = true
+follow_imports = "silent"
+
 [tool.ruff]
 # Match the Phase 0.x / Phase 4.x `target-version = "py312"` so ruff lints
 # against the same Python the CI runner uses (see `.github/workflows/ci.yml`).

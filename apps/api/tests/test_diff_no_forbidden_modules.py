@@ -143,13 +143,13 @@ SCOPING_PATH_PREFIX = "apps/api/"
 # as the Seed text for easy cross-reference.
 FORBIDDEN_BASENAME_PREFIXES: tuple[str, ...] = (
     # Phase 4.3 landed `auth` modules (Apple Sign In) legitimately, so the
-    # prefix is removed from this gate. The original Phase 4.1 entries for
-    # "users" / "events" are retained because Phase 4.2's `event.py` model
-    # and Phase 4.3's `user.py` model use singular names that do not match
-    # the plural prefixes; a future PR that adds a `routers/users.py` is
-    # still gated correctly by the plural prefix here.
-    "users",  # Users routers/repositories (Phase 4.4+ if added)
-    "events",  # /v1/events endpoint surface (Phase 4.4)
+    # prefix is removed from this gate. Phase 4.4 lands the `events*` router
+    # / repository / schema files and the `metrics*` router legitimately, so
+    # the "events" prefix is removed too (and "metrics" was never gated). The
+    # "users" prefix is retained because Phase 4.3's `user.py` model uses a
+    # singular name that does not match the plural prefix; a future PR that
+    # adds a `routers/users.py` is still gated correctly here.
+    "users",  # Users routers/repositories (Phase 4.5+ if added)
     "magazine",  # Magazine surface (Phase 5)
     "referral",  # Referral wiring (Phase 4.5)
     "edit",  # /v1/edit Fal.ai vendor route (Phase 4.4)
