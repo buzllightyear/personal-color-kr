@@ -21,7 +21,9 @@ from api.config.logging import configure_json_logging
 from api.middleware.request_id import RequestIdMiddleware
 from api.routers import auth as auth_router
 from api.routers import diagnose as diagnose_router
+from api.routers import events as events_router
 from api.routers import health as health_router
+from api.routers import metrics as metrics_router
 from api.routers import version as version_router
 
 
@@ -76,6 +78,11 @@ def create_app() -> FastAPI:
     app.include_router(version_router.router, prefix="/v1")
     app.include_router(auth_router.router, prefix="/v1")
     app.include_router(diagnose_router.router, prefix="/v1")
+    # Phase 4.4 — authenticated event ingest (`POST /v1/events`) and the
+    # retention metric assembled server-side from the events table
+    # (`GET /v1/metrics/retention`). Both require a valid backend JWT.
+    app.include_router(events_router.router, prefix="/v1")
+    app.include_router(metrics_router.router, prefix="/v1")
 
     return app
 

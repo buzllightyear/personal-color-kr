@@ -185,3 +185,87 @@ def require_apple_bundle_id() -> str:
             "Set the env var in .env or the deployment environment."
         )
     return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 4.4 — PostHog Cohort API pull integration env vars
+# ---------------------------------------------------------------------------
+# The PostHog Cohort API pull layer (``api.posthog.posthog_cohort_client``)
+# needs two server-side values to construct an authenticated request against
+# PostHog's project-scoped cohorts endpoint:
+#
+#   * ``POSTHOG_PERSONAL_API_KEY`` — a Personal API Key (``phx_*`` format)
+#     sent as a ``Bearer`` token. This is a *server-side* secret; it is
+#     never exposed to the mobile client and never appears in any response
+#     body or log line (the same secret-hygiene contract as JWT_SECRET).
+#   * ``POSTHOG_PROJECT_ID`` — the numeric project identifier used to build
+#     the ``/api/projects/{project_id}/cohorts/{cohort_id}`` URL path.
+#
+# Both follow the established fail-fast ``require_*`` convention: the
+# ``get_*`` accessor returns ``None`` when unset/empty; the ``require_*``
+# wrapper raises :class:`LookupError` (naming the var, never its value) so
+# the pull layer fails fast rather than firing a malformed request.
+
+
+def get_posthog_personal_api_key() -> str | None:
+    """Return ``POSTHOG_PERSONAL_API_KEY`` from env, or ``None`` if unset/empty.
+
+    The PostHog Personal API Key (``phx_*`` format) used as the ``Bearer``
+    credential on the Cohort API pull request. Empty strings count as
+    "unset" so a stray ``POSTHOG_PERSONAL_API_KEY=`` line in ``.env`` does
+    not propagate a blank credential into the ``Authorization`` header.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("POSTHOG_PERSONAL_API_KEY")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_posthog_personal_api_key() -> str:
+    """Return ``POSTHOG_PERSONAL_API_KEY`` or raise :class:`LookupError`.
+
+    Convenience for the PostHog cohort pull client. The error message
+    names the env var but NOT its value — the key is a secret and never
+    appears in exception text.
+    """
+    value = get_posthog_personal_api_key()
+    if value is None:
+        raise LookupError(
+            "POSTHOG_PERSONAL_API_KEY is required for the PostHog cohort "
+            "pull integration. Set the env var in .env or the deployment "
+            "environment."
+        )
+    return value
+
+
+def get_posthog_project_id() -> str | None:
+    """Return ``POSTHOG_PROJECT_ID`` from env, or ``None`` if unset/empty.
+
+    The numeric PostHog project identifier used to build the cohort API
+    URL path. Returned as the raw string value (not coerced to ``int``)
+    so a malformed value surfaces at the HTTP layer rather than as an
+    opaque ``ValueError`` during env resolution; the client validates the
+    shape when it builds the URL.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("POSTHOG_PROJECT_ID")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_posthog_project_id() -> str:
+    """Return ``POSTHOG_PROJECT_ID`` or raise :class:`LookupError`.
+
+    Convenience for the PostHog cohort pull client. The error message
+    names the env var but not its value.
+    """
+    value = get_posthog_project_id()
+    if value is None:
+        raise LookupError(
+            "POSTHOG_PROJECT_ID is required for the PostHog cohort pull "
+            "integration. Set the env var in .env or the deployment "
+            "environment."
+        )
+    return value
