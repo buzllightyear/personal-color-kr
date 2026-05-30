@@ -120,7 +120,8 @@
 | 4.1 | 2026-05-23 | 2026-05-23 | `orch_236de36fef47` + manual | `db188c0` | CI PASS · 13/19 orch + manual completion (Q00 #1202) |
 | 4.2 | 2026-05-24 | 2026-05-24 | `orch_f2d949d559b5` | `0aad534` | CI PASS · **12/12 orch, 14/14 sub-AC, 0 manual** (Q00 #1202 우회 검증) |
 | 4.3 | 2026-05-25 | 2026-05-26 | `orch_d5968c5a063b` + manual | `f87cf76` | CI PASS · 2/21 orch + manual hybrid (~1,400 LOC) — rate-limit cascade recovery |
-| 4.4-4.5 | — | — | | | |
+| 4.4 | 2026-05-29 | 2026-05-30 | `orch_d46b4c3e28f5` + 0-LOC hybrid | `217cdba` | CI PASS · 10/23 orch + worktree-harvest (0 LOC manual code; 1 round CI fix) |
+| 4.5 | — | — | | | |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
 | 7.x | — | — | | | |
@@ -1193,6 +1194,80 @@ Infrastructure 수정:
 - users admin UI / dashboards
 
 **Seed**: `~/.ouroboros/seeds/seed_28f5e2ba1307_unit_4_3.yaml` (v1.0.0, ambiguity 0.0785)
+
+### Phase 4.4 결과 요약 (2026-05-30)
+
+**산출물 (Python 측 6번째 phase — Phase 4.3 인증 위 첫 외부 ingestion + 첫 metrics surface)**:
+
+apps/api/ 에 인증된 사용자 이벤트 ingestion + retention metrics 호스팅 + PostHog Cohort API pull 클라이언트. events 테이블 schema 변경 0 (Phase 4.2/4.3 의 6 cols + user_id FK 그대로 사용), core-python retention 모듈 1,020 LOC 무수정 (HTTP-ignorant + DB-ignorant 유지), 신규 runtime dependency 0 (httpx 는 Phase 4.3 에서 이미 promotion).
+
+Source (apps/api/src/api/):
+- `db/repositories/events_repository.py` (222L NEW) — events 테이블 단일 SQL 경계. `insert_event(session, *, user_id, event_name, occurred_at, properties, anonymous_id)` + `distinct_user_ids_for_event_in_window(session, event_name, start_inclusive, end_exclusive, restrict_to_user_ids=None)` (cohort + active assembly 양쪽 호출 모두 처리하는 generic method). 모든 SQL 접근이 이 모듈을 거치므로 AC11 single-import-boundary 유지.
+- `posthog/posthog_cohort_client.py` (176L NEW) — httpx async client. `POSTHOG_PERSONAL_API_KEY` (phx_*, server-side only) Bearer 인증 + `fetch_cohort(cohort_id: int) -> CohortDefinition` 한 method. MockTransport 기반 테스트 (실 PostHog 호출 없음). Phase 5 의 magazine targeting 가 consumer.
+- `routers/events.py` (100L NEW) — `POST /v1/events`. `require_current_user` 의존성 필수 (anonymous ingestion 안 받음), request body 의 user_id 필드 무시 + `current_user.id` 강제 (user impersonation 방어), single row insert (batch 안 받음).
+- `routers/metrics.py` (160L NEW) — `GET /v1/metrics/retention`. 5 mandatory query params (`cohort_event`, `cohort_start`, `cohort_end`, `active_event`, `window_days` 1~365). validation 강함: `cohort_end >= cohort_start`, event_name regex `^[a-z_]+$`. assembly 가 events 테이블 → cohort set → active set (cohort subset, window=[cohort_end+1day, +window_days)) 조립 후 core-python `calculate_30day_retention(cohort, active)` 위임. 응답은 `ApiResponse[RetentionMetricsData]` envelope 7 fields (cohort_size / active_size / retention_rate / threshold_met / threshold_value / window_days / computed_at).
+- `schemas/events.py` (106L) + `schemas/metrics.py` (61L) — Pydantic v2 모델, 모두 `extra="forbid"`.
+- `config/env.py` (+84L) — `POSTHOG_PERSONAL_API_KEY` + `POSTHOG_PROJECT_ID` getter/require_ 쌍. fail-fast LookupError 패턴 (Phase 4.3 의 JWT_SECRET / APPLE_BUNDLE_ID 패턴 재사용, 값 자체는 에러 메시지에 안 들어감).
+- `main.py` (+7L) — `include_router(events.router, prefix="/v1")` + `include_router(metrics.router, prefix="/v1")` (5th + 6th routers).
+- `routers/__init__.py` (+14/-2L) — events + metrics export.
+
+Tests (Phase 4.3 181 → Phase 4.4 207 unit, +26 신규):
+- `tests/unit/test_events_endpoint.py` (175L NEW) — POST /v1/events 401 (no auth) / 201 (success + DB row 검증) / user_id force 시맨틱 / Pydantic validation.
+- `tests/unit/test_metrics_retention_endpoint.py` (182L NEW) — GET /v1/metrics/retention 401 / 200 (envelope shape + 7 fields) / 422 (validation: cohort_end < cohort_start, window_days 범위, event_name regex).
+- `tests/unit/test_events_repository_sql_boundary.py` (245L NEW) — repository 가 events 테이블 단일 SQL 경계임을 import guard 로 검증 (Phase 4.3 의 sqlalchemy_import_boundary 패턴 재사용).
+- `tests/unit/test_posthog_cohort_client.py` (105L NEW) — httpx MockTransport 로 PostHog response 시뮬레이션. Bearer header / URL path / JSON 파싱 검증.
+- `tests/unit/test_posthog_env.py` (60L NEW) — env var fail-fast 검증.
+- `tests/integration/test_events_and_retention_flow.py` (205L NEW after fix) — Postgres-backed end-to-end. 4 cohort users + 1 active user fixture → POST /v1/events 201 + retention rate 0.25 검증. function-scoped `_reset_db_and_upgrade_head` 헬퍼 (test_events_model_roundtrip.py 패턴 차용) 로 schema 의존 명시.
+
+Infrastructure 수정:
+- `.env.example` (+17L) — POSTHOG_PERSONAL_API_KEY + POSTHOG_PROJECT_ID placeholder + security notes (server-side only, mobile 노출 금지).
+- `pyproject.toml` (+11L) — runtime dependency 추가 없음, 주석만.
+- `tests/test_diff_no_forbidden_modules.py` (+14/-2L) — FORBIDDEN_BASENAME_PREFIXES 에서 `events`, `metrics` 제거 (Phase 4.3 의 `auth` 제거 패턴 재현).
+
+**Ouroboros workflow (5번째 Q00#1202 회피 검증 + venv 도구 부재로 인한 false-failure)**:
+
+- Interview: `interview_20260525_172137` — 5 round Socratic Q&A (데이터 흐름 방향 / cohort assembly 위치 / 인증 scope / batch+dedup+AC scope / assembly semantic + 인가). Ambiguity 0.076 (Phase 4.3 의 0.0785 보다 낮음, Phase 4.1 의 0.06 다음으로 낮음).
+- Seed: `~/.ouroboros/seeds/seed_77a119e8cec2_unit_4_4.yaml` (21 ACs / 19 constraints / 19 ontology fields / 10 evaluation principles / 5 exit conditions).
+- Run #1 (`orch_d46b4c3e28f5`): orchestrator 가 851 LOC source + 910 LOC tests 작성 후 Level 2/5 + 10/23 AC 도달 시점에 "failed" 상태로 종료. 원인: orchestrator 의 in-worktree verify harness 가 `.venv/bin/{ruff,black,mypy,pytest}` 를 호출하려 했으나 orchestrator venv 에 해당 도구 미설치 (RC=127 "command not found"). 코드 품질 자체 문제 아님. **Q00#1202 패치 (활성 archive `ybK6-d2qwqf7jytwL58Wf` 의 `fat_harness_mode = False`) 정상 동작 확인** — Phase 4.3 Run #1 의 0/21 cascade 와 대비, Phase 4.4 는 layered AC 정상 진행.
+- Hybrid completion (**0 LOC manual code**): worktree 자산 (18 파일) 을 main repo branch `ooo/orch_d46b4c3e28f5_manual` 로 copy → CI 워크플로우 recipe 대로 main `.venv` 에 dev 도구 설치 (`pip install pytest pytest-asyncio mypy ruff black httpx` + `pip install -e packages/core-python apps/api`) → 실 4-gate 실행 → 모두 첫 시도 green. Phase 4.3 의 ~1,400 LOC hybrid 와 대비 압도적 개선.
+- CI 회복 1 round: `test_events_and_retention_flow.py` 가 알파벳 순으로 `test_alembic_upgrade_head.py` (baseline 까지만 upgrade) 직후 실행되어 schema 없는 상태로 INSERT 시도 → UndefinedTableError. `seeded_app` fixture 에 function-scoped `_reset_db_and_upgrade_head` 호출 추가 (Phase 4.3 의 test_events_model_roundtrip.py 패턴 차용) → CI 두 trigger (push + pull_request) 모두 green.
+
+**4중 정합 (local pre-push)**:
+- `python -m pytest -q apps/api/tests` → **207 passed, 25 skipped** (integration tier, DATABASE_URL_TEST 미설정)
+- `python -m mypy --strict apps/api/src` → **no issues found in 44 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **99 files unchanged**
+- CI: postgres:16 service + alembic upgrade head + apps/api pytest (integration tier 포함) → **PASS** (1차 fix 후)
+
+**Git**:
+- Feature branch: `ooo/orch_d46b4c3e28f5_manual` (auto-deleted post-merge)
+- 핵심 commit: `8420a84` (20 files: +18 new / -0 / 6 modified, +1,896 / -12 LOC), CI 회복 commit: `558efdc`
+- PR #29 squash merge commit: `217cdba`
+
+**Phase 4.3 비교 (orchestrator 안정도 진화)**:
+| 측면 | Phase 4.3 | Phase 4.4 |
+|---|---|---|
+| Orchestrator 결과 | 2/21 (3회 실패) | 10/23 (1회 false-failure) |
+| Manual completion | ~1,400 LOC (hybrid) | **0 LOC** (worktree harvest) |
+| Ambiguity | 0.0785 | **0.076** |
+| 신규 실패 모드 | Claude Code rate limit | venv tooling absence (false signal) |
+| Q00#1202 검증 | uvx 새 archive 추출 시 재발 | 활성 archive `ybK6` 첫 검증, 정상 |
+| 회복 수고 | multi-archive patch + hybrid manual + 3 round CI fix | dev tools 설치 + 1 round CI fix |
+| CI round | 3 | 1 |
+| 산출 합계 | 28 files / +~2,650 LOC | 20 files / +1,896 LOC |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- POST /v1/events batch payload (Phase 6+)
+- `client_event_id` dedup / 409 idempotency (Phase 6+, retention 수학은 DISTINCT 기반이라 영향 없음)
+- retention metrics caching layer (operator dashboard 호출 빈도 낮음, 필요 시 도입)
+- PostHog cohort response caching (Phase 5 consumer 가 자체 캐싱)
+- POST /v1/events rate limiting / WAF (Phase 6 polish)
+- admin role / HMAC operator dashboard 별도 인증 (single-tenant MVP, Phase 6+ multi-user 시 도입)
+- pre-auth (anonymous) ingestion + `anonymous_id` ↔ `user_id` merge backfill (Phase 5+ funnel cohort retention 필요해지면)
+- `GET /v1/me` (Phase 4.3 deferred → Phase 4.4 deferred 유지, 실제 consumer 시 도입)
+- PostHog cohort consumer (push notification targeting 등) — Phase 5 retention layer / 매거진
+
+**Seed**: `~/.ouroboros/seeds/seed_77a119e8cec2_unit_4_4.yaml` (v1.0.0, ambiguity 0.076)
 
 ## 참고
 
