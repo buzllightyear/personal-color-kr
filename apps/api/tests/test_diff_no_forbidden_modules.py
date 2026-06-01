@@ -145,14 +145,13 @@ FORBIDDEN_BASENAME_PREFIXES: tuple[str, ...] = (
     # Phase 4.3 landed `auth` modules (Apple Sign In) legitimately, so the
     # prefix is removed from this gate. Phase 4.4 lands the `events*` router
     # / repository / schema files and the `metrics*` router legitimately, so
-    # the "events" prefix is removed too (and "metrics" was never gated). The
-    # "users" prefix is retained because Phase 4.3's `user.py` model uses a
-    # singular name that does not match the plural prefix; a future PR that
-    # adds a `routers/users.py` is still gated correctly here.
-    "users",  # Users routers/repositories (Phase 4.5+ if added)
+    # the "events" prefix is removed too (and "metrics" was never gated).
+    # Phase 4.5 lands the `users_repository.py` repository file and the
+    # `referrals/` package (attribution_event, share_url, etc.) plus
+    # `schemas/referrals.py` legitimately, so the "users" and "referral"
+    # prefixes are removed too.
     "magazine",  # Magazine surface (Phase 5)
-    "referral",  # Referral wiring (Phase 4.5)
-    "edit",  # /v1/edit Fal.ai vendor route (Phase 4.4)
+    "edit",  # /v1/edit Fal.ai vendor route (Phase ≥6)
     "guide",  # /v1/guide route (Phase 4.x)
     "curation",  # /v1/curation route (Phase 4.x)
     "wording",  # /v1/wording route (Phase 4.x)

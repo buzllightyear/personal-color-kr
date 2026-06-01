@@ -52,6 +52,18 @@ export default defineConfig({
     // default and breaking the singleton-via-context assertion.
     alias: {
       react: path.resolve(__dirname, 'node_modules/react'),
+      // `expo-linking` transitively imports `react-native`, whose Flow
+      // `import typeof` syntax vite/rollup cannot parse in the node test
+      // environment (same root cause the `react-native` require-cache stub
+      // addresses for the CJS path). Redirect it to a parseable, inert stub
+      // so any component that statically imports `expo-linking` (e.g.
+      // `app/_layout.tsx`, which mounts the deep-link referral-stash hook)
+      // can be rendered. The stash logic itself is unit-tested directly
+      // against `stashReferralCodeFromDeepLink`, not through this hook.
+      'expo-linking': path.resolve(
+        __dirname,
+        'tests/__stubs__/expo-linking-stub.ts',
+      ),
     },
   },
 });

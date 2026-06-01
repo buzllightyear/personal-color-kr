@@ -24,6 +24,7 @@ from api.routers import diagnose as diagnose_router
 from api.routers import events as events_router
 from api.routers import health as health_router
 from api.routers import metrics as metrics_router
+from api.routers import referrals as referrals_router
 from api.routers import version as version_router
 
 
@@ -83,6 +84,10 @@ def create_app() -> FastAPI:
     # (`GET /v1/metrics/retention`). Both require a valid backend JWT.
     app.include_router(events_router.router, prefix="/v1")
     app.include_router(metrics_router.router, prefix="/v1")
+    # Phase 4.5 — authenticated referral surface (`GET /v1/referrals/me`):
+    # the caller's fixed referral code, the server-assembled share URL, and
+    # the live friend-used count. Requires a valid backend JWT.
+    app.include_router(referrals_router.router, prefix="/v1")
 
     return app
 

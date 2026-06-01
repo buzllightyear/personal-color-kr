@@ -111,6 +111,22 @@
  *     2. Interaction assertion that pressing the skip CTA invokes the
  *        `onContinue` callback exactly once.
  *
+ * Phase 4.5 update — real `friend_used_count` display:
+ *   The Phase 2.4 permanent empty state is now data-driven. The branch
+ *   accepts an optional `friendUsedCount` prop (the live count of attributed
+ *   referees, sourced by the route from `GET /v1/referrals/me`):
+ *     - `friendUsedCount` is a positive number → render the "friends joined"
+ *       state showing the real count (`친구 N명이 참여했어요`).
+ *     - `friendUsedCount` is `0`, `null`, or omitted (loading / error / no
+ *       attributed referees yet) → render the original empty state. The
+ *       silent-degradation contract (a failed fetch leaves the count `null`)
+ *       therefore renders exactly as the pre-Phase-4.5 empty state, so a
+ *       network failure never breaks this soft-gate screen.
+ *   The component stays a pure presentational branch — it never fetches; the
+ *   route owns the `GET /v1/referrals/me` call and the silent-degradation
+ *   guard (Seed: "friend-used trigger ... no install/event/payment triggers"
+ *   and "share_url single source of truth is server-side").
+ *
  * @see {@link SocialEvolutionSharedTrueBranchProps} for the prop contract.
  * @see `tests/social-evolution-shared-true-branch.test.tsx` for behavioural
  *      assertions.
@@ -150,6 +166,26 @@ export interface SocialEvolutionSharedTrueBranchProps {
    * layer).
    */
   readonly onContinue: () => void;
+
+  /**
+   * Live count of friends who signed in via this user's referral code —
+   * `friend_used_count` from `GET /v1/referrals/me`, supplied by the route
+   * (Phase 4.5). The route owns the fetch + silent-degradation guard; this
+   * branch only renders the value.
+   *
+   * Semantics:
+   *   - A positive number renders the "friends joined" state
+   *     (`친구 N명이 참여했어요`).
+   *   - `0`, `null`, or omitted renders the original empty state. A failed /
+   *     in-flight fetch leaves the count `null`, so the screen degrades to
+   *     the empty state rather than crashing the soft gate.
+   *
+   * Typed `number | null` (not `| undefined`) to match the workspace
+   * `exactOptionalPropertyTypes: true` convention; `?:` keeps the prop
+   * optional so existing call sites (and the Phase 2.4 tests) that omit it
+   * continue to render the empty state unchanged.
+   */
+  readonly friendUsedCount?: number | null;
 }
 
 /**
@@ -187,6 +223,24 @@ export const SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT =
  */
 export const SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI = '👥' as const;
 
+/**
+ * Build the Korean "friends joined" copy for a live `friend_used_count`
+ * (Phase 4.5). Rendered in place of the empty-state copy when the count is a
+ * positive number.
+ *
+ * Exposed as a builder (not a frozen literal) because the string interpolates
+ * the live count; the test file calls it with a fixed count to assert against
+ * the rendered text without re-stringing the template. Korean counter `명`
+ * (people) + `참여했어요` (have joined) keeps the celebratory soft-gate tone of
+ * the surrounding screen rather than reading as a bare statistic.
+ *
+ * @param count - the live `friend_used_count` (callers pass a positive number).
+ * @returns the rendered Korean copy, e.g. `친구 3명이 참여했어요`.
+ */
+export function buildFriendUsedCountText(count: number): string {
+  return `친구 ${count}명이 참여했어요`;
+}
+
 const SCREEN = FUNNEL_SCREENS.social_evolution;
 
 /**
@@ -202,7 +256,13 @@ const SCREEN = FUNNEL_SCREENS.social_evolution;
 export function SocialEvolutionSharedTrueBranch(
   props: SocialEvolutionSharedTrueBranchProps,
 ): React.ReactElement {
-  const { onContinue } = props;
+  const { onContinue, friendUsedCount } = props;
+  // The route supplies the live `friend_used_count` (or `null` while the
+  // fetch is in-flight / failed). A positive count renders the "friends
+  // joined" state; `0` / `null` / omitted falls back to the empty state so a
+  // silent fetch failure degrades to the original Phase 2.4 surface.
+  const hasFriends =
+    typeof friendUsedCount === 'number' && friendUsedCount > 0;
   return (
     <FunnelScreenLayout
       testID="social-evolution-shared-true-screen"
@@ -222,25 +282,47 @@ export function SocialEvolutionSharedTrueBranch(
             {SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT}
           </Text>
         </View>
-        <View
-          style={styles.emptyState}
-          testID="social-evolution-empty-friend-list"
-        >
-          <Text
-            style={styles.emptyEmoji}
-            testID="social-evolution-empty-friend-list-emoji"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
+        {hasFriends ? (
+          <View
+            style={styles.emptyState}
+            testID="social-evolution-friend-used-count"
           >
-            {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI}
-          </Text>
-          <Text
-            style={styles.emptyText}
-            testID="social-evolution-empty-friend-list-text"
+            <Text
+              style={styles.emptyEmoji}
+              testID="social-evolution-friend-used-count-emoji"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI}
+            </Text>
+            <Text
+              style={styles.friendCountText}
+              testID="social-evolution-friend-used-count-text"
+            >
+              {buildFriendUsedCountText(friendUsedCount)}
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={styles.emptyState}
+            testID="social-evolution-empty-friend-list"
           >
-            {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT}
-          </Text>
-        </View>
+            <Text
+              style={styles.emptyEmoji}
+              testID="social-evolution-empty-friend-list-emoji"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI}
+            </Text>
+            <Text
+              style={styles.emptyText}
+              testID="social-evolution-empty-friend-list-text"
+            >
+              {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT}
+            </Text>
+          </View>
+        )}
       </View>
       <View style={styles.ctaWrapper}>
         <FunnelPrimaryButton
@@ -296,6 +378,11 @@ const styles = StyleSheet.create({
   emptyText: {
     ...TYPOGRAPHY.body.regular,
     color: COLORS.grayscale.disabled,
+    textAlign: 'center',
+  },
+  friendCountText: {
+    ...TYPOGRAPHY.body.medium,
+    color: COLORS.grayscale.text,
     textAlign: 'center',
   },
   ctaWrapper: {

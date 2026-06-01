@@ -29,6 +29,20 @@
  *   - `router.push('/(funnel)/payment-model')` on the shared=true forward
  *     CTA. Same push semantics for back-swipe symmetry.
  *
+ * Real friend-count wiring (Phase 4.5 — this revision):
+ *   - On the shared=true branch the route fetches the live
+ *     `friend_used_count` from `GET /v1/referrals/me` (the server is the
+ *     single source of truth — the client never aggregates) and passes it to
+ *     `SocialEvolutionSharedTrueBranch`, which renders the real count
+ *     (`친구 N명이 참여했어요`) when positive and the original empty state
+ *     otherwise.
+ *   - The fetch is fire-and-forget inside a `useEffect` guarded by an
+ *     `active` flag (no setState after unmount). Failures are swallowed —
+ *     the count stays `null` → empty state — so a network/auth error never
+ *     breaks this soft gate (Seed: silent degradation). The transport is
+ *     built once via `createReferralMeTransport`; the effect only runs on the
+ *     shared=true branch (the shared=false branch shows no count).
+ *
  * PostHog analytics wiring (Phase 2.6 — client pass-through DI):
  *   - `trackSocialEvolutionSkipped({})` now accepts a `PostHog | undefined`
  *     client as its first argument. The route resolves the singleton via
@@ -70,6 +84,10 @@ import { useRouter } from 'expo-router';
 import { usePostHog } from 'posthog-react-native';
 
 import { trackSocialEvolutionSkipped } from '../../src/analytics/track-social-evolution-skipped';
+import {
+  createReferralMeTransport,
+  fetchReferralMe,
+} from '../../src/fetch-referral-me';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
 import { SocialEvolutionSharedFalseBranch } from '../../src/screens/funnel/SocialEvolutionSharedFalseBranch';
 import { SocialEvolutionSharedTrueBranch } from '../../src/screens/funnel/SocialEvolutionSharedTrueBranch';
@@ -77,6 +95,49 @@ import { SocialEvolutionSharedTrueBranch } from '../../src/screens/funnel/Social
 export default function SocialEvolutionRoute(): React.ReactElement {
   const router = useRouter();
   const { referral } = useFunnelState();
+  // One real `fetch`-backed transport for `GET /v1/referrals/me`, memoised so
+  // the friend-count effect reuses a single instance. The backend JWT is
+  // supplied by the auth-session store once wired; until then the request
+  // degrades silently (see the effect below).
+  const referralMeTransport = React.useMemo(
+    () => createReferralMeTransport(),
+    [],
+  );
+  // Live `friend_used_count` from the server (single source of truth). `null`
+  // while the fetch is in-flight, fails, or the gate has not been shared —
+  // the shared=true branch renders the empty state for `null`/`0`, so a
+  // silent fetch failure degrades gracefully rather than crashing the soft
+  // gate (Seed: silent degradation; share_url/count are server-owned).
+  const [friendUsedCount, setFriendUsedCount] = React.useState<number | null>(
+    null,
+  );
+
+  // Fetch the friend-used count only on the shared=true branch — the
+  // empty/false branch never shows a count. Guarded by an `active` flag so a
+  // late-resolving response cannot setState after unmount. Failures are
+  // swallowed (the count stays `null` → empty state) so the soft gate never
+  // breaks on a network/auth error.
+  React.useEffect(() => {
+    if (!referral.shared) {
+      return undefined;
+    }
+    let active = true;
+    void (async (): Promise<void> => {
+      try {
+        const { friendUsedCount: count } = await fetchReferralMe(
+          referralMeTransport,
+        );
+        if (active) {
+          setFriendUsedCount(count);
+        }
+      } catch {
+        // Silent degradation — leave the count `null` (empty state).
+      }
+    })();
+    return (): void => {
+      active = false;
+    };
+  }, [referral.shared, referralMeTransport]);
   // `usePostHog()` returns `PostHog | undefined`. The `undefined` branch is
   // the documented degraded-mode contract (no api key in `.env` → provider
   // renders a fragment, no context value). `trackSocialEvolutionSkipped`
@@ -110,5 +171,10 @@ export default function SocialEvolutionRoute(): React.ReactElement {
     );
   }
 
-  return <SocialEvolutionSharedTrueBranch onContinue={handleContinue} />;
+  return (
+    <SocialEvolutionSharedTrueBranch
+      onContinue={handleContinue}
+      friendUsedCount={friendUsedCount}
+    />
+  );
 }

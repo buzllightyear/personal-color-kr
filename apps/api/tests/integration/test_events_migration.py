@@ -60,9 +60,9 @@ _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 # here instead of a confusing test failure deep in an assertion message.
 _BASELINE_REVISION: str = "phase_4_1_baseline"
 _EVENTS_REVISION: str = "phase_4_2_events"
-# Phase 4.3 added the users migration on top of events; ``alembic upgrade
-# head`` now stamps the alembic_version table to this revision.
-_HEAD_REVISION: str = "phase_4_3_users"
+# Phase 4.5 added the referrals migration on top of users (Phase 4.3);
+# ``alembic upgrade head`` now stamps alembic_version to this revision.
+_HEAD_REVISION: str = "phase_4_5_referrals"
 
 # Generous timeout — the events migration emits two ``CREATE INDEX``
 # statements but no data backfill; 60s protects against a wedged asyncpg
@@ -544,7 +544,7 @@ async def test_alembic_upgrade_head_creates_events_table_with_exact_schema() -> 
             )
             assert ver_rows[0][0] == _HEAD_REVISION, (
                 f"alembic_version.version_num must equal "
-                f"{_HEAD_REVISION!r} (Phase 4.3 head) after upgrade head; "
+                f"{_HEAD_REVISION!r} (Phase 4.5 head) after upgrade head; "
                 f"got {ver_rows[0][0]!r}."
             )
     finally:

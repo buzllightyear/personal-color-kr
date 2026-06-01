@@ -60,6 +60,7 @@ from typing import Any
 
 from api.db.models.event import Event
 from api.db.session import AsyncSession, select
+from api.referrals.attribution_event import build_referral_attributed_event
 
 
 async def insert_event(
@@ -118,6 +119,81 @@ async def insert_event(
     session.add(event)
     await session.flush()
     return event
+
+
+async def insert_referral_attributed_event(
+    session: AsyncSession,
+    *,
+    referee_id: uuid.UUID,
+    referrer_id: uuid.UUID,
+    referral_code: str,
+    occurred_at: datetime,
+) -> Event:
+    """Persist the ``referral_attributed`` event for an attribution link.
+
+    Phase 4.5. When a fresh signup is attributed to the user who referred them
+    (at Apple Sign In), exactly one ``referral_attributed`` row is appended to
+    the ``events`` table recording the link. This is the single repository
+    surface for that write: it composes the pure
+    :func:`api.referrals.attribution_event.build_referral_attributed_event`
+    builder (the one source of truth for the row's ``event_name`` +
+    ``properties`` shape) with :func:`insert_event` (the single INSERT
+    primitive), so the auth router never re-spells the event shape inline and
+    the persisted-row contract has exactly one home.
+
+    The referee is recorded on **both** identity columns — authoritative
+    ``user_id`` and the PostHog-style ``anonymous_id`` — so the row is
+    attributable to the new signup. The ``referrer_id`` + ``referral_code``
+    ride in the JSON ``properties`` bag for the analytics surface to
+    reconstruct the referral graph without a join.
+
+    As with :func:`insert_event`, the caller owns the surrounding transaction;
+    this function only ``add``s the row and ``flush``es so the INSERT is issued
+    inside the caller's transactional / error-handling scope (the auth router
+    commits the ``referrer_user_id`` link and this event together as one unit).
+
+    Parameters
+    ----------
+    session:
+        The per-request :class:`AsyncSession` from
+        :func:`api.db.session.get_session`.
+    referee_id:
+        The ``users.id`` of the freshly attributed signup. Written to both
+        ``user_id`` and ``anonymous_id``.
+    referrer_id:
+        The ``users.id`` of the user who referred ``referee_id``. Stored as a
+        string in the ``properties`` bag.
+    referral_code:
+        The referrer's per-user fixed 8-char ``referral_code`` the referee
+        arrived with. Stored in the ``properties`` bag.
+    occurred_at:
+        The instant the attribution happened (the sign-in completion time).
+
+    Returns
+    -------
+    Event
+        The inserted row with ``id`` and ``server_received_at`` populated
+        app-side.
+
+    Raises
+    ------
+    ValueError
+        If ``referrer_id`` renders empty or ``referral_code`` is blank — the
+        builder's fail-fast guard surfaces before any row is staged, so no
+        malformed event reaches the table.
+    """
+    attribution_event = build_referral_attributed_event(
+        referrer_id=str(referrer_id),
+        referral_code=referral_code,
+    )
+    return await insert_event(
+        session,
+        anonymous_id=str(referee_id),
+        event_name=attribution_event.event_name,
+        occurred_at=occurred_at,
+        properties=attribution_event.properties,
+        user_id=referee_id,
+    )
 
 
 async def fetch_cohort_user_ids(
@@ -219,4 +295,5 @@ __all__ = [
     "fetch_active_user_ids",
     "fetch_cohort_user_ids",
     "insert_event",
+    "insert_referral_attributed_event",
 ]

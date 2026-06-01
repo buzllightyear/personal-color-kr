@@ -1,22 +1,24 @@
 """``users`` table backing self-managed Apple Sign In auth (Phase 4.3).
 
-The :class:`User` declarative model owns the seven-column ``users`` table
-defined by the Phase 4.3 Seed. Each row represents a single Apple Sign In
-identity, keyed by Apple's stable opaque ``sub`` claim, with a backend-side
-UUID v4 primary key that downstream tables (``events.user_id`` and any
-Phase 4.4+ user-owned resources) can foreign-key into.
+The :class:`User` declarative model owns the ``users`` table defined by the
+Phase 4.3 Seed (seven columns) and extended by the Phase 4.5 referral-
+attribution Seed (``referrer_user_id``). Each row represents a single Apple
+Sign In identity, keyed by Apple's stable opaque ``sub`` claim, with a
+backend-side UUID v4 primary key that downstream tables (``events.user_id``
+and any Phase 4.4+ user-owned resources) can foreign-key into.
 
-# Schema (matches the Phase 4.3 Sub-AC 1 verbatim)
+# Schema (Phase 4.3 Sub-AC 1 verbatim + Phase 4.5 referral columns)
 
-    Column           Type           Nullable  Default
+    Column            Type           Nullable  Default
     -----------------------------------------------------------------
-    id               uuid (pk)      NOT NULL  (app-side uuid4)
-    apple_sub        text           NOT NULL  -                (UNIQUE)
-    email            text           NULL      -
-    email_verified   boolean        NOT NULL  FALSE
-    display_name     text           NULL      -
-    created_at       timestamptz    NOT NULL  now()
-    updated_at       timestamptz    NOT NULL  now()            (ORM onupdate=now())
+    id                uuid (pk)      NOT NULL  (app-side uuid4)
+    apple_sub         text           NOT NULL  -                (UNIQUE)
+    email             text           NULL      -
+    email_verified    boolean        NOT NULL  FALSE
+    display_name      text           NULL      -
+    created_at        timestamptz    NOT NULL  now()
+    updated_at        timestamptz    NOT NULL  now()            (ORM onupdate=now())
+    referrer_user_id  uuid           NULL      -                (FK users.id, SET NULL)
 
 # Constraints
 
@@ -80,10 +82,11 @@ modules other than ``auth.py``.
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -95,6 +98,36 @@ from api.db.models.base import Base
 # class. Single source of truth for table name + constraint identifier.
 USERS_TABLE_NAME: str = "users"
 UNIQUE_CONSTRAINT_APPLE_SUB: str = "uq_users_apple_sub"
+# Phase 4.5 — referral attribution. The self-referential FK constraint that
+# links a referee back to the user who referred them. Named so the Phase 4.5
+# migration and any future repository surface reference the same identifier
+# without importing the ORM class.
+FK_USERS_REFERRER_USER_ID: str = "fk_users_referrer_user_id"
+# Phase 4.5 — per-user fixed referral code. The named UNIQUE constraint mirrors
+# the ``phase_4_5_referrals`` migration so the ORM and DDL agree on the
+# identifier (the auth upsert's collision-retry can reference it by name).
+UNIQUE_CONSTRAINT_REFERRAL_CODE: str = "uq_users_referral_code"
+# ``secrets.token_urlsafe(6)`` always renders as 8 URL-safe base64 characters
+# (6 random bytes → ceil(6 * 4 / 3) = 8 chars). The column is sized to match.
+REFERRAL_CODE_NBYTES: int = 6
+REFERRAL_CODE_LENGTH: int = 8
+
+
+def generate_referral_code() -> str:
+    """Return a fresh 8-char URL-safe referral code (``token_urlsafe(6)``).
+
+    Used as the model-level ``default`` for :attr:`User.referral_code` so any
+    INSERT that omits the column — including the auth router's
+    ``INSERT ... ON CONFLICT`` upsert — gets a per-user code generated
+    app-side at write time. The code never rotates: the upsert's ON CONFLICT
+    ``DO UPDATE`` set-clause leaves ``referral_code`` untouched, so a re-auth
+    that collides on ``apple_sub`` preserves the user's original code.
+
+    Uniqueness is enforced by the DB ``uq_users_referral_code`` constraint;
+    the (astronomically unlikely) collision is handled by the auth router's
+    bounded INSERT retry, not here.
+    """
+    return secrets.token_urlsafe(REFERRAL_CODE_NBYTES)
 
 
 class User(Base):
@@ -212,12 +245,69 @@ class User(Base):
         onupdate=func.now(),
     )
 
+    # ----- referral_code: per-user fixed 8-char URL-safe code (Phase 4.5) -----
+    # The single source of truth for the server-assembled ``share_url``
+    # (``REFERRAL_BASE_URL`` + this code). Generated app-side at INSERT via the
+    # ``default=generate_referral_code`` callable (``secrets.token_urlsafe(6)``)
+    # so every user — including those created through the auth router's
+    # ``INSERT ... ON CONFLICT`` upsert, which omits the column — receives a
+    # code without the handler having to spell it out. No ``server_default``:
+    # generation is pinned to the application layer (matching the ``id`` /
+    # ``apple_sub`` UUID precedent), keeping the schema extension-free.
+    #
+    # NOT NULL + UNIQUE (via the named ``uq_users_referral_code`` constraint in
+    # ``__table_args__``): every user always has a sharable code and codes
+    # never collide. The code is *fixed per user* — the upsert's ON CONFLICT
+    # ``DO UPDATE`` clause leaves it untouched, so re-auth preserves the
+    # original value. ``String(8)`` renders as ``VARCHAR(8)`` to match the
+    # Seed-pinned width of a ``token_urlsafe(6)`` output.
+    referral_code: Mapped[str] = mapped_column(
+        String(REFERRAL_CODE_LENGTH),
+        nullable=False,
+        default=generate_referral_code,
+    )
+
+    # ----- referrer_user_id: self-referential nullable FK (Phase 4.5) -----
+    # The user who referred this user, or NULL for organic / un-attributed
+    # signups. Phase 4.5 attribution at Apple Sign In writes this column
+    # exactly once (idempotent — an already-attributed referee is silently
+    # skipped) when a valid, non-self referral code is presented.
+    #
+    # ``ON DELETE SET NULL`` mirrors the ``events.user_id`` convention: when
+    # the referrer's row is deleted (GDPR right-to-delete in Phase 7+), the
+    # referee row survives with ``referrer_user_id`` anonymized to NULL
+    # rather than cascading the delete onto referred users.
+    #
+    # Nullable because the overwhelming majority of signups are organic; the
+    # column is only populated when a deep-link-stashed referral code rides
+    # along with the sign-in request and passes the application-level
+    # self-referral + validity + idempotency checks.
+    #
+    # The FK is declared inline on the column (matching the
+    # ``events.user_id`` pattern in :mod:`api.db.models.event`) rather than
+    # in ``__table_args__`` so the single named UNIQUE constraint there stays
+    # the only entry — the sign-in upsert's ON CONFLICT target is unchanged.
+    referrer_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+            name=FK_USERS_REFERRER_USER_ID,
+        ),
+        nullable=True,
+    )
+
     __table_args__ = (
         # Named UNIQUE constraint so the sign-in upsert can reference it
         # by name in ``INSERT ... ON CONFLICT ON CONSTRAINT
         # uq_users_apple_sub DO UPDATE`` — stable across autogenerate
         # runs and human-readable in psql ``\d users`` output.
         UniqueConstraint("apple_sub", name=UNIQUE_CONSTRAINT_APPLE_SUB),
+        # Named UNIQUE constraint on the per-user referral code. Distinct
+        # from the apple_sub constraint (which is the upsert's ON CONFLICT
+        # target); this one guarantees referral codes never collide and lets
+        # the auth router's bounded INSERT retry reference it by name.
+        UniqueConstraint("referral_code", name=UNIQUE_CONSTRAINT_REFERRAL_CODE),
     )
 
     def __repr__(self) -> str:

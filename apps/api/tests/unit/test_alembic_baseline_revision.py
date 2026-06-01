@@ -43,12 +43,15 @@ _VERSIONS_DIR = _APPS_API_ROOT / "src" / "api" / "db" / "migrations" / "versions
 _BASELINE_FILENAME = "2026_01_01_0000-phase_4_1_baseline_phase_4_1_baseline.py"
 _EVENTS_FILENAME = "2026_01_02_0000-phase_4_2_events_create_events_table.py"
 _USERS_FILENAME = "2026_01_03_0000-phase_4_3_users_create_users_table.py"
+_REFERRALS_FILENAME = "2026_01_04_0000-phase_4_5_referrals_add_referral_columns.py"
 
 # Pinned revision identifiers — single source of truth for the chain
 # topology. Any test that asserts a specific ``down_revision`` value reads
 # from these constants so a rename anywhere in the chain fails fast.
 _BASELINE_REVISION_ID = "phase_4_1_baseline"
 _EVENTS_REVISION_ID = "phase_4_2_events"
+_USERS_REVISION_ID = "phase_4_3_users"
+_REFERRALS_REVISION_ID = "phase_4_5_referrals"
 
 
 def _collect_py_files() -> list[Path]:
@@ -85,21 +88,26 @@ def _extract_module_constant(
 
 
 @pytest.mark.unit
-def test_versions_directory_contains_exactly_three_py_files() -> None:
-    """The versions/ directory holds exactly three revision files in Phase 4.3.
+def test_versions_directory_contains_exactly_four_py_files() -> None:
+    """The versions/ directory holds exactly four revision files in Phase 4.5.
 
     Phase 4.1 shipped a single empty baseline migration. Phase 4.2 added
-    the events table. Phase 4.3 adds the users table + events.user_id FK.
-    Any fourth file in this directory is an orphan revision (regression)
-    and must be removed or rolled into the chain explicitly.
+    the events table. Phase 4.3 added the users table + events.user_id FK.
+    Phase 4.5 adds the ``users.referrer_user_id`` referral-attribution
+    column (Phase 4.4 shipped no DDL). Any fifth file in this directory is
+    an orphan revision (regression) and must be removed or rolled into the
+    chain explicitly.
     """
     py_files = _collect_py_files()
     actual_names = sorted(p.name for p in py_files)
-    expected_names = sorted([_BASELINE_FILENAME, _EVENTS_FILENAME, _USERS_FILENAME])
+    expected_names = sorted(
+        [_BASELINE_FILENAME, _EVENTS_FILENAME, _USERS_FILENAME, _REFERRALS_FILENAME]
+    )
     assert actual_names == expected_names, (
-        "Phase 4.3 must ship exactly three migrations: the empty "
-        "baseline, the events table, and the users table. Expected "
-        f"files {expected_names!r}; found {actual_names!r}. An extra "
+        "Phase 4.5 must ship exactly four migrations: the empty "
+        "baseline, the events table, the users table, and the referral "
+        "attribution column. Expected files "
+        f"{expected_names!r}; found {actual_names!r}. An extra "
         "file indicates an orphan revision; a missing file indicates a "
         "regression in the migration chain."
     )
@@ -174,5 +182,46 @@ def test_events_migration_chains_on_baseline() -> None:
     assert down_value.value == _BASELINE_REVISION_ID, (
         f"Events migration `down_revision` must equal "
         f"{_BASELINE_REVISION_ID!r} (preserves the Phase 4.1 chain); "
+        f"got {down_value.value!r}."
+    )
+
+
+@pytest.mark.unit
+def test_referrals_migration_chains_on_users() -> None:
+    """The Phase 4.5 referrals migration chains on ``phase_4_3_users``.
+
+    The Phase 4.5 Seed constraint "Alembic migration chain:
+    phase_4_3_users → phase_4_5_referrals" is encoded here as a static AST
+    check: the referral-attribution migration's ``revision`` must equal
+    ``phase_4_5_referrals`` and its ``down_revision`` must equal
+    ``phase_4_3_users`` (Phase 4.4 shipped no DDL, so the users migration
+    is the head this revision extends).
+    """
+    referrals_path = _VERSIONS_DIR / _REFERRALS_FILENAME
+    assert referrals_path.is_file(), (
+        f"Referrals migration must live at {referrals_path}; missing file "
+        "indicates the Phase 4.5 migration was not added correctly."
+    )
+
+    tree = ast.parse(referrals_path.read_text(encoding="utf-8"))
+
+    rev_found, rev_value = _extract_module_constant(tree, "revision")
+    assert rev_found and isinstance(rev_value, ast.Constant), (
+        f"Referrals migration {referrals_path.name} must assign `revision` "
+        "to a string literal at module scope."
+    )
+    assert rev_value.value == _REFERRALS_REVISION_ID, (
+        f"Referrals migration `revision` id must equal "
+        f"{_REFERRALS_REVISION_ID!r}; got {rev_value.value!r}."
+    )
+
+    down_found, down_value = _extract_module_constant(tree, "down_revision")
+    assert down_found and isinstance(down_value, ast.Constant), (
+        f"Referrals migration {referrals_path.name} must assign "
+        "`down_revision` to a string literal at module scope."
+    )
+    assert down_value.value == _USERS_REVISION_ID, (
+        f"Referrals migration `down_revision` must equal "
+        f"{_USERS_REVISION_ID!r} (preserves the Phase 4.3 chain); "
         f"got {down_value.value!r}."
     )
