@@ -7,6 +7,7 @@ import { PostHogProvider } from '../src/providers/PostHogProvider';
 import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
 import { getVendorKeys } from '../src/config/vendor-keys';
 import { configureSuperwall } from '../src/superwall/client';
+import { useStashReferralCodeOnDeepLink } from '../src/hooks/use-stash-referral-code';
 
 /**
  * Root layout for the personal-color-kr Expo Router app shell.
@@ -61,6 +62,12 @@ function RootLayoutInner(): React.ReactElement {
   // packages/core-ts state machines and async data hooks (DataHook<T>).
   const [shouldShowPaywall] = useState<boolean>(false);
   const [shouldShowReferral] = useState<boolean>(false);
+
+  // Stash any inbound `/r/:code` referral code into AsyncStorage (last-wins,
+  // no TTL) so a later Apple Sign In can transmit it for referee attribution
+  // (Phase 4.5). Mounted once at the root so it catches referral links on
+  // cold start AND while the app is already foregrounded on any screen.
+  useStashReferralCodeOnDeepLink();
 
   // funnel_step_entered auto-capture:
   //   When the active pathname is one of the 12 funnel kebab slugs, fire a

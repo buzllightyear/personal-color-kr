@@ -93,6 +93,7 @@ vi.mock('react-native-safe-area-context', () => {
 // component's `import { ... } from 'react-native'` resolves to the
 // mocked surface above.
 import {
+  buildFriendUsedCountText,
   SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI,
   SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT,
   SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT,
@@ -265,5 +266,118 @@ describe('SocialEvolutionSharedTrueBranch — interaction (AC 4)', () => {
     act(() => onPress({}));
 
     expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SocialEvolutionSharedTrueBranch — friend_used_count display (Phase 4.5)', () => {
+  it('renders the empty state when friendUsedCount is omitted', () => {
+    // Backward-compat: the Phase 2.4 call shape (onContinue only) leaves the
+    // count undefined → the original empty state renders, and the friend-
+    // count host is absent.
+    const tree = render(
+      React.createElement(SocialEvolutionSharedTrueBranch, {
+        onContinue: NO_OP,
+      }),
+    );
+    expect(
+      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'social-evolution-friend-used-count'),
+    ).toBeNull();
+  });
+
+  it('renders the empty state when friendUsedCount is null (loading / silent-degraded)', () => {
+    // A `null` count is the loading / fetch-failed state — the route passes
+    // `null` until `GET /v1/referrals/me` resolves (and keeps it `null` on a
+    // swallowed failure). The empty state must render so the soft gate never
+    // breaks.
+    const tree = render(
+      React.createElement(SocialEvolutionSharedTrueBranch, {
+        onContinue: NO_OP,
+        friendUsedCount: null,
+      }),
+    );
+    expect(
+      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'social-evolution-friend-used-count'),
+    ).toBeNull();
+  });
+
+  it('renders the empty state when friendUsedCount is 0 (no attributed referees yet)', () => {
+    // Zero attributed referees is still the empty state — the celebratory
+    // count surface only appears once at least one friend has joined.
+    const tree = render(
+      React.createElement(SocialEvolutionSharedTrueBranch, {
+        onContinue: NO_OP,
+        friendUsedCount: 0,
+      }),
+    );
+    expect(
+      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'social-evolution-friend-used-count'),
+    ).toBeNull();
+  });
+
+  it('renders the real friend_used_count when positive', () => {
+    // The core AC: a positive `friend_used_count` from the server renders the
+    // live count copy (`친구 N명이 참여했어요`) and hides the empty state.
+    const tree = render(
+      React.createElement(SocialEvolutionSharedTrueBranch, {
+        onContinue: NO_OP,
+        friendUsedCount: 3,
+      }),
+    );
+
+    // The empty-state host is gone — the count surface replaced it.
+    expect(
+      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
+    ).toBeNull();
+
+    // The friend-count container + the count text render the real number,
+    // pinned against the builder so a copy/format change fails loud.
+    const countHost = findHostByTestId(
+      tree,
+      'social-evolution-friend-used-count',
+    );
+    expect(countHost).toBeTruthy();
+    const countText = findHostByTestId(
+      tree,
+      'social-evolution-friend-used-count-text',
+    );
+    expect(countText).toBeTruthy();
+    expect(collectText(countText)).toBe(buildFriendUsedCountText(3));
+    // The rendered copy embeds the literal server count.
+    expect(collectText(countText)).toContain('3');
+
+    // The decorative emoji is still present in the count state.
+    expect(
+      findHostByTestId(tree, 'social-evolution-friend-used-count-emoji'),
+    ).toBeTruthy();
+  });
+
+  it('still renders the skip CTA in the friend-count state', () => {
+    // The soft-gate forward affordance must remain on the count branch too —
+    // a user with friends can still proceed to payment_model.
+    const tree = render(
+      React.createElement(SocialEvolutionSharedTrueBranch, {
+        onContinue: NO_OP,
+        friendUsedCount: 5,
+      }),
+    );
+    expect(
+      findHostByTestId(tree, 'social-evolution-shared-true-skip-cta'),
+    ).toBeTruthy();
+  });
+});
+
+describe('buildFriendUsedCountText (Phase 4.5)', () => {
+  it('interpolates the count into the Korean copy', () => {
+    expect(buildFriendUsedCountText(1)).toBe('친구 1명이 참여했어요');
+    expect(buildFriendUsedCountText(42)).toBe('친구 42명이 참여했어요');
   });
 });

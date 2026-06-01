@@ -50,10 +50,16 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import Function
 
+from sqlalchemy.schema import ForeignKey
+
 from api.db.models.user import (
+    FK_USERS_REFERRER_USER_ID,
+    REFERRAL_CODE_LENGTH,
     UNIQUE_CONSTRAINT_APPLE_SUB,
+    UNIQUE_CONSTRAINT_REFERRAL_CODE,
     USERS_TABLE_NAME,
     User,
+    generate_referral_code,
 )
 
 
@@ -140,31 +146,49 @@ def test_user_apple_sub_column_is_text_not_null() -> None:
 
 @pytest.mark.unit
 def test_user_apple_sub_has_named_unique_constraint() -> None:
-    """The named UNIQUE constraint exists exactly once on ``apple_sub``."""
+    """The named UNIQUE constraints exist on ``apple_sub`` and ``referral_code``.
+
+    Phase 4.3 shipped the single ``uq_users_apple_sub`` constraint (the
+    sign-in upsert's ON CONFLICT target). Phase 4.5 adds a *second*,
+    independent ``uq_users_referral_code`` constraint guaranteeing referral
+    codes never collide. The two are distinct, single-column constraints:
+    crucially, ``referral_code`` must NOT join the ``apple_sub`` constraint
+    (that would change the upsert conflict target and break the ON CONFLICT
+    clause in the sign-in router).
+    """
     unique_constraints = [
         constraint
         for constraint in User.__table__.constraints
         if isinstance(constraint, UniqueConstraint)
     ]
-    assert len(unique_constraints) == 1, (
-        f"User table must declare exactly one UNIQUE constraint "
-        f"(on apple_sub); got {len(unique_constraints)}: "
-        f"{[c.name for c in unique_constraints]!r}."
+    by_name = {constraint.name: constraint for constraint in unique_constraints}
+    assert set(by_name) == {
+        UNIQUE_CONSTRAINT_APPLE_SUB,
+        UNIQUE_CONSTRAINT_REFERRAL_CODE,
+    }, (
+        f"User table must declare exactly two named UNIQUE constraints "
+        f"(apple_sub + referral_code); got {[c.name for c in unique_constraints]!r}."
     )
 
-    constraint = unique_constraints[0]
-    assert constraint.name == UNIQUE_CONSTRAINT_APPLE_SUB == "uq_users_apple_sub", (
-        f"UNIQUE constraint name drift: expected 'uq_users_apple_sub', "
-        f"got {constraint.name!r}."
+    # The apple_sub constraint must cover exactly ``apple_sub`` — adding
+    # columns would change the upsert conflict target and break the ON
+    # CONFLICT clause in the sign-in router.
+    apple_sub_constraint = by_name[UNIQUE_CONSTRAINT_APPLE_SUB]
+    assert UNIQUE_CONSTRAINT_APPLE_SUB == "uq_users_apple_sub"
+    assert [column.name for column in apple_sub_constraint.columns] == ["apple_sub"], (
+        f"apple_sub UNIQUE constraint must cover only apple_sub; got "
+        f"{[c.name for c in apple_sub_constraint.columns]!r}."
     )
 
-    # The constraint must cover exactly the ``apple_sub`` column —
-    # adding columns would change the upsert conflict target and break
-    # the ON CONFLICT clause in the sign-in router.
-    column_names = [column.name for column in constraint.columns]
-    assert column_names == [
-        "apple_sub"
-    ], f"UNIQUE constraint must cover only apple_sub; got {column_names!r}."
+    # The referral_code constraint must cover exactly ``referral_code``.
+    referral_constraint = by_name[UNIQUE_CONSTRAINT_REFERRAL_CODE]
+    assert UNIQUE_CONSTRAINT_REFERRAL_CODE == "uq_users_referral_code"
+    assert [column.name for column in referral_constraint.columns] == [
+        "referral_code"
+    ], (
+        f"referral_code UNIQUE constraint must cover only referral_code; got "
+        f"{[c.name for c in referral_constraint.columns]!r}."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +347,164 @@ def test_user_updated_at_column_is_timestamptz_not_null_with_onupdate_now() -> N
         f"User.updated_at onupdate must render as 'now()'; got "
         f"{rendered_onupdate!r}."
     )
+
+
+# ---------------------------------------------------------------------------
+# Column 8 — referrer_user_id: UUID NULL, self-referential FK SET NULL (4.5)
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+def test_user_referrer_user_id_column_is_nullable_uuid_with_no_default() -> None:
+    """``referrer_user_id`` is nullable ``UUID(as_uuid=True)`` with no default."""
+    column = User.__table__.c.referrer_user_id
+
+    assert isinstance(column.type, UUID), (
+        f"User.referrer_user_id must be PostgreSQL UUID; got " f"{type(column.type)!r}."
+    )
+    assert column.type.as_uuid is True, "User.referrer_user_id must use as_uuid=True."
+    assert column.nullable is True, (
+        "User.referrer_user_id must be nullable — organic / un-attributed "
+        "signups leave it NULL."
+    )
+    assert column.default is None, "User.referrer_user_id has no Python-side default."
+    assert column.server_default is None, (
+        "User.referrer_user_id has no server default — attribution is "
+        "written explicitly by the sign-in path, never defaulted."
+    )
+    # referrer_user_id is intentionally NOT unique — many referees can share
+    # the same referrer.
+    assert column.unique is None or column.unique is False, (
+        "User.referrer_user_id MUST NOT be UNIQUE — a single referrer can "
+        "refer many users."
+    )
+
+
+@pytest.mark.unit
+def test_user_referrer_user_id_self_referential_fk_set_null() -> None:
+    """``referrer_user_id`` carries a self-referential FK → users.id, SET NULL."""
+    column = User.__table__.c.referrer_user_id
+
+    foreign_keys = list(column.foreign_keys)
+    assert len(foreign_keys) == 1, (
+        f"User.referrer_user_id must declare exactly one foreign key; got "
+        f"{len(foreign_keys)}."
+    )
+
+    fk: ForeignKey = foreign_keys[0]
+    # Self-referential: the FK target is the users table's own ``id`` column.
+    assert fk.column.table.name == "users", (
+        f"User.referrer_user_id FK must target the ``users`` table "
+        f"(self-referential); got {fk.column.table.name!r}."
+    )
+    assert fk.column.name == "id", (
+        f"User.referrer_user_id FK must reference ``users.id``; got "
+        f"{fk.column.name!r}."
+    )
+    assert fk.ondelete == "SET NULL", (
+        f"User.referrer_user_id FK must be ON DELETE SET NULL so deleting a "
+        f"referrer anonymizes (not cascades) referees; got {fk.ondelete!r}."
+    )
+    # The named constraint matches the exported constant so the migration
+    # and ORM agree on the identifier.
+    assert (
+        fk.constraint is not None
+        and fk.constraint.name
+        == (FK_USERS_REFERRER_USER_ID)
+        == "fk_users_referrer_user_id"
+    ), (
+        f"User.referrer_user_id FK constraint name drift: expected "
+        f"'fk_users_referrer_user_id', got "
+        f"{fk.constraint.name if fk.constraint else None!r}."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Column 9 — referral_code: VARCHAR(8) NOT NULL UNIQUE, app-side default (4.5)
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+def test_user_referral_code_column_is_varchar8_not_null() -> None:
+    """``referral_code`` is ``String(8)`` (VARCHAR(8)) and ``NOT NULL``."""
+    column = User.__table__.c.referral_code
+
+    assert isinstance(
+        column.type, String
+    ), f"User.referral_code must be String/VARCHAR; got {type(column.type)!r}."
+    assert column.type.length == REFERRAL_CODE_LENGTH == 8, (
+        f"User.referral_code must be VARCHAR(8) to fit a token_urlsafe(6) "
+        f"output; got length={column.type.length!r}."
+    )
+    assert column.nullable is False, (
+        "User.referral_code must be NOT NULL — every user always has a "
+        "sharable code."
+    )
+    assert column.server_default is None, (
+        "User.referral_code must NOT carry a server_default; generation is "
+        "pinned to the application layer (matching the id/uuid precedent)."
+    )
+
+
+@pytest.mark.unit
+def test_user_referral_code_has_app_side_default_callable() -> None:
+    """``referral_code`` declares a Python-side ``default`` callable.
+
+    The model-level default is what lets the auth router's
+    ``INSERT ... ON CONFLICT`` upsert omit the column while still satisfying
+    the NOT NULL constraint — SQLAlchemy invokes the callable at INSERT time
+    for any row that does not specify ``referral_code``.
+    """
+    column = User.__table__.c.referral_code
+
+    assert (
+        column.default is not None
+    ), "User.referral_code must declare a Python-side default callable."
+    default_callable = column.default.arg
+    assert callable(
+        default_callable
+    ), f"User.referral_code default must be callable; got {default_callable!r}."
+    assert column.default.is_callable is True, (
+        "User.referral_code default must be a Python-side callable, not a "
+        "scalar/SQL expression (keeps the schema extension-free)."
+    )
+
+
+@pytest.mark.unit
+def test_user_referral_code_is_unique() -> None:
+    """``referral_code`` is covered by the named ``uq_users_referral_code``."""
+    referral_constraints = [
+        constraint
+        for constraint in User.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+        and constraint.name == UNIQUE_CONSTRAINT_REFERRAL_CODE
+    ]
+    assert len(referral_constraints) == 1, (
+        f"User table must declare exactly one UNIQUE constraint named "
+        f"{UNIQUE_CONSTRAINT_REFERRAL_CODE!r}; got {len(referral_constraints)}."
+    )
+    assert [c.name for c in referral_constraints[0].columns] == ["referral_code"]
+
+
+@pytest.mark.unit
+def test_generate_referral_code_returns_8_char_urlsafe_string() -> None:
+    """``generate_referral_code`` returns an 8-char URL-safe base64 string.
+
+    ``secrets.token_urlsafe(6)`` encodes 6 random bytes as URL-safe base64
+    (alphabet ``A-Za-z0-9-_``), which always renders as exactly 8 characters.
+    Two consecutive calls must differ (the code is per-user, not a constant).
+    """
+    code = generate_referral_code()
+    assert isinstance(code, str)
+    assert len(code) == REFERRAL_CODE_LENGTH == 8, (
+        f"generate_referral_code must return an 8-char code; got {code!r} "
+        f"(len={len(code)})."
+    )
+    # URL-safe base64 alphabet only.
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+    assert set(code) <= allowed, (
+        f"generate_referral_code must only emit URL-safe base64 characters; "
+        f"got {code!r}."
+    )
+    assert (
+        generate_referral_code() != generate_referral_code()
+    ), "generate_referral_code must produce a fresh (random) code per call."
 
 
 # ---------------------------------------------------------------------------

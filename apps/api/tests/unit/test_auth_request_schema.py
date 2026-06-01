@@ -66,10 +66,29 @@ class TestSignInWithAppleRequestShape:
             identity_token="token.value.sig",
             full_name=None,
             email=None,
+            referral_code=None,
         )
 
         assert request.full_name is None
         assert request.email is None
+        assert request.referral_code is None
+
+    def test_referral_code_defaults_to_none_when_omitted(self) -> None:
+        """Organic sign-up: ``referral_code`` is absent and defaults to None."""
+        request = SignInWithAppleRequest(
+            identity_token="organic.token.jwt",
+        )
+
+        assert request.referral_code is None
+
+    def test_accepts_referral_code_when_present(self) -> None:
+        """Referred sign-up: the 8-char URL-safe code is carried through."""
+        request = SignInWithAppleRequest(
+            identity_token="referred.token.jwt",
+            referral_code="aB3dEf7h",
+        )
+
+        assert request.referral_code == "aB3dEf7h"
 
 
 class TestSignInWithAppleRequestValidation:
@@ -107,6 +126,14 @@ class TestSignInWithAppleRequestValidation:
                 email=12345,  # type: ignore[arg-type]
             )
 
+    def test_rejects_non_string_referral_code(self) -> None:
+        """``referral_code`` must be a string when present."""
+        with pytest.raises(ValidationError):
+            SignInWithAppleRequest(
+                identity_token="t.t.t",
+                referral_code=12345,  # type: ignore[arg-type]
+            )
+
 
 class TestSignInWithAppleRequestJSON:
     """The schema round-trips through JSON exactly as the wire contract."""
@@ -132,3 +159,17 @@ class TestSignInWithAppleRequestJSON:
         assert request.identity_token == "reauth.tok.sig"
         assert request.full_name is None
         assert request.email is None
+        assert request.referral_code is None
+
+    def test_parses_referred_json_payload(self) -> None:
+        """A referred first-auth JSON payload carries ``referral_code``."""
+        payload = (
+            '{"identity_token": "id.tok.sig",'
+            ' "full_name": "Park Ji-sung",'
+            ' "email": "jisung@example.com",'
+            ' "referral_code": "Xy9zAb2c"}'
+        )
+        request = SignInWithAppleRequest.model_validate_json(payload)
+
+        assert request.identity_token == "id.tok.sig"
+        assert request.referral_code == "Xy9zAb2c"

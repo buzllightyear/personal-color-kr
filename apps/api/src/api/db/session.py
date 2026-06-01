@@ -32,6 +32,7 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.sql import func
 
@@ -45,6 +46,7 @@ from api.db.engine import get_engine
 # importing sqlalchemy itself.
 __all__ = [
     "AsyncSession",
+    "IntegrityError",
     "func",
     "get_session",
     "pg_insert",

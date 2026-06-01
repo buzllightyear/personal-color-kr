@@ -239,6 +239,53 @@ def require_posthog_personal_api_key() -> str:
     return value
 
 
+# ---------------------------------------------------------------------------
+# Phase 4.5 — referral share-URL base (REFERRAL_BASE_URL)
+# ---------------------------------------------------------------------------
+# The referral feature assembles a user's shareable URL **exclusively
+# server-side** (Seed: single_source_of_truth). ``REFERRAL_BASE_URL`` is the
+# origin/base the server combines with a user's ``referral_code`` to build the
+# ``share_url`` returned by ``GET /v1/referrals/me`` and embedded in the
+# sign-in response. The mobile client carries no ``REFERRAL_BASE_URL`` constant
+# and never assembles the URL itself — it renders whatever ``share_url`` the
+# server hands back.
+#
+# Follows the established fail-fast convention: the ``get_*`` accessor returns
+# ``None`` when unset/empty; the ``require_*`` wrapper raises ``LookupError``
+# (naming the var, never leaking a value) so the share-URL builder fails fast
+# rather than emitting a malformed ``None/r/<code>`` URL.
+
+
+def get_referral_base_url() -> str | None:
+    """Return ``REFERRAL_BASE_URL`` from env, or ``None`` if unset/empty.
+
+    The origin/base the server combines with a user's ``referral_code`` to
+    assemble the ``share_url`` (e.g. ``https://pcolor.example``). Empty strings
+    count as "unset" so a stray ``REFERRAL_BASE_URL=`` line in ``.env`` does
+    not propagate a blank base into the share-URL builder.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("REFERRAL_BASE_URL")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_referral_base_url() -> str:
+    """Return ``REFERRAL_BASE_URL`` or raise :class:`LookupError`.
+
+    Convenience for the share-URL builder / referrals router. The error
+    message names the env var but not its value.
+    """
+    value = get_referral_base_url()
+    if value is None:
+        raise LookupError(
+            "REFERRAL_BASE_URL is required to assemble referral share URLs. "
+            "Set the env var in .env or the deployment environment."
+        )
+    return value
+
+
 def get_posthog_project_id() -> str | None:
     """Return ``POSTHOG_PROJECT_ID`` from env, or ``None`` if unset/empty.
 

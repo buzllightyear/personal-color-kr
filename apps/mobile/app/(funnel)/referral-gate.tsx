@@ -32,9 +32,22 @@
  *     never throw even with the SDK absent. This matches the Seed
  *     constraint "Degraded mode posthog undefined must produce silent
  *     no-op".
- *   - No real Kakao SDK call, no clipboard write — both share buttons
- *     route through the same `setReferral({ shared: true })` write so the
- *     funnel-state contract treats them identically.
+ *
+ * Real share-URL wiring (Phase 4.5 — this revision):
+ *   - The two share buttons no longer noop. On tap they fetch the
+ *     *server-assembled* `share_url` from `GET /v1/referrals/me` (the server
+ *     is the single source of truth — the client carries no
+ *     `REFERRAL_BASE_URL` constant and never assembles the URL) and hand it
+ *     to the OS share sheet via `shareReferralLink` → `presentReferralShare`.
+ *   - The transport is built once via `createReferralMeTransport` against the
+ *     `EXPO_PUBLIC_API_BASE_URL` origin. The backend JWT is forwarded by the
+ *     auth-session store once that lands; until then the request degrades
+ *     silently (the share gate is soft — `shareReferralLink` swallows
+ *     fetch/auth failures), so navigation is always preserved.
+ *   - No real Kakao SDK call (deferred): the OS share sheet is used, not the
+ *     Kakao SDK. Both share buttons still route through the same
+ *     `setReferral({ shared: true })` write so the funnel-state contract
+ *     treats them identically.
  *
  * External deep-link allowlist invariant:
  *   `referral-gate` is one of the 3 externally-allowed funnel kebab slugs
@@ -49,12 +62,23 @@ import { usePostHog } from 'posthog-react-native';
 
 import { trackReferralShared } from '../../src/analytics/track-referral-shared';
 import { trackReferralSkipped } from '../../src/analytics/track-referral-skipped';
+import { createReferralMeTransport } from '../../src/fetch-referral-me';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
+import { presentReferralShare } from '../../src/present-referral-share';
+import { shareReferralLink } from '../../src/share-referral-link';
 import { ReferralGateScreen } from '../../src/screens/funnel/ReferralGateScreen';
 
 export default function ReferralGateRoute(): React.ReactElement {
   const router = useRouter();
   const { setReferral } = useFunnelState();
+  // One real `fetch`-backed transport for `GET /v1/referrals/me`, memoised so
+  // the share handlers share a single instance. The backend JWT is supplied
+  // by the auth-session store once wired; until then the request degrades
+  // silently (the share gate is soft) and navigation is always preserved.
+  const referralMeTransport = React.useMemo(
+    () => createReferralMeTransport(),
+    [],
+  );
   // `usePostHog()` returns `PostHog | undefined`. The `undefined` branch is
   // the documented degraded-mode contract (no api key in `.env` → provider
   // renders a fragment, no context value). The track helpers below
@@ -64,15 +88,27 @@ export default function ReferralGateRoute(): React.ReactElement {
 
   const handleShareKakao = React.useCallback((): void => {
     trackReferralShared(posthog, { method: 'kakao' });
+    // Fetch the server `share_url` and open the OS share sheet. Fire-and-
+    // -forget: `shareReferralLink` degrades silently on failure, so the
+    // funnel-state write + navigation below never wait on (or break with)
+    // the network call — the gate stays soft.
+    void shareReferralLink('kakao', {
+      transport: referralMeTransport,
+      present: presentReferralShare,
+    });
     setReferral({ shared: true });
     router.replace('/(funnel)/social-evolution');
-  }, [posthog, router, setReferral]);
+  }, [posthog, referralMeTransport, router, setReferral]);
 
   const handleCopyLink = React.useCallback((): void => {
     trackReferralShared(posthog, { method: 'copy_link' });
+    void shareReferralLink('copy_link', {
+      transport: referralMeTransport,
+      present: presentReferralShare,
+    });
     setReferral({ shared: true });
     router.replace('/(funnel)/social-evolution');
-  }, [posthog, router, setReferral]);
+  }, [posthog, referralMeTransport, router, setReferral]);
 
   const handleSkip = React.useCallback((): void => {
     trackReferralSkipped(posthog, {});

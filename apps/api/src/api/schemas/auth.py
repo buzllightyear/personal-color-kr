@@ -24,6 +24,12 @@ Seed contract (Phase 4.3):
           decoded from ``identity_token`` and raises HTTP 400 on
           mismatch. The schema does *not* perform that cross-check; it
           only enforces the type.
+        * ``referral_code``: ``Optional[str]`` — the referrer's 8-char
+          URL-safe referral code, forwarded by the mobile client from
+          its AsyncStorage stash. Optional: organic sign-ups omit it.
+          The handler performs the referee → referrer attribution
+          (validity, self-referral, already-attributed guards); the
+          schema only enforces the optional-string shape.
 
 Design notes:
     - ``identity_token`` is typed as a plain ``str``. The Seed pins JWT
@@ -132,11 +138,24 @@ class SignInWithAppleRequest(BaseModel):
         value against the ``email`` claim in ``identity_token`` and
         raises HTTP 400 on mismatch. ``None`` means the client omitted
         the field — the handler then trusts the token claim.
+    referral_code:
+        The referrer's 8-char URL-safe referral code, supplied by the
+        mobile client from its AsyncStorage stash (deep-link
+        ``/r/:code`` capture, last-wins, no TTL). Optional — organic
+        sign-ups omit it, and re-auth requests after attribution omit it
+        too. ``None`` means "no referral to attribute." The schema only
+        enforces the wire *shape* (an optional string); the referee →
+        referrer attribution logic (validity lookup, self-referral and
+        already-attributed guards, atomic events write) lives in the
+        handler / repository seam, never in this Pydantic boundary.
+        Attribution failure here is silently skipped so sign-in always
+        succeeds (Seed: silent_degradation).
     """
 
     identity_token: str
     full_name: str | None = None
     email: str | None = None
+    referral_code: str | None = None
 
 
 __all__ = [

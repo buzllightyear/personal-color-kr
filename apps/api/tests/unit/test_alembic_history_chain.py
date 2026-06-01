@@ -65,13 +65,14 @@ from alembic.script import ScriptDirectory
 _APPS_API_ROOT: Path = Path(__file__).resolve().parents[2]
 _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 
-# Single source of truth for the three Phase 4.x revision ids. Mirroring
+# Single source of truth for the four Phase 4.x revision ids. Mirroring
 # the same literals used by ``test_alembic_baseline_revision.py`` so a
 # rename anywhere in the chain breaks both the AST check and the
 # alembic-runtime check in the same commit.
 _BASELINE_REVISION_ID: str = "phase_4_1_baseline"
 _EVENTS_REVISION_ID: str = "phase_4_2_events"
 _USERS_REVISION_ID: str = "phase_4_3_users"
+_REFERRALS_REVISION_ID: str = "phase_4_5_referrals"
 
 
 def _load_script_directory() -> ScriptDirectory:
@@ -91,14 +92,15 @@ def _load_script_directory() -> ScriptDirectory:
 
 
 @pytest.mark.unit
-def test_alembic_history_reports_single_head_at_events_revision() -> None:
-    """``alembic heads`` (via ScriptDirectory) returns exactly ``phase_4_2_events``.
+def test_alembic_history_reports_single_head_at_referrals_revision() -> None:
+    """``alembic heads`` (via ScriptDirectory) returns exactly ``phase_4_5_referrals``.
 
     A single head proves the chain is **linear** — no accidental
     branching introduced by a sibling migration that forgot to chain on
-    the existing head. The head's identity (``phase_4_2_events``) proves
-    the events migration has been correctly registered with alembic and
-    has taken over the head position from the Phase 4.1 baseline.
+    the existing head. The head's identity (``phase_4_5_referrals``)
+    proves the Phase 4.5 referral-attribution migration has been correctly
+    registered with alembic and has taken over the head position from the
+    Phase 4.3 users migration.
     """
     script = _load_script_directory()
 
@@ -107,13 +109,13 @@ def test_alembic_history_reports_single_head_at_events_revision() -> None:
     # ``tuple`` for the equality assertion so the message reads naturally
     # regardless of the concrete container type alembic chose.
     heads = tuple(script.get_heads())
-    assert heads == (_USERS_REVISION_ID,), (
+    assert heads == (_REFERRALS_REVISION_ID,), (
         f"alembic must report exactly one head and it must be "
-        f"{_USERS_REVISION_ID!r} (the Phase 4.3 users migration); "
+        f"{_REFERRALS_REVISION_ID!r} (the Phase 4.5 referrals migration); "
         f"got {heads!r}. More than one head indicates the migration "
         f"chain branched (e.g. two migrations both set "
-        f"``down_revision = 'phase_4_2_events'`` without merging); a "
-        f"different head indicates a Phase 4.4+ migration sneaked in "
+        f"``down_revision = 'phase_4_3_users'`` without merging); a "
+        f"different head indicates a Phase 4.6+ migration sneaked in "
         f"prematurely."
     )
 
@@ -147,22 +149,22 @@ def test_alembic_history_reports_single_base_at_baseline_revision() -> None:
 
 @pytest.mark.unit
 def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
-    """``walk_revisions()`` yields events → baseline with correct down_revision.
+    """``walk_revisions()`` yields referrals → users → events → baseline.
 
     This is the strongest form of the chain assertion — it asks alembic
     to walk the DAG from head to base and verifies:
 
-        * exactly two revisions appear in the walk
+        * exactly four revisions appear in the walk
           (no extra revisions, no missing revisions),
-        * the head-to-base order is ``phase_4_2_events`` then
-          ``phase_4_1_baseline`` (proves the events migration sits
-          *above* the baseline, not beside it),
-        * the events migration's ``down_revision`` resolves to
-          ``phase_4_1_baseline`` at the alembic-runtime layer (proves
-          the chain link is honored by alembic itself, not just by the
-          source-file AST),
+        * the head-to-base order is ``phase_4_5_referrals`` →
+          ``phase_4_3_users`` → ``phase_4_2_events`` →
+          ``phase_4_1_baseline`` (proves each migration sits *above* the
+          next, not beside it),
+        * each migration's ``down_revision`` resolves to the next at the
+          alembic-runtime layer (proves the chain links are honored by
+          alembic itself, not just by the source-file AST),
         * the baseline migration's ``down_revision`` is ``None``
-          (proves the baseline is still the chain root after Phase 4.2
+          (proves the baseline is still the chain root after Phase 4.5
           extended the chain on top of it).
     """
     script = _load_script_directory()
@@ -173,32 +175,42 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
     # index + count.
     walk = list(script.walk_revisions())
 
-    assert len(walk) == 3, (
-        f"alembic chain must contain exactly three revisions in Phase 4.3 "
-        f"(baseline + events + users); walk_revisions() yielded {len(walk)}: "
-        f"{[r.revision for r in walk]!r}. A fourth revision indicates an "
-        f"orphan or Phase 4.4+ migration landed prematurely; fewer "
-        f"revisions indicate a missing chain link."
+    assert len(walk) == 4, (
+        f"alembic chain must contain exactly four revisions in Phase 4.5 "
+        f"(baseline + events + users + referrals); walk_revisions() yielded "
+        f"{len(walk)}: {[r.revision for r in walk]!r}. A fifth revision "
+        f"indicates an orphan or Phase 4.6+ migration landed prematurely; "
+        f"fewer revisions indicate a missing chain link."
     )
 
-    head_script, events_script, base_script = walk
+    referrals_script, users_script, events_script, base_script = walk
 
-    # ---- Head position: the users migration sits on top.
-    assert head_script.revision == _USERS_REVISION_ID, (
-        f"The head of walk_revisions() must be {_USERS_REVISION_ID!r} "
-        f"(the users migration); got {head_script.revision!r}. The "
+    # ---- Head position: the referrals migration sits on top.
+    assert referrals_script.revision == _REFERRALS_REVISION_ID, (
+        f"The head of walk_revisions() must be {_REFERRALS_REVISION_ID!r} "
+        f"(the referrals migration); got {referrals_script.revision!r}. The "
         f"walk order is head-to-base, so the first element is the head."
     )
 
+    # ---- Referrals migration chains on the users migration.
+    assert referrals_script.down_revision == _USERS_REVISION_ID, (
+        f"Referrals migration's down_revision must equal "
+        f"{_USERS_REVISION_ID!r}; got {referrals_script.down_revision!r}."
+    )
+
     # ---- Users migration chains on the events migration.
-    assert head_script.down_revision == _EVENTS_REVISION_ID, (
+    assert users_script.revision == _USERS_REVISION_ID, (
+        f"Second script in walk must be {_USERS_REVISION_ID!r}; "
+        f"got {users_script.revision!r}."
+    )
+    assert users_script.down_revision == _EVENTS_REVISION_ID, (
         f"Users migration's down_revision must equal "
-        f"{_EVENTS_REVISION_ID!r}; got {head_script.down_revision!r}."
+        f"{_EVENTS_REVISION_ID!r}; got {users_script.down_revision!r}."
     )
 
     # ---- Events migration chains on the baseline (Phase 4.2 invariant).
     assert events_script.revision == _EVENTS_REVISION_ID, (
-        f"Middle script in walk must be {_EVENTS_REVISION_ID!r}; "
+        f"Third script in walk must be {_EVENTS_REVISION_ID!r}; "
         f"got {events_script.revision!r}."
     )
     assert events_script.down_revision == _BASELINE_REVISION_ID, (
