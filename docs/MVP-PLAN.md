@@ -121,7 +121,7 @@
 | 4.2 | 2026-05-24 | 2026-05-24 | `orch_f2d949d559b5` | `0aad534` | CI PASS · **12/12 orch, 14/14 sub-AC, 0 manual** (Q00 #1202 우회 검증) |
 | 4.3 | 2026-05-25 | 2026-05-26 | `orch_d5968c5a063b` + manual | `f87cf76` | CI PASS · 2/21 orch + manual hybrid (~1,400 LOC) — rate-limit cascade recovery |
 | 4.4 | 2026-05-29 | 2026-05-30 | `orch_d46b4c3e28f5` + 0-LOC hybrid | `217cdba` | CI PASS · 10/23 orch + worktree-harvest (0 LOC manual code; 1 round CI fix) |
-| 4.5 | — | — | | | |
+| 4.5 | 2026-05-30 | 2026-06-01 | `orch_bc32d9fef5e3` + 0-LOC hybrid | `a456fb0` | CI PASS · **20/20 orch (full)** + worktree-harvest (0 LOC manual code; 1 round CI fix) — Q00#1202 **upstream fixed** |
 | 5.x | — | — | | | |
 | 6.x | — | — | | | |
 | 7.x | — | — | | | |
@@ -1268,6 +1268,89 @@ Infrastructure 수정:
 - PostHog cohort consumer (push notification targeting 등) — Phase 5 retention layer / 매거진
 
 **Seed**: `~/.ouroboros/seeds/seed_77a119e8cec2_unit_4_4.yaml` (v1.0.0, ambiguity 0.076)
+
+### Phase 4.5 결과 요약 (2026-06-01)
+
+**산출물 (첫 Py+TS 양쪽 surface phase — Phase 2.4 referral UI ↔ Phase 4.3 auth + Phase 4.4 events 결합)**:
+
+referral gate를 실 server에 wiring + friend-used callback 영속화. Backend는 fresh greenfield (core-python referral 모듈 없음 — MVP-PLAN.md:10 표기 오류 확정), mobile은 Phase 2.4의 placeholder 3개 integration point를 실 API 호출로 swap.
+
+Backend Source (apps/api/src/api/):
+- `db/models/user.py` (+120/-): `referral_code` (8-char URL-safe base64 via `secrets.token_urlsafe(6)`, UNIQUE NOT NULL) + `referrer_user_id` (UUID NULL, self-FK `users.id` ON DELETE SET NULL) 컬럼 추가.
+- `db/migrations/versions/2026_01_04_0000-phase_4_5_referrals_add_referral_columns.py` (NEW): alembic chain `phase_4_3_users` → `phase_4_5_referrals`. 3-step 패턴 (ADD NULL → backfill via `secrets.token_urlsafe(6)` → ALTER NOT NULL + UNIQUE). 안전 forward-compatible.
+- `db/repositories/users_repository.py` (NEW): users 테이블 단일 SQL 경계. `count_attributed_referees(session, referrer_user_id)` + `insert_user_with_referral_code(session, ...)`. AC11 single-import-boundary 패턴 (Phase 4.4 events_repository와 동일).
+- `db/repositories/events_repository.py` (+77/-): `insert_referral_attributed_event(session, *, referee_id, referrer_id, referral_code)` 추가.
+- `referrals/` (NEW package): `attribution_event.py` (event builder, REFERRAL_ATTRIBUTED_EVENT_NAME constant), `share_url.py` (server-side URL assembler from REFERRAL_BASE_URL + code). 모두 pure functions, framework-agnostic.
+- `schemas/referrals.py` (NEW): `ReferralMeResponse` (`referral_code: str`, `share_url: str`, `friend_used_count: int`), Pydantic v2 `extra="forbid"`.
+- `schemas/auth.py` (+19/-): `SignInWithAppleRequest`에 `referral_code: str | None = None` 필드 추가.
+- `routers/auth.py` (+271/-): atomic attribution 로직 (`_attempt_referral_attribution`). user upsert + referrer_user_id write + events `referral_attributed` insert가 동일 transaction. 4-state enum (`ATTRIBUTION_STATUS_ATTRIBUTED` / `SKIPPED_INVALID_CODE` / `SKIPPED_SELF_REFERRAL` / `SKIPPED_ALREADY_ATTRIBUTED`). 실패 path는 silent skip (sign-in 항상 성공).
+- `routers/referrals.py` (NEW): `GET /v1/referrals/me` 핸들러. `require_current_user` 의존. response: `{ referral_code, share_url, friend_used_count }`. share_url은 `f"{settings.REFERRAL_BASE_URL}{user.referral_code}"` 로 server-side 조립 (single source of truth).
+- `config/env.py` (+47/-): `get_referral_base_url() / require_referral_base_url()` (Phase 4.3 JWT_SECRET / Phase 4.4 POSTHOG_PERSONAL_API_KEY 패턴 재사용, fail-fast LookupError).
+- `main.py` (+5/-): `include_router(referrals.router, prefix="/v1")` (7th router).
+- `db/session.py` (+2/-): `update` 재익스포트 (auth router의 attribution UPDATE 위해, AC11 boundary 유지).
+
+Mobile Source (apps/mobile/src/):
+- `storage/referral-storage.ts` (NEW) + `stash-referral-code.ts` (NEW) + `hooks/use-stash-referral-code.ts` (NEW): AsyncStorage 래퍼 + deep-link `/r/:code` 클릭 시 code stash + sign-in 후 cleanup. **Last-wins + 무기한 TTL + attribution 후 client cleanup**.
+- `sign-in-with-apple-request-body.ts` (NEW): body composer (`referral_code` 포함). 
+- `submit-sign-in-with-apple.ts` (NEW): real `fetch` wrapper. HTTP 200 시 `AsyncStorage.removeItem('referral_code')` 호출 (cleanup hygiene). 401/500 path는 stashed code 유지 (재시도 시 재전송).
+- `config/api-base-url.ts` (NEW): mobile API base URL constant.
+- `fetch-referral-me.ts` (NEW): `GET /v1/referrals/me` wrapper.
+- `present-referral-share.ts` (NEW) + `share-referral-link.ts` (NEW): share UI handlers. Kakao SDK 실 호출은 Phase 7 (현재는 share_url을 console로 출력 + 클립보드 placeholder).
+- `screens/funnel/SocialEvolutionSharedTrueBranch.tsx` (+123/-): "아직 친구가 참여하지 않았어요" empty state를 실 `friend_used_count` 표시로 swap. `count === 0` 이면 empty state, `> 0` 이면 카운트 표시.
+- `app/(funnel)/referral-gate.tsx` (+46/-) + `social-evolution.tsx` (+68/-): routes 가 신규 hooks 사용.
+- `app/_layout.tsx` (+7/-): deep-link 파싱 → `useStashReferralCode` hook 연동.
+
+Tests (Phase 4.4 207 → Phase 4.5 **279** pytest, +72 신규; mobile vitest **1107**, core-ts 809):
+- Backend unit 신규 8개: `test_auth_referral_attribution.py`, `test_auth_referral_code_generation.py` (collision retry 포함), `test_events_repository_referral_attributed.py`, `test_referrals_attribution_event.py`, `test_referrals_me_endpoint.py`, `test_referrals_me_schema.py`, `test_referrals_share_url.py`, `test_users_repository_friend_count.py`.
+- Backend integration 신규 4개: `test_users_referrer_fk.py` (FK SET NULL + orphan blocked), `test_users_friend_count.py` (DISTINCT COUNT semantics), `test_referral_attributed_event_persistence.py` (repository write), `test_attribution_path_event_persistence.py` (end-to-end attribution path × 3 paths).
+- Backend 갱신: `test_alembic_baseline_revision.py` (3 → 4 revisions), `test_alembic_history_chain.py` (head `phase_4_5_referrals`), `test_auth_request_schema.py` (referral_code field), `test_user_model.py` (2 신규 컬럼).
+- Mobile vitest 신규 12개: referral-storage, stash-referral-code, sign-in-with-apple-request-body, submit-sign-in-with-apple, fetch-referral-me, present-referral-share, share-referral-link, api-base-url, social-evolution-friend-count, social-evolution-shared-true-branch (updated), asyncstorage-boundary-isolation (updated), `__stubs__/expo-linking-stub.ts`.
+
+**4중 정합 (local pre-push)**:
+- `python -m pytest -q apps/api/tests` → **279 passed, 32 skipped** (integration tier, DATABASE_URL_TEST 미설정)
+- `python -m mypy --strict apps/api/src` → **no issues found in 51 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **118 files unchanged**
+- `pnpm --filter mobile run typecheck + test` → clean + **1107 passed**
+- `pnpm --filter core-ts run typecheck + test` → clean + 809 passed
+- CI: postgres:16 service + alembic upgrade head (`phase_4_5_referrals` head 까지) + apps/api pytest (integration tier 포함) → **PASS** (1차 fix 후)
+
+**Git**:
+- Feature branch: `ooo/orch_bc32d9fef5e3_manual` (auto-deleted post-merge)
+- 핵심 commit: `af1f706` (56 files: +5,793 / -149 LOC), CI 회복 commit: `caa15a9`
+- PR #31 squash merge commit: `a456fb0`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 첫 검증)**:
+
+- Interview: `interview_20260530_062852` — 5 round Socratic (friend-used 트리거 + reward scope / code 모델 + 포맷 / share URL SoT + PostHog 연동 / 최종 details). Ambiguity 0.123. Phase 4.x 중 가장 높지만 Py+TS 양쪽 surface로 도메인 폭 넓음 감안.
+- Seed: `~/.ouroboros/seeds/seed_1847a2866a57_unit_4_5.yaml` (21 ACs / 22 constraints / 6 ontology fields / 8 evaluation principles / 6 exit conditions).
+- Run #1 (`orch_bc32d9fef5e3`): **20/20 ACs (Level 5/5, all 7 sub-ACs in Level 4 complete)** — Phase 4.x 중 **첫 full orchestrator 성공**. Phase 4.4 의 10/23 (false-failure due to venv tooling) 보다 압도적 개선.
+- **Q00#1202 UPSTREAM FIXED**: 활성 archive `lC013e8tCRS6wCtH_2S4K` 의 `execution_handlers.py:589` 가 `fat_harness_mode = execution_mode == "fat_harness"` (이전 hardcoded `True` → 이제 seed 의 execution_mode 에서 derived). Phase 4.1~4.3 의 multi-archive 패치 부담 사라짐. ouroboros-ai upstream commit으로 회수.
+- Hybrid completion (**0 LOC manual code**): worktree 자산 (54 파일) → main repo branch `ooo/orch_bc32d9fef5e3_manual` 로 copy → 실 4-gate → 모두 first try green.
+- CI 회복 1 round: 5 failures, 모두 schema/diff-guard 이슈 (1-3: attribution_path 가 `test_alembic_upgrade_head` 직후 알파벳 순으로 실행되어 schema-at-baseline → Phase 4.4 의 `_reset_db_and_upgrade_head` 헬퍼 패턴 차용. 4: `test_events_migration._HEAD_REVISION` constant 갱신. 5: `test_users_friend_count.py` 의 seed/assertion 내부 모순. 추가: forbidden modules prefix 에서 `users` + `referral` 제거, Phase 4.1 잔재 `test_diff_no_mobile_changes.py` 삭제 — Phase 4.5 가 legitimate mobile swap phase).
+
+**Phase 4.4 비교 (orchestrator 완전 안정화)**:
+| 측면 | Phase 4.4 | Phase 4.5 |
+|---|---|---|
+| Orchestrator 결과 | 10/23 (false-failure) | **20/20 (full success)** |
+| Manual completion | 0 LOC | **0 LOC** (재현) |
+| Ambiguity | 0.076 | 0.123 (Py+TS 양 surface) |
+| Surface | Python only | **Python + TypeScript** |
+| Q00#1202 상태 | 활성 archive 패치 필요 (orchestrator's run-time) | **upstream fixed** (수동 패치 0) |
+| 회복 수고 | dev tools 설치 + 1 round CI fix | 1 round CI fix only |
+| CI round | 1 | 1 |
+| 산출 합계 | 20 files / +1,896 LOC | 56 files / +5,793 LOC (Py 26 + TS 30, tests 다수) |
+| 테스트 증가 | +26 unit | **+72 pytest + 12 mobile vitest** |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- Reward / entitlement mechanics (Phase 5+ when paywall integrates) — referrer가 friend 카운트만 보고, 무료 매거진 / badge 등 보상 메커니즘은 없음
+- Universal Link infra (AASA hosting, Associated Domains entitlement) — Phase 7
+- Real Kakao SDK invocation — Phase 7 (현재 share_url은 실 URL이지만 SDK 호출 자체는 placeholder boundary 유지)
+- Server-side PostHog push — Phase 4.4 의 "pull-only" 결정 유지 (events 테이블 row만 작성)
+- Anonymous_id ↔ user_id merge backfill — Phase 5+ funnel cohort retention 필요해지면
+- Batch POST endpoint, dedup key, admin role / HMAC, rate limiting — Phase 6+
+
+**Seed**: `~/.ouroboros/seeds/seed_1847a2866a57_unit_4_5.yaml` (v1.0.0, ambiguity 0.123)
 
 ## 참고
 
