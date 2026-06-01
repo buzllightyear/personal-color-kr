@@ -30,7 +30,10 @@ from __future__ import annotations
 
 import os
 import secrets
+import subprocess
+import sys
 import uuid
+from pathlib import Path
 
 import pytest
 from sqlalchemy import insert, select, text
@@ -45,6 +48,54 @@ from api.routers.auth import (
     ATTRIBUTION_STATUS_SKIPPED_SELF_REFERRAL,
     _attempt_referral_attribution,
 )
+
+# ``parents[2]`` from apps/api/tests/integration/test_*.py resolves to apps/api/
+# so the alembic CLI subprocess receives an absolute path regardless of pytest cwd.
+_APPS_API_ROOT: Path = Path(__file__).resolve().parents[2]
+_ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
+_ALEMBIC_CLI_TIMEOUT_SECONDS: int = 60
+
+
+async def _reset_db_and_upgrade_head(url: str) -> None:
+    """Drop ``events`` + ``users`` + ``alembic_version`` and run ``alembic upgrade head``.
+
+    ``test_alembic_upgrade_head.py`` (alphabetically prior) leaves the DB at the
+    baseline revision, so we cannot assume the schema is already at head.
+    Mirrors the pattern in ``test_events_model_roundtrip.py`` and
+    ``test_events_and_retention_flow.py``.
+    """
+    setup_engine = create_async_engine(url, future=True)
+    try:
+        async with setup_engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    finally:
+        await setup_engine.dispose()
+
+    env = os.environ.copy()
+    env["DATABASE_URL"] = url
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "alembic",
+            "-c",
+            str(_ALEMBIC_INI_PATH),
+            "upgrade",
+            "head",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=_ALEMBIC_CLI_TIMEOUT_SECONDS,
+        check=False,
+    )
+    if result.returncode != 0:  # pragma: no cover — exercised only on failure
+        raise RuntimeError(
+            f"alembic upgrade head failed (exit {result.returncode}): "
+            f"{result.stdout}\n{result.stderr}"
+        )
 
 
 def _resolved_database_url() -> str | None:
@@ -133,6 +184,7 @@ async def test_successful_attribution_path_writes_exactly_one_event() -> None:
     assert _RESOLVED_URL is not None
     referrer_code = secrets.token_urlsafe(6)
     referee_code = secrets.token_urlsafe(6)
+    await _reset_db_and_upgrade_head(_RESOLVED_URL)
     engine = create_async_engine(_RESOLVED_URL, future=True)
     seeded: list[uuid.UUID] = []
     try:
@@ -181,6 +233,7 @@ async def test_invalid_code_attribution_path_writes_no_event() -> None:
     """An unknown referral_code skips attribution → zero events persisted."""
     assert _RESOLVED_URL is not None
     referee_code = secrets.token_urlsafe(6)
+    await _reset_db_and_upgrade_head(_RESOLVED_URL)
     engine = create_async_engine(_RESOLVED_URL, future=True)
     seeded: list[uuid.UUID] = []
     try:
@@ -216,6 +269,7 @@ async def test_self_referral_attribution_path_writes_no_event() -> None:
     """A code resolving to the signer itself skips → zero events persisted."""
     assert _RESOLVED_URL is not None
     self_code = secrets.token_urlsafe(6)
+    await _reset_db_and_upgrade_head(_RESOLVED_URL)
     engine = create_async_engine(_RESOLVED_URL, future=True)
     seeded: list[uuid.UUID] = []
     try:

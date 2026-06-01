@@ -75,8 +75,10 @@ async def test_count_attributed_referees_counts_only_matching_rows() -> None:
             # Three referees attributed to ``referrer_id``.
             for _ in range(3):
                 created.append(await _insert_user(conn, referrer_user_id=referrer_id))
-            # One referee attributed to a different referrer + one organic.
-            created.append(await _insert_user(conn, referrer_user_id=other_referrer_id))
+            # One organic (no referrer) — acts as noise to prove the COUNT
+            # query filters on referrer_user_id rather than scanning the whole
+            # table. ``other_referrer_id`` itself is intentionally left with
+            # zero referees so the second assertion can prove isolation.
             created.append(await _insert_user(conn, referrer_user_id=None))
 
         async with AsyncSession(engine, expire_on_commit=False) as session:
