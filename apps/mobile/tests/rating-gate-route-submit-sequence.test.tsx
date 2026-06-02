@@ -202,8 +202,7 @@ describe('rating-gate route — submit CTA causal chain (helper → capture → 
     pressSubmit(tree);
     await flushMicrotasks();
 
-    const dispatchOrder =
-      helperSpies.requestStoreReview.mock.invocationCallOrder[0];
+    const dispatchOrder = helperSpies.requestStoreReview.mock.invocationCallOrder[0];
     const captureOrder = posthogSpies.capture.mock.invocationCallOrder[0];
 
     expect(dispatchOrder).toBeDefined();
@@ -229,13 +228,12 @@ describe('rating-gate route — submit CTA causal chain (helper → capture → 
   it('helper rejection can never happen, but a slow probe never delays navigation', async () => {
     // Re-pin the helper to a promise that resolves on a later microtask turn.
     // Even so, navigation must already have fired synchronously.
-    helperSpies.requestStoreReview.mockImplementationOnce(
-      () =>
-        Promise.resolve().then(() => ({
-          attempted: true,
-          available: true,
-          platform: 'ios' as const,
-        })),
+    helperSpies.requestStoreReview.mockImplementationOnce(() =>
+      Promise.resolve().then(() => ({
+        attempted: true,
+        available: true,
+        platform: 'ios' as const,
+      })),
     );
 
     const tree = render(React.createElement(RatingGateRoute));

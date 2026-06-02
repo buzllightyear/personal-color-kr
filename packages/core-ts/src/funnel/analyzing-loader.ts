@@ -51,8 +51,8 @@ export const ANALYZING_TOTAL_STAGES = 5 as const;
 export const ANALYZING_STAGE_DURATION_MS = 1_000 as const;
 
 /** Total wall-clock duration of the fake loader — matches step 8 metadata. */
-export const ANALYZING_TOTAL_DURATION_MS =
-  (ANALYZING_TOTAL_STAGES * ANALYZING_STAGE_DURATION_MS) as 5_000;
+export const ANALYZING_TOTAL_DURATION_MS = (ANALYZING_TOTAL_STAGES *
+  ANALYZING_STAGE_DURATION_MS) as 5_000;
 
 /**
  * Canonical 5-stage ladder rendered on top of the fake loader screen.
@@ -145,10 +145,7 @@ function stageIndexForElapsed(elapsedMs: number): AnalyzingStageIndex {
 }
 
 function progressPercentForElapsed(elapsedMs: number): number {
-  const clamped = Math.min(
-    ANALYZING_TOTAL_DURATION_MS,
-    clampNonNegative(elapsedMs),
-  );
+  const clamped = Math.min(ANALYZING_TOTAL_DURATION_MS, clampNonNegative(elapsedMs));
   return Math.floor((clamped / ANALYZING_TOTAL_DURATION_MS) * 100);
 }
 

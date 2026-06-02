@@ -78,11 +78,7 @@ export class ConversionRateError extends Error {
   public readonly reason: ConversionRateErrorReason;
   public readonly value: unknown;
 
-  constructor(
-    reason: ConversionRateErrorReason,
-    message: string,
-    value: unknown,
-  ) {
+  constructor(reason: ConversionRateErrorReason, message: string, value: unknown) {
     super(message);
     this.reason = reason;
     this.value = value;

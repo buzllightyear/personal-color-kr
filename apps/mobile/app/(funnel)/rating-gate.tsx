@@ -61,9 +61,7 @@ export function RatingGateDefaultVariant(props: {
   readonly onSkip: () => void;
 }): JSX.Element {
   const { onSubmit, onSkip } = props;
-  return (
-    <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="default" />
-  );
+  return <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="default" />;
 }
 
 /**
@@ -75,9 +73,7 @@ export function RatingGateSecondaryVariant(props: {
   readonly onSkip: () => void;
 }): JSX.Element {
   const { onSubmit, onSkip } = props;
-  return (
-    <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="secondary" />
-  );
+  return <RatingGateContent onSubmit={onSubmit} onSkip={onSkip} variant="secondary" />;
 }
 
 export type RatingGateVariantComponent =

@@ -32,10 +32,7 @@
  *
  * Immutability: every screen and its nested arrays / metadata are frozen.
  */
-import {
-  FUNNEL_STEPS_ORDERED,
-  type FunnelStepId,
-} from './types.js';
+import { FUNNEL_STEPS_ORDERED, type FunnelStepId } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -46,17 +43,17 @@ import {
  * same configuration can drive React Native, Web, or analytics replays.
  */
 export type FunnelCtaAction =
-  | 'advance'                       // proceed to next step (default)
-  | 'skip'                          // dismiss current step (rating_gate only)
-  | 'submit_rating'                 // submit iOS rating
-  | 'select_scan_personal_color'    // step 6 primary option — main hook
-  | 'select_scan_secondary'         // step 6 secondary scan options (Phase-N)
-  | 'upload_selfie'                 // step 7 — selfie + onboarding answers
-  | 'auto_advance'                  // step 8 — no user CTA; timer drives it
-  | 'unlock_result'                 // step 9 — proceed to KR-variant gates
-  | 'share_referral'                // step 10 — share invite to 1 friend
-  | 'select_monthly'                // step 12 — $12/월
-  | 'select_annual';                // step 12 — $59/연 + 37일 무료체험
+  | 'advance' // proceed to next step (default)
+  | 'skip' // dismiss current step (rating_gate only)
+  | 'submit_rating' // submit iOS rating
+  | 'select_scan_personal_color' // step 6 primary option — main hook
+  | 'select_scan_secondary' // step 6 secondary scan options (Phase-N)
+  | 'upload_selfie' // step 7 — selfie + onboarding answers
+  | 'auto_advance' // step 8 — no user CTA; timer drives it
+  | 'unlock_result' // step 9 — proceed to KR-variant gates
+  | 'share_referral' // step 10 — share invite to 1 friend
+  | 'select_monthly' // step 12 — $12/월
+  | 'select_annual'; // step 12 — $59/연 + 37일 무료체험
 
 /**
  * Visual weight of a CTA.  `dismiss` is reserved for the rating gate so the
@@ -65,7 +62,7 @@ export type FunnelCtaAction =
 export type FunnelCtaVariant = 'primary' | 'secondary' | 'tertiary' | 'dismiss';
 
 export interface FunnelCta {
-  readonly label: string;          // Korean copy rendered on the button
+  readonly label: string; // Korean copy rendered on the button
   readonly action: FunnelCtaAction;
   readonly variant: FunnelCtaVariant;
 }
@@ -86,10 +83,10 @@ export type FunnelVariantTag = 'kr_variant';
  */
 export interface FunnelScreen {
   readonly stepId: FunnelStepId;
-  readonly stepNumber: number;                          // 1..12
-  readonly headline: string;                            // Korean h1
-  readonly subhead: string;                             // Korean supporting copy
-  readonly bodyCopy: string | null;                     // optional long-form body
+  readonly stepNumber: number; // 1..12
+  readonly headline: string; // Korean h1
+  readonly subhead: string; // Korean supporting copy
+  readonly bodyCopy: string | null; // optional long-form body
   readonly ctas: readonly FunnelCta[];
   readonly variantTag: FunnelVariantTag | null;
   readonly metadata: Readonly<Record<string, unknown>>; // step-specific config
@@ -135,9 +132,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       headline: '내 퍼스널 컬러로 셀카가 한 장 더 빛나도록',
       subhead: '1분 진단으로 봄·여름·가을·겨울 카테고리부터 맞춤 편집까지',
       bodyCopy: null,
-      ctas: [
-        { label: '1분 진단 시작', action: 'advance', variant: 'primary' },
-      ],
+      ctas: [{ label: '1분 진단 시작', action: 'advance', variant: 'primary' }],
       variantTag: null,
       metadata: { hook: 'personal_color_diagnosis' },
     }),
@@ -149,9 +144,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       bodyCopy:
         '셀카 한 장 → 컬러 카테고리 매칭 → 트렌드 preset 자동 적용. ' +
         '편집은 우리가, 큐레이션은 매월 매거진으로.',
-      ctas: [
-        { label: '다음', action: 'advance', variant: 'primary' },
-      ],
+      ctas: [{ label: '다음', action: 'advance', variant: 'primary' }],
       variantTag: null,
       metadata: {
         valueProps: [
@@ -169,9 +162,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       headline: '나에 대해 짧게 알려주세요',
       subhead: '결과에 영향을 주지 않는 2개 질문 · 더 정확한 가이드를 위해',
       bodyCopy: null,
-      ctas: [
-        { label: '계속', action: 'advance', variant: 'primary' },
-      ],
+      ctas: [{ label: '계속', action: 'advance', variant: 'primary' }],
       variantTag: null,
       metadata: {
         primingMechanism: 'consistency_lever',
@@ -252,9 +243,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       headline: '셀카 1장만 올려주세요',
       subhead: '정면 · 자연광 · 민낯에 가까울수록 결과가 정확해요',
       bodyCopy: null,
-      ctas: [
-        { label: '셀카 업로드하기', action: 'upload_selfie', variant: 'primary' },
-      ],
+      ctas: [{ label: '셀카 업로드하기', action: 'upload_selfie', variant: 'primary' }],
       variantTag: null,
       metadata: {
         requiredInputs: ['selfie_image'],
@@ -287,11 +276,8 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
     result_reveal: buildScreen('result_reveal', {
       headline: '당신의 카테고리는 ✦ 가을 웜톤 ✦',
       subhead: '어울리는 메이크업·코디 + 맞춤 편집 결과는 다음 단계에서 공개돼요',
-      bodyCopy:
-        '전체 진단 카드 · 가이드 텍스트 · 첫 추천 패키지 4종이 잠겨 있어요.',
-      ctas: [
-        { label: '결과 잠금 해제', action: 'unlock_result', variant: 'primary' },
-      ],
+      bodyCopy: '전체 진단 카드 · 가이드 텍스트 · 첫 추천 패키지 4종이 잠겨 있어요.',
+      ctas: [{ label: '결과 잠금 해제', action: 'unlock_result', variant: 'primary' }],
       variantTag: null,
       metadata: {
         locked: true,
@@ -305,9 +291,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
       headline: '친구 한 명에게 진단 공유하면 다음으로 넘어가요',
       subhead: '한국 시장 변형: 50% 할인 게이트 폐기, 부담 없이 1명만 부탁드려요',
       bodyCopy: null,
-      ctas: [
-        { label: '공유하고 계속', action: 'share_referral', variant: 'primary' },
-      ],
+      ctas: [{ label: '공유하고 계속', action: 'share_referral', variant: 'primary' }],
       variantTag: 'kr_variant',
       metadata: {
         requiredReferrals: 1,
@@ -326,9 +310,7 @@ export const FUNNEL_SCREENS: Readonly<Record<FunnelStepId, FunnelScreen>> =
         '한국 리뷰 검증 문화에 맞춰 가짜 별점 패턴을 버리고, ' +
         '실제 사용자 게시물 · 인플루언서 인용 · 12만+ 누적 진단으로 ' +
         '사회 증명을 단계 진화시켰어요.',
-      ctas: [
-        { label: '계속', action: 'advance', variant: 'primary' },
-      ],
+      ctas: [{ label: '계속', action: 'advance', variant: 'primary' }],
       variantTag: 'kr_variant',
       metadata: {
         replaces: 'standard_fake_figma_reviews',

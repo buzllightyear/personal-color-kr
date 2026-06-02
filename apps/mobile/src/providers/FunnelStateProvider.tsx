@@ -226,20 +226,18 @@ export function FunnelStateProvider(
   // no AsyncStorage (Phase 3). The initial value is computed lazily via the
   // function form so the (cheap) ternary only runs on first render rather
   // than on every render.
-  const [onboarding, setOnboardingState] =
-    React.useState<FunnelOnboardingAnswers>(
-      () => initialOnboarding ?? INITIAL_FUNNEL_ONBOARDING_ANSWERS,
-    );
+  const [onboarding, setOnboardingState] = React.useState<FunnelOnboardingAnswers>(
+    () => initialOnboarding ?? INITIAL_FUNNEL_ONBOARDING_ANSWERS,
+  );
 
   // Parallel useState for the Phase 2.3 diagnosisInput slice. Kept on a
   // separate state cell (rather than nested inside `onboarding`) so React's
   // bailout-on-equal-reference path treats writes to one slice independently
   // of the other — a `setOnboarding(...)` call does not invalidate the
   // `diagnosisInput` reference, and vice versa.
-  const [diagnosisInput, setDiagnosisInputState] =
-    React.useState<FunnelDiagnosisInput>(
-      () => initialDiagnosisInput ?? INITIAL_FUNNEL_DIAGNOSIS_INPUT,
-    );
+  const [diagnosisInput, setDiagnosisInputState] = React.useState<FunnelDiagnosisInput>(
+    () => initialDiagnosisInput ?? INITIAL_FUNNEL_DIAGNOSIS_INPUT,
+  );
 
   // `setOnboarding` is wrapped in `useCallback` so its identity is stable
   // across renders — combined with the `useMemo` on the context value below,
@@ -291,15 +289,12 @@ export function FunnelStateProvider(
   // invariant declared on `FunnelStateValue` and makes the contract easy
   // to extend (Phase 2.4 sibling AC adds a `payment` slice that follows
   // the same template).
-  const setReferral = React.useCallback<SetReferral>(
-    (patch: FunnelReferralPatch) => {
-      setReferralState((prev: FunnelReferral) => {
-        const next: FunnelReferral = { ...prev, ...patch };
-        return next;
-      });
-    },
-    [],
-  );
+  const setReferral = React.useCallback<SetReferral>((patch: FunnelReferralPatch) => {
+    setReferralState((prev: FunnelReferral) => {
+      const next: FunnelReferral = { ...prev, ...patch };
+      return next;
+    });
+  }, []);
 
   // Phase 2.4 payment slice (step 12 — payment_model). Same parallel-slice
   // pattern as the other slices: independent `useState` cell, immutable
@@ -315,15 +310,12 @@ export function FunnelStateProvider(
   // patch shape constrains `selectedMethod` to `PaymentMethod | null` (no
   // free-text widening) and the two flags to `boolean`, so spreading the
   // patch into the new object cannot introduce out-of-domain values.
-  const setPayment = React.useCallback<SetPayment>(
-    (patch: FunnelPaymentPatch) => {
-      setPaymentState((prev: FunnelPayment) => {
-        const next: FunnelPayment = { ...prev, ...patch };
-        return next;
-      });
-    },
-    [],
-  );
+  const setPayment = React.useCallback<SetPayment>((patch: FunnelPaymentPatch) => {
+    setPaymentState((prev: FunnelPayment) => {
+      const next: FunnelPayment = { ...prev, ...patch };
+      return next;
+    });
+  }, []);
 
   // Sub-AC 15.2 — dedicated `setSelectedPaymentMethod` action.
   //
@@ -345,24 +337,23 @@ export function FunnelStateProvider(
   //     concern surgically isolated from the payment-flow state machine.
   //   - Stable identity via `useCallback([])` so consumers can list it in
   //     `useEffect` dependency arrays without spurious re-runs.
-  const setSelectedPaymentMethod =
-    React.useCallback<SetSelectedPaymentMethod>(
-      (method: PaymentMethod | null) => {
-        setPaymentState((prev: FunnelPayment) => {
-          // Bail out when the requested value matches the current selection
-          // — React already short-circuits identical references, but the
-          // early return makes the intent explicit and saves a downstream
-          // `useMemo` rebuild when the user re-taps the already-selected
-          // radio option.
-          if (prev.selectedMethod === method) {
-            return prev;
-          }
-          const next: FunnelPayment = { ...prev, selectedMethod: method };
-          return next;
-        });
-      },
-      [],
-    );
+  const setSelectedPaymentMethod = React.useCallback<SetSelectedPaymentMethod>(
+    (method: PaymentMethod | null) => {
+      setPaymentState((prev: FunnelPayment) => {
+        // Bail out when the requested value matches the current selection
+        // — React already short-circuits identical references, but the
+        // early return makes the intent explicit and saves a downstream
+        // `useMemo` rebuild when the user re-taps the already-selected
+        // radio option.
+        if (prev.selectedMethod === method) {
+          return prev;
+        }
+        const next: FunnelPayment = { ...prev, selectedMethod: method };
+        return next;
+      });
+    },
+    [],
+  );
 
   // Sub-AC 15.3 — dedicated `setPaymentProcessing` action.
   //
@@ -444,18 +435,15 @@ export function FunnelStateProvider(
   // invalidates preview branch") is enforced at the consumer boundary
   // (`result_reveal` render-time branch selection), not inside this setter
   // — the action only flips the slice flag.
-  const setIsPremium = React.useCallback<SetIsPremium>(
-    (isPremium: boolean) => {
-      setPaymentState((prev: FunnelPayment) => {
-        if (prev.isPremium === isPremium) {
-          return prev;
-        }
-        const next: FunnelPayment = { ...prev, isPremium };
-        return next;
-      });
-    },
-    [],
-  );
+  const setIsPremium = React.useCallback<SetIsPremium>((isPremium: boolean) => {
+    setPaymentState((prev: FunnelPayment) => {
+      if (prev.isPremium === isPremium) {
+        return prev;
+      }
+      const next: FunnelPayment = { ...prev, isPremium };
+      return next;
+    });
+  }, []);
 
   // Stable context value reference — only rebuilt when one of the state
   // slices actually changes (every `set*` updater is itself stable via
@@ -489,11 +477,7 @@ export function FunnelStateProvider(
     ],
   );
 
-  return React.createElement(
-    FunnelStateContext.Provider,
-    { value },
-    children,
-  );
+  return React.createElement(FunnelStateContext.Provider, { value }, children);
 }
 
 // ---------------------------------------------------------------------------

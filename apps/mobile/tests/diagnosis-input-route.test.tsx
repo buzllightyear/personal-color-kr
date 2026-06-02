@@ -131,12 +131,8 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
     // label testID is owned by SelfieUploadPressable (Sub-AC 5.2): post
     // composition (Sub-AC 5.3) the screen delegates the label to the
     // component, so we assert against the component's contract.
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-idle'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeTruthy();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeNull();
   });
 
   it('forwards capture-surface taps into setDiagnosisInput (screen re-renders with captured state)', () => {
@@ -152,12 +148,8 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
     // After the tap the route's onCaptureSelfie wrote a stub URI into
     // context.diagnosisInput, which re-renders the screen with the captured
     // label visible — this is the route → context write contract.
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-idle'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeTruthy();
+    expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeNull();
   });
 
   it('forwards useRouter().push to onNext (advances to /(funnel)/fake-scan-animation)', () => {
@@ -171,9 +163,9 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
 
     const submit = findHostByTestId(tree, 'diagnosis-input-submit');
     expect(submit).toBeTruthy();
-    expect(
-      (submit?.props.accessibilityState as { disabled: boolean }).disabled,
-    ).toBe(false);
+    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      false,
+    );
     const submitPress = submit?.props.onPress as ((e: unknown) => void) | undefined;
     expect(typeof submitPress).toBe('function');
     act(() => {

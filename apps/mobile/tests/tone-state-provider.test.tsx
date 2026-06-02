@@ -34,10 +34,7 @@ import { Text } from 'react-native';
 import { act, render, waitFor } from '@testing-library/react-native';
 
 import type { Season } from '../src/contracts/post-payment-views';
-import {
-  ToneStateProvider,
-  useToneState,
-} from '../src/providers/ToneStateProvider';
+import { ToneStateProvider, useToneState } from '../src/providers/ToneStateProvider';
 
 function ToneProbe(): React.ReactElement {
   const { current, source, setTone } = useToneState();
@@ -86,9 +83,7 @@ describe('ToneStateProvider', () => {
       </ToneStateProvider>,
     );
 
-    await waitFor(() =>
-      expect(getByTestId('current').children[0]).toBe('winter-cool'),
-    );
+    await waitFor(() => expect(getByTestId('current').children[0]).toBe('winter-cool'));
     expect(getByTestId('source').children[0]).toBe('user-switched');
   });
 

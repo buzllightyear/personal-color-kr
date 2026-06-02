@@ -108,9 +108,7 @@ describe('SelfieUploadPressable — render', () => {
     expect(idle).toBeTruthy();
     expect(idle?.props.children).toBe(SELFIE_UPLOAD_IDLE_LABEL);
     expect(idle?.props.children).toBe('셀카 등록하기');
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeNull();
   });
 
   it('renders the captured Korean label "셀카 등록됨" when selfieUri is a non-null string', () => {
@@ -159,13 +157,9 @@ describe('SelfieUploadPressable — render', () => {
         testID: 'diagnosis-input-capture-surface',
       }),
     );
-    expect(
-      findHostByTestId(tree, 'diagnosis-input-capture-surface'),
-    ).not.toBeNull();
+    expect(findHostByTestId(tree, 'diagnosis-input-capture-surface')).not.toBeNull();
     // Default sentinel must NOT also be present — the caller's value wins.
-    expect(
-      findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID),
-    ).toBeNull();
+    expect(findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID)).toBeNull();
   });
 });
 
@@ -179,10 +173,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
       }),
     );
 
-    const surface = findHostByTestId(
-      tree,
-      SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
-    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     expect(surface).toBeTruthy();
     const onPress = surface?.props.onPress as (e: unknown) => void;
     expect(typeof onPress).toBe('function');
@@ -212,10 +203,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
         onCapture,
       }),
     );
-    const surface = findHostByTestId(
-      tree,
-      SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
-    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     const onPress = surface?.props.onPress as (e: unknown) => void;
 
     act(() => {
@@ -240,10 +228,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
         onCapture,
       }),
     );
-    const surface = findHostByTestId(
-      tree,
-      SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
-    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     const onPress = surface?.props.onPress as (e: unknown) => void;
 
     act(() => {
@@ -265,10 +250,7 @@ describe('SelfieUploadPressable — accessibility', () => {
         onCapture: NO_OP_CAPTURE,
       }),
     );
-    const surface = findHostByTestId(
-      tree,
-      SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
-    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     expect(surface?.props.accessibilityRole).toBe('button');
   });
 
@@ -283,9 +265,7 @@ describe('SelfieUploadPressable — accessibility', () => {
       idleTree,
       SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
     );
-    expect(idleSurface?.props.accessibilityLabel).toBe(
-      SELFIE_UPLOAD_IDLE_LABEL,
-    );
+    expect(idleSurface?.props.accessibilityLabel).toBe(SELFIE_UPLOAD_IDLE_LABEL);
 
     const capturedTree = render(
       React.createElement(SelfieUploadPressable, {
@@ -328,8 +308,7 @@ describe('SelfieUploadPressable — accessibility', () => {
       SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
     );
     expect(
-      (capturedSurface?.props.accessibilityState as { selected: boolean })
-        .selected,
+      (capturedSurface?.props.accessibilityState as { selected: boolean }).selected,
     ).toBe(true);
   });
 

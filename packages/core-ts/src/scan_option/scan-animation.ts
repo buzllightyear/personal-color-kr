@@ -66,9 +66,8 @@ export const SCAN_ANIMATION_TOTAL_STAGES = 8 as const;
 export const SCAN_ANIMATION_STAGE_DURATION_MS = 400 as const;
 
 /** Total wall-clock duration of the fake scan animation. */
-export const SCAN_ANIMATION_TOTAL_DURATION_MS =
-  (SCAN_ANIMATION_TOTAL_STAGES *
-    SCAN_ANIMATION_STAGE_DURATION_MS) as 3_200;
+export const SCAN_ANIMATION_TOTAL_DURATION_MS = (SCAN_ANIMATION_TOTAL_STAGES *
+  SCAN_ANIMATION_STAGE_DURATION_MS) as 3_200;
 
 /**
  * Canonical 8-stage ladder rendered over the fake scan animation.
@@ -102,7 +101,7 @@ export interface ScanAnimationStage {
   readonly index: ScanAnimationStageIndex;
   readonly label: string;
   readonly startsAtMs: number; // inclusive
-  readonly endsAtMs: number;   // exclusive (except final stage — see notes)
+  readonly endsAtMs: number; // exclusive (except final stage — see notes)
 }
 
 /**
@@ -174,9 +173,7 @@ function progressPercentForElapsed(elapsedMs: number): number {
   return Math.floor((clamped / SCAN_ANIMATION_TOTAL_DURATION_MS) * 100);
 }
 
-function freezeState(
-  state: Omit<ScanAnimationState, 'stages'>,
-): ScanAnimationState {
+function freezeState(state: Omit<ScanAnimationState, 'stages'>): ScanAnimationState {
   return Object.freeze({
     ...state,
     stages: CANONICAL_SCAN_ANIMATION_STAGES,
@@ -239,8 +236,7 @@ export function tickScanAnimation(
     }
     return freezeState({
       phase: 'complete',
-      currentStageIndex: (SCAN_ANIMATION_TOTAL_STAGES -
-        1) as ScanAnimationStageIndex,
+      currentStageIndex: (SCAN_ANIMATION_TOTAL_STAGES - 1) as ScanAnimationStageIndex,
       elapsedMs: SCAN_ANIMATION_TOTAL_DURATION_MS,
       progressPercent: 100,
       startedAtMs: prev.startedAtMs,
@@ -332,9 +328,7 @@ export interface ScanAnimationController {
   /** Synchronous read of the current state. */
   readonly snapshot: () => ScanAnimationState;
   /** Subscribe to state changes; the returned function unsubscribes. */
-  readonly subscribe: (
-    listener: ScanAnimationListener,
-  ) => ScanAnimationUnsubscribe;
+  readonly subscribe: (listener: ScanAnimationListener) => ScanAnimationUnsubscribe;
 }
 
 // Default scheduler — uses the standard globals.  Captured as a constant so
@@ -461,9 +455,7 @@ export function useScanAnimation(
     return state;
   }
 
-  function subscribe(
-    listener: ScanAnimationListener,
-  ): ScanAnimationUnsubscribe {
+  function subscribe(listener: ScanAnimationListener): ScanAnimationUnsubscribe {
     listeners.add(listener);
     return () => {
       listeners.delete(listener);

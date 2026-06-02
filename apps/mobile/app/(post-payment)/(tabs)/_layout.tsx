@@ -19,7 +19,6 @@ import { useEffect } from 'react';
 import {
   readLastPostPaymentTab,
   writeLastPostPaymentTab,
-  type TabKey,
 } from '../../../src/storage/post-payment-storage';
 
 export default function PostPaymentTabsLayout(): React.ReactElement {
@@ -59,7 +58,7 @@ export default function PostPaymentTabsLayout(): React.ReactElement {
       tab === 'guide' ||
       tab === 'curation'
     ) {
-      void writeLastPostPaymentTab(tab as TabKey);
+      void writeLastPostPaymentTab(tab);
     }
   }, [segments]);
 

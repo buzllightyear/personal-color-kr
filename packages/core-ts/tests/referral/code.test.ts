@@ -138,16 +138,18 @@ describe('generateReferralCode', () => {
 
   it('rejects RNG output outside the charset range', () => {
     expect(() =>
-      generateReferralCode({ randomInt: rngFromSequence([REFERRAL_CODE_CHARSET.length]) }),
+      generateReferralCode({
+        randomInt: rngFromSequence([REFERRAL_CODE_CHARSET.length]),
+      }),
     ).toThrow(ReferralCodeError);
 
-    expect(() =>
-      generateReferralCode({ randomInt: rngFromSequence([-1]) }),
-    ).toThrow(ReferralCodeError);
+    expect(() => generateReferralCode({ randomInt: rngFromSequence([-1]) })).toThrow(
+      ReferralCodeError,
+    );
 
-    expect(() =>
-      generateReferralCode({ randomInt: rngFromSequence([1.5]) }),
-    ).toThrow(ReferralCodeError);
+    expect(() => generateReferralCode({ randomInt: rngFromSequence([1.5]) })).toThrow(
+      ReferralCodeError,
+    );
   });
 
   it('default RNG produces valid codes across many draws (smoke test)', () => {
@@ -171,8 +173,18 @@ describe('generateUniqueReferralCode', () => {
     // Sequence: first draw collides with `first`, second draw uses
     // index 1 across all 6 positions and is therefore distinct.
     const sequence = [
-      0, 0, 0, 0, 0, 0, // attempt 1 → equals `first`, must be rejected
-      1, 1, 1, 1, 1, 1, // attempt 2 → distinct
+      0,
+      0,
+      0,
+      0,
+      0,
+      0, // attempt 1 → equals `first`, must be rejected
+      1,
+      1,
+      1,
+      1,
+      1,
+      1, // attempt 2 → distinct
     ];
 
     const result = generateUniqueReferralCode([first], {

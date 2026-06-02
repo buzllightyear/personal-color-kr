@@ -106,12 +106,7 @@ function makeIosBridge(overrides?: {
 
 describe('RATING_BRIDGE_PLATFORMS', () => {
   it('exposes ios, android, web, unknown in canonical order', () => {
-    expect([...RATING_BRIDGE_PLATFORMS]).toEqual([
-      'ios',
-      'android',
-      'web',
-      'unknown',
-    ]);
+    expect([...RATING_BRIDGE_PLATFORMS]).toEqual(['ios', 'android', 'web', 'unknown']);
   });
 
   it('is frozen', () => {
@@ -161,8 +156,7 @@ describe('createRatingBridge — constructor validation', () => {
     try {
       createRatingBridge({
         platform: 'ios',
-        requestReviewNative:
-          'not a function' as unknown as RatingBridgeNativeBinding,
+        requestReviewNative: 'not a function' as unknown as RatingBridgeNativeBinding,
       });
     } catch (err) {
       caught = err;
@@ -336,9 +330,7 @@ describe('requestReview — iOS happy path', () => {
     });
     const result = await bridge.requestReview(1);
     expect(result.outcome).toBe('requested');
-    expect(result.promptedAt).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-    );
+    expect(result.promptedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 
   it('rejects a now() that returns a non-string', async () => {
@@ -348,9 +340,7 @@ describe('requestReview — iOS happy path', () => {
       requestReviewNative: binding as unknown as RatingBridgeNativeBinding,
       now: () => 42 as unknown as string,
     });
-    await expect(bridge.requestReview(1)).rejects.toBeInstanceOf(
-      RatingBridgeError,
-    );
+    await expect(bridge.requestReview(1)).rejects.toBeInstanceOf(RatingBridgeError);
   });
 
   it('rejects an appVersion function that returns an invalid value', async () => {
@@ -360,9 +350,7 @@ describe('requestReview — iOS happy path', () => {
       requestReviewNative: binding as unknown as RatingBridgeNativeBinding,
       appVersion: () => '' as unknown as string,
     });
-    await expect(bridge.requestReview(1)).rejects.toBeInstanceOf(
-      RatingBridgeError,
-    );
+    await expect(bridge.requestReview(1)).rejects.toBeInstanceOf(RatingBridgeError);
   });
 });
 
@@ -438,9 +426,7 @@ describe('requestReview — failure handling', () => {
   });
 
   it('catches an async rejection with a generic Error', async () => {
-    const binding = vi.fn(() =>
-      Promise.reject(new Error('async StoreKit failure')),
-    );
+    const binding = vi.fn(() => Promise.reject(new Error('async StoreKit failure')));
     const bridge = createRatingBridge({
       platform: 'ios',
       requestReviewNative: binding as unknown as RatingBridgeNativeBinding,
@@ -455,9 +441,7 @@ describe('requestReview — failure handling', () => {
     class NativeError extends Error {
       override readonly name = 'NativeError';
     }
-    const binding = vi.fn(() =>
-      Promise.reject(new NativeError('OS-level reject')),
-    );
+    const binding = vi.fn(() => Promise.reject(new NativeError('OS-level reject')));
     const bridge = createRatingBridge({
       platform: 'ios',
       requestReviewNative: binding as unknown as RatingBridgeNativeBinding,
@@ -547,28 +531,22 @@ describe('requestReview — stage validation', () => {
     expect(result.outcome).toBe('requested');
   });
 
-  it.each([
-    0,
-    5,
-    -1,
-    1.5,
-    '1',
-    null,
-    undefined,
-    {},
-  ] as const)('rejects invalid stage %s', async (bad) => {
-    const { bridge } = makeIosBridge();
-    let caught: unknown;
-    try {
-      await bridge.requestReview(
-        bad as unknown as Parameters<RatingBridge['requestReview']>[0],
-      );
-    } catch (err) {
-      caught = err;
-    }
-    expect(caught).toBeInstanceOf(RatingBridgeError);
-    expect((caught as RatingBridgeError).reason).toBe('invalid_stage');
-  });
+  it.each([0, 5, -1, 1.5, '1', null, undefined, {}] as const)(
+    'rejects invalid stage %s',
+    async (bad) => {
+      const { bridge } = makeIosBridge();
+      let caught: unknown;
+      try {
+        await bridge.requestReview(
+          bad as unknown as Parameters<RatingBridge['requestReview']>[0],
+        );
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(RatingBridgeError);
+      expect((caught as RatingBridgeError).reason).toBe('invalid_stage');
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------

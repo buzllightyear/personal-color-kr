@@ -402,9 +402,7 @@ describe('FunnelStateProvider — paywallOutcome:restored state transition (Sub-
     expect(captureA.latest?.payment.isProcessing).toBe(
       captureB.latest?.payment.isProcessing,
     );
-    expect(captureA.latest?.payment.isPremium).toBe(
-      captureB.latest?.payment.isPremium,
-    );
+    expect(captureA.latest?.payment.isPremium).toBe(captureB.latest?.payment.isPremium);
     expect(captureA.latest?.payment.isProcessing).toBe(false);
     expect(captureA.latest?.payment.isPremium).toBe(true);
   });
@@ -436,9 +434,7 @@ describe('FunnelStateProvider — paywallOutcome:restored state transition (Sub-
     });
 
     expect(capture.latest?.setIsPremium).toBe(initialSetIsPremium);
-    expect(capture.latest?.setPaymentProcessing).toBe(
-      initialSetPaymentProcessing,
-    );
+    expect(capture.latest?.setPaymentProcessing).toBe(initialSetPaymentProcessing);
   });
 
   it('produces an identical post-transition slice shape to the purchased outcome', () => {

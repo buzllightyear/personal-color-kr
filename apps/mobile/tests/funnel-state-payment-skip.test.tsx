@@ -538,9 +538,7 @@ describe('FunnelStateProvider — explicit skip path state contract (Sub-AC 21.4
       applySkipTransition(value);
     });
 
-    expect(capture.latest?.setPaymentProcessing).toBe(
-      initialSetPaymentProcessing,
-    );
+    expect(capture.latest?.setPaymentProcessing).toBe(initialSetPaymentProcessing);
     expect(capture.latest?.setIsPremium).toBe(initialSetIsPremium);
   });
 

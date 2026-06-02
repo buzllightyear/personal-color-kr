@@ -155,10 +155,7 @@ export function DiagnosisInputScreen(
   );
 
   return (
-    <FunnelScreenLayout
-      testID="diagnosis-input-screen"
-      accessibilityLabel="셀카 등록"
-    >
+    <FunnelScreenLayout testID="diagnosis-input-screen" accessibilityLabel="셀카 등록">
       <FunnelHeadline
         headline={SCREEN.headline}
         subhead={SCREEN.subhead}

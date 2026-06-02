@@ -426,9 +426,15 @@ describe('validateScanOptionCatalogue — collection invariants', () => {
 
   it('rejects catalogues with no main entry', () => {
     const noMain = [
-      { ...validMain(), id: 'scan_slot_2', role: 'secondary' as const,
-        slot: 1 as const, status: 'phase_n_tbd' as const, placeholder: true,
-        displayLabelKo: '두번째 스캔 (곧 오픈)' },
+      {
+        ...validMain(),
+        id: 'scan_slot_2',
+        role: 'secondary' as const,
+        slot: 1 as const,
+        status: 'phase_n_tbd' as const,
+        placeholder: true,
+        displayLabelKo: '두번째 스캔 (곧 오픈)',
+      },
       validSecondary2(),
       validSecondary3(),
     ];

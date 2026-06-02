@@ -72,7 +72,10 @@ const replaceSpy = vi.fn();
 
 vi.mock('expo-router', () => {
   return {
-    useRouter: (): { push: (path: string) => void; replace: (path: string) => void } => ({
+    useRouter: (): {
+      push: (path: string) => void;
+      replace: (path: string) => void;
+    } => ({
       push: pushSpy,
       replace: replaceSpy,
     }),
@@ -142,9 +145,7 @@ describe('social-evolution route file — render smoke', () => {
     pushSpy.mockClear();
     replaceSpy.mockClear();
     const tree = renderRoute(false);
-    expect(
-      findHostByTestId(tree, 'social-evolution-shared-false-branch'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-shared-false-branch')).toBeTruthy();
   });
 
   it('renders the shared=true branch when referral.shared === true', () => {
@@ -154,9 +155,7 @@ describe('social-evolution route file — render smoke', () => {
     pushSpy.mockClear();
     replaceSpy.mockClear();
     const tree = renderRoute(true);
-    expect(
-      findHostByTestId(tree, 'social-evolution-shared-true-screen'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-shared-true-screen')).toBeTruthy();
   });
 
   it('does not invoke router.push or router.replace on mount (either branch)', () => {

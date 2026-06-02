@@ -106,8 +106,7 @@ function findHostByTestId(
   // two matches per testID (the wrapper FC + the rendered host); we want
   // the host node only.
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -124,9 +123,7 @@ function findAllHostsByTestIdPattern(
   ) as unknown as readonly TestInstance[];
 }
 
-function collectRenderedText(
-  tree: TestRenderer.ReactTestRenderer,
-): string {
+function collectRenderedText(tree: TestRenderer.ReactTestRenderer): string {
   // Sweep every host text-bearing child and concatenate into one string so
   // the "no forbidden substring" assertion below can scan the whole
   // rendered surface in one pass.
@@ -208,10 +205,7 @@ describe('PriceCard — value-prop heading (AC 13 primary contract)', () => {
 describe('PriceCard — three benefit rows (AC 13 primary contract)', () => {
   it('renders exactly three benefit rows', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const rows = findAllHostsByTestIdPattern(
-      tree,
-      'payment-model-value-prop-item-',
-    );
+    const rows = findAllHostsByTestIdPattern(tree, 'payment-model-value-prop-item-');
     expect(rows).toHaveLength(3);
   });
 
@@ -259,9 +253,7 @@ describe('PriceCard — three benefit rows (AC 13 primary contract)', () => {
         tree,
         `payment-model-value-prop-item-${String(index)}`,
       );
-      expect(String(row?.props.children)).toContain(
-        VALUE_PROP_CARD_BULLET_GLYPH,
-      );
+      expect(String(row?.props.children)).toContain(VALUE_PROP_CARD_BULLET_GLYPH);
     });
   });
 });
@@ -354,10 +346,8 @@ describe('PriceCard — typography tokens applied (no drift from design tokens)'
 
   it('paints the heading and benefit rows with COLORS.grayscale.text (canonical near-black)', () => {
     const tree = render(React.createElement(PriceCard, {}));
-    const headingStyle = findHostByTestId(
-      tree,
-      'payment-model-value-prop-heading',
-    )?.props.style as { color?: string };
+    const headingStyle = findHostByTestId(tree, 'payment-model-value-prop-heading')
+      ?.props.style as { color?: string };
     expect(headingStyle.color).toBe(COLORS.grayscale.text);
 
     VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
@@ -384,27 +374,15 @@ describe('PriceCard — testID prefix expansion', () => {
       React.createElement(PriceCard, { testIDPrefix: 'custom-prefix' }),
     );
     expect(findHostByTestId(tree, 'custom-prefix-value-prop-card')).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'custom-prefix-value-prop-heading'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'custom-prefix-value-prop-item-0'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'custom-prefix-value-prop-item-1'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'custom-prefix-value-prop-item-2'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-value-prop-heading')).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-value-prop-item-0')).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-value-prop-item-1')).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-value-prop-item-2')).toBeTruthy();
     // The default-prefixed handles must NOT resolve when the prefix is
     // overridden — drift guard against a copy-paste bug that hard-codes
     // the default in the component.
     expect(findHostByTestId(tree, 'payment-model-value-prop-card')).toBeNull();
-    expect(
-      findHostByTestId(tree, 'payment-model-value-prop-heading'),
-    ).toBeNull();
-    expect(
-      findHostByTestId(tree, 'payment-model-value-prop-item-0'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'payment-model-value-prop-heading')).toBeNull();
+    expect(findHostByTestId(tree, 'payment-model-value-prop-item-0')).toBeNull();
   });
 });

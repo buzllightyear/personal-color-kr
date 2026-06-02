@@ -10,10 +10,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  RESULT_WORDING_CATALOG,
-  SEASONS,
-} from '../src/wording/result-wording-catalog';
+import { RESULT_WORDING_CATALOG, SEASONS } from '../src/wording/result-wording-catalog';
 
 const ASCII_LETTER_REGEX = /[A-Za-z]/;
 

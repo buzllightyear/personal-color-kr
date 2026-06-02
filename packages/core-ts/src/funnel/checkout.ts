@@ -39,7 +39,7 @@ export type PaymentPlanId = 'monthly' | 'annual';
 export type BillingCadence = 'monthly' | 'annual';
 
 export interface TrialBreakdown {
-  readonly baseTrialDays: number;   // 7 for annual, 0 for monthly
+  readonly baseTrialDays: number; // 7 for annual, 0 for monthly
   readonly annualBonusDays: number; // 30 for annual, 0 for monthly
 }
 

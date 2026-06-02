@@ -99,8 +99,7 @@ export interface GenerateReferralCodeOptions {
   readonly randomInt?: ReferralRandomInt;
 }
 
-export interface GenerateUniqueReferralCodeOptions
-  extends GenerateReferralCodeOptions {
+export interface GenerateUniqueReferralCodeOptions extends GenerateReferralCodeOptions {
   /**
    * Maximum number of mint attempts before giving up.  Defaults to 32.
    * Collision probability with the default 6-char suffix is
@@ -125,11 +124,7 @@ export function generateReferralCode(
   const chars: string[] = [];
   for (let i = 0; i < REFERRAL_CODE_SUFFIX_LENGTH; i += 1) {
     const index = randomInt(charsetSize);
-    if (
-      !Number.isInteger(index) ||
-      index < 0 ||
-      index >= charsetSize
-    ) {
+    if (!Number.isInteger(index) || index < 0 || index >= charsetSize) {
       throw new ReferralCodeError(
         'invalid_rng_output',
         `RNG returned out-of-range value ${String(index)} for charset size ${charsetSize}.`,
@@ -153,9 +148,8 @@ export function generateUniqueReferralCode(
   existingCodes: Iterable<string>,
   options: GenerateUniqueReferralCodeOptions = {},
 ): string {
-  const taken = existingCodes instanceof Set
-    ? existingCodes
-    : new Set<string>(existingCodes);
+  const taken =
+    existingCodes instanceof Set ? existingCodes : new Set<string>(existingCodes);
   const maxAttempts = options.maxAttempts ?? DEFAULT_GENERATE_MAX_ATTEMPTS;
   if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
     throw new ReferralCodeError(

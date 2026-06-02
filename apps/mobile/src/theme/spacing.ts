@@ -77,14 +77,7 @@
  * md < lg) so a designer can say "use lg padding" without remembering whether
  * that's 20px or 24px.
  */
-export type SpacingKey =
-  | 'xxs'
-  | 'xs'
-  | 'sm'
-  | 'md'
-  | 'lg'
-  | 'xl'
-  | 'xxl';
+export type SpacingKey = 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
 export const SPACING = {
   /** 4px — hairline gap (border-adjacent inset, icon-to-text gap). */

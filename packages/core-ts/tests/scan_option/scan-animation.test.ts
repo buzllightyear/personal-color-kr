@@ -23,14 +23,7 @@
  *       * a fresh `start()` resets the timeline,
  *       * an injected scheduler drives the controller deterministically.
  */
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CANONICAL_SCAN_ANIMATION_STAGES,
@@ -58,15 +51,13 @@ describe('scan-animation — public constants', () => {
     expect(SCAN_ANIMATION_TOTAL_STAGES).toBe(8);
     expect(SCAN_ANIMATION_STAGE_DURATION_MS).toBe(400);
     expect(SCAN_ANIMATION_TOTAL_DURATION_MS).toBe(3_200);
-    expect(
-      SCAN_ANIMATION_TOTAL_STAGES * SCAN_ANIMATION_STAGE_DURATION_MS,
-    ).toBe(SCAN_ANIMATION_TOTAL_DURATION_MS);
+    expect(SCAN_ANIMATION_TOTAL_STAGES * SCAN_ANIMATION_STAGE_DURATION_MS).toBe(
+      SCAN_ANIMATION_TOTAL_DURATION_MS,
+    );
   });
 
   it('exposes exactly 8 Korean stage labels', () => {
-    expect(SCAN_ANIMATION_STAGE_LABELS).toHaveLength(
-      SCAN_ANIMATION_TOTAL_STAGES,
-    );
+    expect(SCAN_ANIMATION_STAGE_LABELS).toHaveLength(SCAN_ANIMATION_TOTAL_STAGES);
     for (const label of SCAN_ANIMATION_STAGE_LABELS) {
       expect(label.length).toBeGreaterThan(0);
       expect(/[가-힣]/.test(label)).toBe(true);
@@ -79,9 +70,7 @@ describe('scan-animation — public constants', () => {
   });
 
   it('CANONICAL_SCAN_ANIMATION_STAGES windows tile [0, 3200) without gaps or overlap', () => {
-    expect(CANONICAL_SCAN_ANIMATION_STAGES).toHaveLength(
-      SCAN_ANIMATION_TOTAL_STAGES,
-    );
+    expect(CANONICAL_SCAN_ANIMATION_STAGES).toHaveLength(SCAN_ANIMATION_TOTAL_STAGES);
     CANONICAL_SCAN_ANIMATION_STAGES.forEach((stage, idx) => {
       expect(stage.index).toBe(idx);
       expect(stage.label).toBe(SCAN_ANIMATION_STAGE_LABELS[idx]);
@@ -105,9 +94,7 @@ describe('scan-animation — public constants', () => {
   it('getScanAnimationStage is total over ScanAnimationStageIndex and returns the canonical record', () => {
     for (let i = 0; i < SCAN_ANIMATION_TOTAL_STAGES; i += 1) {
       const idx = i as ScanAnimationStageIndex;
-      expect(getScanAnimationStage(idx)).toBe(
-        CANONICAL_SCAN_ANIMATION_STAGES[idx],
-      );
+      expect(getScanAnimationStage(idx)).toBe(CANONICAL_SCAN_ANIMATION_STAGES[idx]);
     }
   });
 });
@@ -154,10 +141,7 @@ describe('startScanAnimation', () => {
 
 describe('tickScanAnimation — boundary semantics', () => {
   function project(elapsed: number): ScanAnimationState {
-    return tickScanAnimation(
-      startScanAnimation(createScanAnimation(), 0),
-      elapsed,
-    );
+    return tickScanAnimation(startScanAnimation(createScanAnimation(), 0), elapsed);
   }
 
   it('idle ticks are inert', () => {
@@ -253,10 +237,7 @@ describe('stage transition order — strictly 0 → 7', () => {
     if (state.currentStageIndex !== null) visited.push(state.currentStageIndex);
 
     for (let i = 1; i < SCAN_ANIMATION_TOTAL_STAGES; i += 1) {
-      const next = tickScanAnimation(
-        state,
-        i * SCAN_ANIMATION_STAGE_DURATION_MS,
-      );
+      const next = tickScanAnimation(state, i * SCAN_ANIMATION_STAGE_DURATION_MS);
       if (next.currentStageIndex !== null) {
         visited.push(next.currentStageIndex);
       }
@@ -318,9 +299,7 @@ describe('useScanAnimation — fake-timer driven 400 ms cadence', () => {
 
       const snap = controller.snapshot();
       expect(snap.phase, `at ${step.afterMs}ms`).toBe(step.phase);
-      expect(snap.currentStageIndex, `at ${step.afterMs}ms`).toBe(
-        step.stageIndex,
-      );
+      expect(snap.currentStageIndex, `at ${step.afterMs}ms`).toBe(step.stageIndex);
       expect(snap.progressPercent, `at ${step.afterMs}ms`).toBe(step.progress);
       expect(snap.elapsedMs, `at ${step.afterMs}ms`).toBe(step.afterMs);
     }
@@ -350,9 +329,7 @@ describe('useScanAnimation — fake-timer driven 400 ms cadence', () => {
     vi.advanceTimersByTime(SCAN_ANIMATION_TOTAL_DURATION_MS);
 
     expect(stages.map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-    expect(stages.map((s) => s.label)).toEqual([
-      ...SCAN_ANIMATION_STAGE_LABELS,
-    ]);
+    expect(stages.map((s) => s.label)).toEqual([...SCAN_ANIMATION_STAGE_LABELS]);
   });
 
   it('invokes onComplete exactly once when the animation latches', () => {

@@ -48,14 +48,8 @@ import { describe, expect, it, vi } from 'vitest';
 // CommonJS surface. Mocking here keeps both resolution paths happy.
 vi.mock('react-native', async () => {
   const reactActual: typeof React = await vi.importActual('react');
-  const makeHost =
-    (label: string) =>
-    (props: Record<string, unknown>) =>
-      reactActual.createElement(
-        label,
-        props,
-        (props as { children?: unknown }).children,
-      );
+  const makeHost = (label: string) => (props: Record<string, unknown>) =>
+    reactActual.createElement(label, props, (props as { children?: unknown }).children);
   return {
     View: makeHost('View'),
     Text: makeHost('Text'),
@@ -125,9 +119,7 @@ function findByTestId(
   tree: TestRenderer.ReactTestRenderer,
   testID: string,
 ): TestInstance | null {
-  const matches = tree.root.findAll(
-    (node) => node.props?.testID === testID,
-  );
+  const matches = tree.root.findAll((node) => node.props?.testID === testID);
   return (matches[0] as unknown as TestInstance) ?? null;
 }
 
@@ -146,9 +138,7 @@ function getByTestId(
  * so a single style prop is already the merged object; this helper just
  * normalises the array vs. object shape.
  */
-function flattenStyle(
-  styleProp: unknown,
-): Readonly<Record<string, unknown>> {
+function flattenStyle(styleProp: unknown): Readonly<Record<string, unknown>> {
   if (!styleProp) return {};
   if (Array.isArray(styleProp)) {
     return styleProp.reduce<Record<string, unknown>>(
@@ -165,11 +155,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
       React.createElement(
         FunnelScreenLayout,
         null,
-        React.createElement(
-          'Text',
-          { testID: 'inner-child' },
-          'Hello 안녕하세요',
-        ),
+        React.createElement('Text', { testID: 'inner-child' }, 'Hello 안녕하세요'),
       ),
     );
     const child = getByTestId(tree, 'inner-child');
@@ -253,10 +239,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
         React.createElement('Text', null, 'body'),
       ),
     );
-    const content = getByTestId(
-      tree,
-      `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`,
-    );
+    const content = getByTestId(tree, `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`);
     const style = flattenStyle(content.props.style);
     expect(style.paddingHorizontal).toBe(SPACING.lg);
     expect(style.paddingVertical).toBe(SPACING.xl);
@@ -275,10 +258,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
       ),
     );
     const root = getByTestId(tree, FUNNEL_SCREEN_LAYOUT_TEST_ID);
-    const content = getByTestId(
-      tree,
-      `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`,
-    );
+    const content = getByTestId(tree, `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`);
     expect(flattenStyle(root.props.style).flex).toBe(1);
     expect(flattenStyle(content.props.style).flex).toBe(1);
   });
@@ -294,8 +274,6 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
     expect(findByTestId(tree, 'value-props-screen-content')).not.toBeNull();
     // The default inner content testID must NOT be present when the outer is
     // overridden — they are derived from the same prop.
-    expect(
-      findByTestId(tree, `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`),
-    ).toBeNull();
+    expect(findByTestId(tree, `${FUNNEL_SCREEN_LAYOUT_TEST_ID}-content`)).toBeNull();
   });
 });

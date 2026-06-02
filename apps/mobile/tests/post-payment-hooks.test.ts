@@ -74,8 +74,7 @@ describe('useCurationContent', () => {
 
 describe('hook independence (Sub-AC 11 — cross-coupling assertion)', () => {
   it('changing the Season passed to one hook does not affect another hook called separately', () => {
-    const diag = renderHook(() => useDiagnosisContent('spring-warm')).result
-      .current;
+    const diag = renderHook(() => useDiagnosisContent('spring-warm')).result.current;
     const edit = renderHook(() => useEditContent('winter-cool')).result.current;
 
     expect(diag.data?.season).toBe('spring-warm');

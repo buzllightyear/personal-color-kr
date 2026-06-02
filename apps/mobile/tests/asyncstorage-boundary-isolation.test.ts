@@ -34,7 +34,7 @@ describe('AsyncStorage boundary isolation (Phase 3.3 Sub-AC 14 / Phase 4.5)', ()
         "git grep -l '@react-native-async-storage/async-storage' -- 'apps/mobile/src' 'apps/mobile/app'",
         { cwd: REPO_ROOT, encoding: 'utf8' },
       );
-    } catch (e: unknown) {
+    } catch {
       // git grep exits non-zero when no matches found, which would mean
       // the wrapper itself does not import the library either — that's
       // a real failure, surface it.
@@ -44,9 +44,7 @@ describe('AsyncStorage boundary isolation (Phase 3.3 Sub-AC 14 / Phase 4.5)', ()
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
-    const offenders = matches.filter(
-      (line) => !line.startsWith(WRAPPER_DIR_PREFIX),
-    );
+    const offenders = matches.filter((line) => !line.startsWith(WRAPPER_DIR_PREFIX));
 
     // Guard against a vacuous pass: at least one storage-wrapper file must
     // import the library, otherwise the grep matched nothing (the catch

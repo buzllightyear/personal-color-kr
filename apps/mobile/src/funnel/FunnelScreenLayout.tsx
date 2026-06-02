@@ -146,14 +146,8 @@ export const FUNNEL_SCREEN_LAYOUT_TEST_ID = 'funnel-screen-layout';
  *     );
  *   }
  */
-export function FunnelScreenLayout(
-  props: FunnelScreenLayoutProps,
-): React.ReactElement {
-  const {
-    children,
-    testID = FUNNEL_SCREEN_LAYOUT_TEST_ID,
-    accessibilityLabel,
-  } = props;
+export function FunnelScreenLayout(props: FunnelScreenLayoutProps): React.ReactElement {
+  const { children, testID = FUNNEL_SCREEN_LAYOUT_TEST_ID, accessibilityLabel } = props;
 
   // `SafeAreaView` from react-native-safe-area-context supplies the inset
   // padding (notch / status bar / home indicator). We layer a plain `View`

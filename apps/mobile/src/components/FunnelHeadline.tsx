@@ -162,18 +162,10 @@ export function FunnelHeadline(props: FunnelHeadlineProps): React.ReactElement {
 
   return (
     <View style={styles.container} testID={`${testIDPrefix}-headline-group`}>
-      <Text
-        style={styles.headline}
-        testID={headlineTestID}
-        accessibilityRole="header"
-      >
+      <Text style={styles.headline} testID={headlineTestID} accessibilityRole="header">
         {headline}
       </Text>
-      <Text
-        style={styles.subhead}
-        testID={subheadTestID}
-        accessibilityRole="header"
-      >
+      <Text style={styles.subhead} testID={subheadTestID} accessibilityRole="header">
         {subhead}
       </Text>
     </View>

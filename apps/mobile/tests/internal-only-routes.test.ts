@@ -86,9 +86,7 @@ describe('getInternalOnlyFunnelKebabSlugs (pure function — Sub-AC 2.2)', () =>
   });
 
   it('returns the same array referenced by INTERNAL_ONLY_FUNNEL_KEBAB_SLUGS', () => {
-    expect(getInternalOnlyFunnelKebabSlugs()).toBe(
-      INTERNAL_ONLY_FUNNEL_KEBAB_SLUGS,
-    );
+    expect(getInternalOnlyFunnelKebabSlugs()).toBe(INTERNAL_ONLY_FUNNEL_KEBAB_SLUGS);
   });
 
   it('enumerates the EXACT 9 internal-only kebab slugs the seed contract requires', () => {
@@ -248,9 +246,7 @@ describe('isExternalDeepLinkAllowedFunnelKebabSlug (allowlist decision)', () => 
   it('returns false for non-funnel and malformed input', () => {
     expect(isExternalDeepLinkAllowedFunnelKebabSlug('magazine')).toBe(false);
     expect(isExternalDeepLinkAllowedFunnelKebabSlug('')).toBe(false);
-    expect(isExternalDeepLinkAllowedFunnelKebabSlug('/welcome-hook')).toBe(
-      false,
-    );
+    expect(isExternalDeepLinkAllowedFunnelKebabSlug('/welcome-hook')).toBe(false);
   });
 });
 

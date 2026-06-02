@@ -93,9 +93,7 @@ function buildIosBridge(binding?: RatingBridgeNativeBinding): {
   return { bridge, binding: stub };
 }
 
-async function build(
-  options: BuildOptions = {},
-): Promise<{
+async function build(options: BuildOptions = {}): Promise<{
   controller: RatingGateController;
   service: RatingGateService;
   persistence: RatingPersistence;
@@ -693,7 +691,9 @@ describe('subscribe()', () => {
     const { controller } = await build();
     let caught: unknown;
     try {
-      controller.subscribe('not a function' as unknown as (s: RatingHookSnapshot) => void);
+      controller.subscribe(
+        'not a function' as unknown as (s: RatingHookSnapshot) => void,
+      );
     } catch (err) {
       caught = err;
     }
@@ -826,9 +826,10 @@ describe('end-to-end ladder progression', () => {
     expect(onTriggerResult).toHaveBeenCalledTimes(5);
 
     // Persistence reflects the full ladder.
-    const persisted = JSON.parse(
-      Object.values(store.snapshot())[0] as string,
-    ) as { promptedStages: number[]; lastPromptedStage: number };
+    const persisted = JSON.parse(Object.values(store.snapshot())[0] as string) as {
+      promptedStages: number[];
+      lastPromptedStage: number;
+    };
     expect([...persisted.promptedStages].sort()).toEqual([1, 2, 3, 4]);
     expect(persisted.lastPromptedStage).toBe(4);
   });

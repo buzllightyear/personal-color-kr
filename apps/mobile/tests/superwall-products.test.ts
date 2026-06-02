@@ -58,10 +58,7 @@ import {
 // depend on the working directory the vitest CLI was invoked from.
 // ---------------------------------------------------------------------------
 
-const STOREKIT_PATH = path.resolve(
-  __dirname,
-  '../storekit/PersonalColorKR.storekit',
-);
+const STOREKIT_PATH = path.resolve(__dirname, '../storekit/PersonalColorKR.storekit');
 const RUNBOOK_PATH = path.resolve(
   __dirname,
   '../../../docs/PHASE-2.5-ASC-SUBSCRIPTION.md',
@@ -148,19 +145,11 @@ describe('superwall/products — constants (AC 15)', () => {
     expect(SUBSCRIPTION_PRODUCT.productId).toBe(SUBSCRIPTION_PRODUCT_ID);
     expect(SUBSCRIPTION_PRODUCT.groupName).toBe(SUBSCRIPTION_GROUP_NAME);
     expect(SUBSCRIPTION_PRODUCT.priceKrw).toBe(SUBSCRIPTION_BASELINE_PRICE_KRW);
-    expect(SUBSCRIPTION_PRODUCT.currency).toBe(
-      SUBSCRIPTION_BASELINE_PRICE_CURRENCY,
-    );
-    expect(SUBSCRIPTION_PRODUCT.bundleIdentifier).toBe(
-      SUBSCRIPTION_BUNDLE_IDENTIFIER,
-    );
+    expect(SUBSCRIPTION_PRODUCT.currency).toBe(SUBSCRIPTION_BASELINE_PRICE_CURRENCY);
+    expect(SUBSCRIPTION_PRODUCT.bundleIdentifier).toBe(SUBSCRIPTION_BUNDLE_IDENTIFIER);
     expect(SUBSCRIPTION_PRODUCT.primaryLocale).toBe(SUBSCRIPTION_PRIMARY_LOCALE);
-    expect(SUBSCRIPTION_PRODUCT.displayNameKo).toBe(
-      SUBSCRIPTION_DISPLAY_NAME_KO,
-    );
-    expect(SUBSCRIPTION_PRODUCT.descriptionKo).toBe(
-      SUBSCRIPTION_DESCRIPTION_KO,
-    );
+    expect(SUBSCRIPTION_PRODUCT.displayNameKo).toBe(SUBSCRIPTION_DISPLAY_NAME_KO);
+    expect(SUBSCRIPTION_PRODUCT.descriptionKo).toBe(SUBSCRIPTION_DESCRIPTION_KO);
   });
 });
 
@@ -211,9 +200,7 @@ describe('storekit/PersonalColorKR.storekit — mirrors constants (AC 15)', () =
       throw new Error('expected subscriptions[0] to be defined');
     }
     // StoreKit's `displayPrice` is the integer won amount as a string.
-    expect(subscription.displayPrice).toBe(
-      String(SUBSCRIPTION_BASELINE_PRICE_KRW),
-    );
+    expect(subscription.displayPrice).toBe(String(SUBSCRIPTION_BASELINE_PRICE_KRW));
   });
 
   it('encodes the billing period as the ISO-8601 string "P1M"', () => {

@@ -22,10 +22,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import * as funnelModule from 'core-ts/funnel';
-import {
-  ANALYZING_STAGE_LABELS,
-  ANALYZING_TOTAL_DURATION_MS,
-} from 'core-ts/funnel';
+import { ANALYZING_STAGE_LABELS, ANALYZING_TOTAL_DURATION_MS } from 'core-ts/funnel';
 import * as scanModule from 'core-ts/scan_option';
 import {
   SCAN_ANIMATION_STAGE_LABELS,
@@ -257,9 +254,7 @@ describe('useScanAnimationLadder', () => {
 
     const model = vm();
     expect(model.items).toHaveLength(8);
-    expect(model.items.map((i) => i.label)).toEqual([
-      ...SCAN_ANIMATION_STAGE_LABELS,
-    ]);
+    expect(model.items.map((i) => i.label)).toEqual([...SCAN_ANIMATION_STAGE_LABELS]);
     expect(model.phase).toBe('running');
     expect(model.items[0]?.status).toBe('active');
     expect(model.totalDurationMs).toBe(SCAN_ANIMATION_TOTAL_DURATION_MS);

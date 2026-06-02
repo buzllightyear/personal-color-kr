@@ -128,11 +128,7 @@ describe('PostHogClient.capture — happy path', () => {
     client.capture('third', { idx: 3 });
 
     expect(capture).toHaveBeenCalledTimes(3);
-    expect(capture.mock.calls.map((c) => c[0])).toEqual([
-      'first',
-      'second',
-      'third',
-    ]);
+    expect(capture.mock.calls.map((c) => c[0])).toEqual(['first', 'second', 'third']);
     expect(capture.mock.calls.map((c) => c[1])).toEqual([
       { idx: 1 },
       { idx: 2 },
@@ -188,12 +184,8 @@ describe('PostHogClient.capture — validation', () => {
     const { transport, capture } = makeMockTransport();
     const client = createPostHogClient({ transport });
 
-    expect(() => client.capture(42 as unknown as string)).toThrow(
-      PostHogClientError,
-    );
-    expect(() => client.capture(null as unknown as string)).toThrow(
-      PostHogClientError,
-    );
+    expect(() => client.capture(42 as unknown as string)).toThrow(PostHogClientError);
+    expect(() => client.capture(null as unknown as string)).toThrow(PostHogClientError);
     expect(capture).not.toHaveBeenCalled();
   });
 

@@ -130,9 +130,7 @@ function statusForIndex(
   return 'pending';
 }
 
-function ariaLiveForPhase(
-  phase: ScanAnimationPhase,
-): 'off' | 'polite' | 'assertive' {
+function ariaLiveForPhase(phase: ScanAnimationPhase): 'off' | 'polite' | 'assertive' {
   // idle = 안내할 것 없음; running = 잦지만 공손; complete = 다음 화면이
   // 마운트되기 전 종료를 단호히 알리도록 assertive.
   switch (phase) {

@@ -161,11 +161,7 @@ export class RatingPersistenceError extends Error {
 // ---------------------------------------------------------------------------
 
 function isFiniteInteger(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    Number.isInteger(value)
-  );
+  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
 }
 
 function isRatingStage(value: unknown): value is RatingPromptStage {
@@ -248,9 +244,7 @@ function validateOptionalStage(
   }
 }
 
-function validateStages(
-  value: unknown,
-): asserts value is readonly RatingPromptStage[] {
+function validateStages(value: unknown): asserts value is readonly RatingPromptStage[] {
   if (!Array.isArray(value)) {
     throw new RatingPersistenceError(
       'invalid_stage',
@@ -298,10 +292,7 @@ function validateState(state: unknown): asserts state is RatingPersistedState {
   validateVersion(s.lastPromptedVersion);
   validateOptionalStage(s.lastPromptedStage);
   validateStages(s.promptedStages);
-  if (
-    !isFiniteInteger(s.schemaVersion) ||
-    s.schemaVersion < 1
-  ) {
+  if (!isFiniteInteger(s.schemaVersion) || s.schemaVersion < 1) {
     throw new RatingPersistenceError(
       'invalid_state',
       `schemaVersion must be a positive integer (got ${String(s.schemaVersion)})`,
@@ -341,9 +332,7 @@ export function freezeRatingPersistedState(
  * KV key.  Throws `RatingPersistenceError` on schema failure so callers
  * never write malformed data.
  */
-export function serializeRatingPersistedState(
-  state: RatingPersistedState,
-): string {
+export function serializeRatingPersistedState(state: RatingPersistedState): string {
   const frozen = freezeRatingPersistedState(state);
   return JSON.stringify({
     schemaVersion: frozen.schemaVersion,
@@ -399,16 +388,15 @@ export function deserializeRatingPersistedState(
 
   const obj = parsed as Record<string, unknown>;
 
-  const schemaVersion =
-    obj.schemaVersion ?? RATING_PERSISTENCE_SCHEMA_VERSION;
-  if (!isFiniteInteger(schemaVersion) || (schemaVersion as number) < 1) {
+  const schemaVersion = obj.schemaVersion ?? RATING_PERSISTENCE_SCHEMA_VERSION;
+  if (!isFiniteInteger(schemaVersion) || schemaVersion < 1) {
     throw new RatingPersistenceError(
       'invalid_state',
       `schemaVersion must be a positive integer (got ${String(schemaVersion)})`,
       schemaVersion,
     );
   }
-  if ((schemaVersion as number) !== RATING_PERSISTENCE_SCHEMA_VERSION) {
+  if (schemaVersion !== RATING_PERSISTENCE_SCHEMA_VERSION) {
     throw new RatingPersistenceError(
       'unsupported_schema',
       `unsupported schemaVersion ${String(schemaVersion)} (current: ${RATING_PERSISTENCE_SCHEMA_VERSION})`,
@@ -428,7 +416,7 @@ export function deserializeRatingPersistedState(
     lastPromptedVersion: lastPromptedVersion as string | null,
     lastPromptedStage: lastPromptedStage as RatingPromptStage | null,
     promptedStages,
-    schemaVersion: schemaVersion as number,
+    schemaVersion: schemaVersion,
   };
 
   return freezeRatingPersistedState(candidate);
@@ -579,9 +567,7 @@ export function createRatingPersistence(
     async clear(): Promise<void> {
       await safeRemove();
     },
-    async recordPrompt(
-      input: RecordPromptInput,
-    ): Promise<RatingPersistedState> {
+    async recordPrompt(input: RecordPromptInput): Promise<RatingPersistedState> {
       if (input === null || typeof input !== 'object') {
         throw new RatingPersistenceError(
           'invalid_state',
@@ -619,10 +605,7 @@ export function createRatingPersistence(
         lastPromptedAt: input.promptedAt,
         lastPromptedVersion: input.appVersion,
         lastPromptedStage: input.stage,
-        promptedStages: normalizeStages([
-          ...prior.promptedStages,
-          input.stage,
-        ]),
+        promptedStages: normalizeStages([...prior.promptedStages, input.stage]),
         schemaVersion: RATING_PERSISTENCE_SCHEMA_VERSION,
       };
       const frozen = freezeRatingPersistedState(merged);

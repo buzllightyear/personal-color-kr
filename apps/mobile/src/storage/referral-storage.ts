@@ -50,8 +50,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * stringly-typed magic value) is auditable from one place and impossible
  * to fat-finger across the (eventual) sign-in read site.
  */
-export const STASHED_REFERRAL_CODE_STORAGE_KEY =
-  'pck.referral.stashed_code' as const;
+export const STASHED_REFERRAL_CODE_STORAGE_KEY = 'pck.referral.stashed_code' as const;
 
 /**
  * Stash a referral code parsed from a deep link.

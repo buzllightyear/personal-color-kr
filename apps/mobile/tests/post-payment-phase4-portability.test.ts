@@ -111,7 +111,11 @@ function walkRepoForCatalogImporters(dir: string, accumulator: string[]): void {
     return;
   }
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === '.expo') {
+    if (
+      entry.name === 'node_modules' ||
+      entry.name === '.git' ||
+      entry.name === '.expo'
+    ) {
       continue;
     }
     const childPath = path.join(dir, entry.name);
@@ -122,10 +126,7 @@ function walkRepoForCatalogImporters(dir: string, accumulator: string[]): void {
     if (!/\.(ts|tsx)$/.test(entry.name)) {
       continue;
     }
-    const relNormalised = path
-      .relative(REPO_ROOT, childPath)
-      .split(path.sep)
-      .join('/');
+    const relNormalised = path.relative(REPO_ROOT, childPath).split(path.sep).join('/');
     // Tests are NOT part of the production import boundary — tests render
     // catalog text and assert against it (and this file itself encodes
     // the import-string needle). Scope the boundary to source files only.

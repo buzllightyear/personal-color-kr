@@ -182,7 +182,10 @@ describe('result_reveal CTA navigation handler — Sub-AC 11.3', () => {
     // visibility truth-table separately; here we simply assert the CTA is
     // present so the press exercise is meaningful.
     const cta = findHostByTestId(tree, UNLOCK_CTA_TEST_ID);
-    expect(cta, 'share-to-unlock CTA must be rendered to exercise Sub-AC 11.3').toBeTruthy();
+    expect(
+      cta,
+      'share-to-unlock CTA must be rendered to exercise Sub-AC 11.3',
+    ).toBeTruthy();
 
     // Act: simulate the press via the Pressable's `onPress` prop. The
     // FunnelPrimaryButton wires its own `onPress` to call the

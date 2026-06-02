@@ -58,8 +58,7 @@ export type ReferralGateState = 'locked' | 'unlocked';
  * matches the user experience — a user who taps "unlock" twice
  * should not see a failure toast.
  */
-export interface ProcessReferralRedemptionRequest
-  extends ReferralValidationRequest {
+export interface ProcessReferralRedemptionRequest extends ReferralValidationRequest {
   /**
    * Current state of the user's `referral_gate`.  Defaults to
    * `'locked'` when omitted.
@@ -108,7 +107,7 @@ function fail(reason: ReferralUnlockFailure): ReferralUnlockResult {
     ok: false,
     gateState: 'locked',
     reason,
-  }) as ReferralUnlockResult;
+  });
 }
 
 /**
@@ -128,8 +127,7 @@ function fail(reason: ReferralUnlockFailure): ReferralUnlockResult {
 export function processReferralRedemption(
   request: ProcessReferralRedemptionRequest,
 ): ReferralUnlockResult {
-  const priorGateState: ReferralGateState =
-    request.priorGateState ?? 'locked';
+  const priorGateState: ReferralGateState = request.priorGateState ?? 'locked';
 
   // Idempotent fast-path: gate already open, nothing to do.
   // We intentionally do NOT validate input in this branch — the user
@@ -142,7 +140,7 @@ export function processReferralRedemption(
       normalizedCode: '',
       updatedRecord: null,
       transitioned: false,
-    }) as ReferralUnlockResult;
+    });
   }
 
   const validation = validateReferralRedemption(request);
@@ -166,5 +164,5 @@ export function processReferralRedemption(
     normalizedCode: validation.normalizedCode,
     updatedRecord,
     transitioned: true,
-  }) as ReferralUnlockResult;
+  });
 }

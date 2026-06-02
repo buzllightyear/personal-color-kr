@@ -53,8 +53,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -82,49 +81,45 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
 
 describe('ValuePropsScreen — render', () => {
   it('renders Korean headline "오늘의 트렌드, 내 얼굴에 맞춘 편집"', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
     const headline = findHostByTestId(tree, 'value-props-headline');
     expect(headline?.props.children).toBe('오늘의 트렌드, 내 얼굴에 맞춘 편집');
   });
 
   it('renders 3 value-props cards via ScrollView', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
     expect(findHostByTestId(tree, 'value-props-card-list')).toBeTruthy();
     // Use a stricter pattern that excludes the parent list container —
     // each card has testID `value-props-card-<key>` (with a suffix).
     const cards = findAllHostByTestId(tree, /^value-props-card-[a-z-]+$/);
-    expect(cards.filter((c) => c.props.testID !== 'value-props-card-list')).toHaveLength(3);
+    expect(
+      cards.filter((c) => c.props.testID !== 'value-props-card-list'),
+    ).toHaveLength(3);
   });
 
   it('renders trend_matched_editing card', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
-    expect(findHostByTestId(tree, 'value-props-card-trend-matched-editing')).toBeTruthy();
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
+    expect(
+      findHostByTestId(tree, 'value-props-card-trend-matched-editing'),
+    ).toBeTruthy();
   });
 
   it('renders monthly_curated_magazine card', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
-    expect(findHostByTestId(tree, 'value-props-card-monthly-curated-magazine')).toBeTruthy();
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
+    expect(
+      findHostByTestId(tree, 'value-props-card-monthly-curated-magazine'),
+    ).toBeTruthy();
   });
 
   it('renders personal_color_preset_library card', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
-    expect(findHostByTestId(tree, 'value-props-card-personal-color-preset-library')).toBeTruthy();
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
+    expect(
+      findHostByTestId(tree, 'value-props-card-personal-color-preset-library'),
+    ).toBeTruthy();
   });
 
   it('renders the primary CTA with accessibility attributes', () => {
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(ValuePropsScreen, { onNext: vi.fn() }));
     const cta = findHostByTestId(tree, 'value-props-cta');
     expect(cta?.props.accessibilityRole).toBe('button');
     expect(cta?.props.accessibilityLabel).toBe('다음');
@@ -134,9 +129,7 @@ describe('ValuePropsScreen — render', () => {
 describe('ValuePropsScreen — interaction', () => {
   it('invokes onNext when the CTA is pressed', () => {
     const onNext = vi.fn();
-    const tree = render(
-      React.createElement(ValuePropsScreen, { onNext }),
-    );
+    const tree = render(React.createElement(ValuePropsScreen, { onNext }));
     const cta = findHostByTestId(tree, 'value-props-cta');
     const onPress = cta?.props.onPress as (e: unknown) => void;
     act(() => onPress({}));

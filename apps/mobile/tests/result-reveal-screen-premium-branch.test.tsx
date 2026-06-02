@@ -81,8 +81,7 @@ function findAllWithAccessibilityLabel(
   label: string,
 ): readonly TestInstance[] {
   return tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.accessibilityLabel === label,
+    (node) => typeof node.type === 'string' && node.props?.accessibilityLabel === label,
   ) as unknown as readonly TestInstance[];
 }
 
@@ -159,7 +158,10 @@ describe('ResultRevealScreen — AC 12 premium branch (isPremium=true)', () => {
     );
     for (const asset of ASSETS) {
       const lockIcon = findHostByTestId(tree, `${asset.id}-lock-icon`);
-      expect(lockIcon, `${asset.id} lock icon must NOT render in premium mode`).toBeNull();
+      expect(
+        lockIcon,
+        `${asset.id} lock icon must NOT render in premium mode`,
+      ).toBeNull();
     }
   });
 
@@ -217,10 +219,7 @@ describe('ResultRevealScreen — AC 12 premium branch (isPremium=true)', () => {
       }),
     );
     expect(
-      findHostByTestId(
-        tree,
-        'result-reveal-locked-asset-full-category-card-hero-card',
-      ),
+      findHostByTestId(tree, 'result-reveal-locked-asset-full-category-card-hero-card'),
     ).toBeTruthy();
     expect(
       findHostByTestId(tree, 'result-reveal-locked-asset-guide-text-text-stack'),

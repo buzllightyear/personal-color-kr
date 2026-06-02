@@ -201,11 +201,7 @@
  * runtime resolves edge cases server-side and always returns one of these
  * four values; an unresolved case raises before the package is ever built.
  */
-export type Season =
-  | 'spring-warm'
-  | 'summer-cool'
-  | 'autumn-warm'
-  | 'winter-cool';
+export type Season = 'spring-warm' | 'summer-cool' | 'autumn-warm' | 'winter-cool';
 
 // ---------------------------------------------------------------------------
 // DiagnosisView — per-season subset slice for the diagnosis tab

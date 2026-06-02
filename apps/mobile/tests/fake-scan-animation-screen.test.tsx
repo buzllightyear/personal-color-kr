@@ -190,9 +190,7 @@ function findAllHosts(tree: TestRenderer.ReactTestRenderer): readonly TestInstan
  * without one). Used to assert *relative document order* between the existing
  * face oval, the additively-composed stage ladder, and the existing counter.
  */
-function testIdsInRenderOrder(
-  tree: TestRenderer.ReactTestRenderer,
-): readonly string[] {
+function testIdsInRenderOrder(tree: TestRenderer.ReactTestRenderer): readonly string[] {
   return findAllHosts(tree)
     .map((h) => h.props?.testID)
     .filter((id): id is string => typeof id === 'string');
@@ -302,17 +300,12 @@ describe('FakeScanAnimationScreen — 8-stage scan ladder', () => {
       React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
     );
     SCAN_LADDER_LABELS.forEach((label, index) => {
-      const row = findHostByTestId(
-        tree,
-        `scan-animation-ladder-item-${index}-label`,
-      );
+      const row = findHostByTestId(tree, `scan-animation-ladder-item-${index}-label`);
       expect(row, `ladder row ${index}`).toBeTruthy();
       expect(row?.props.children).toBe(label);
     });
     // No 9th row — the ladder is pinned to the 8 core-ts stages.
-    expect(
-      findHostByTestId(tree, 'scan-animation-ladder-item-8-label'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'scan-animation-ladder-item-8-label')).toBeNull();
   });
 
   it('places the ladder BELOW the face oval and ABOVE the X/24 counter', () => {
@@ -386,9 +379,7 @@ describe('FakeScanAnimationScreen — 8-stage scan ladder', () => {
 
 describe('FakeScanAnimationScreen — Animated.Value lifecycle', () => {
   it('initialises a single Animated.Value at 0', () => {
-    render(
-      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
-    );
+    render(React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }));
     // Exactly one Animated.Value was constructed by this screen render and
     // its starting value was 0.
     expect(recordedAnimatedValueStartValues).toHaveLength(1);
@@ -396,9 +387,7 @@ describe('FakeScanAnimationScreen — Animated.Value lifecycle', () => {
   });
 
   it('drives Animated.timing(...) to toValue=1 with useNativeDriver=false', () => {
-    render(
-      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
-    );
+    render(React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }));
     expect(recordedTimingConfigs).toHaveLength(1);
     const cfg = recordedTimingConfigs[0];
     expect(cfg?.toValue).toBe(1);
@@ -406,9 +395,7 @@ describe('FakeScanAnimationScreen — Animated.Value lifecycle', () => {
   });
 
   it('uses durationMs=5000 by default (matches FUNNEL_SCREENS metadata)', () => {
-    render(
-      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
-    );
+    render(React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }));
     expect(recordedTimingConfigs[0]?.duration).toBe(5_000);
   });
 
@@ -464,9 +451,7 @@ describe('FakeScanAnimationScreen — auto-advance timer (5000ms)', () => {
 
   it('does not fire onElapsed after unmount (cleanup)', () => {
     const onElapsed = vi.fn();
-    const tree = render(
-      React.createElement(FakeScanAnimationScreen, { onElapsed }),
-    );
+    const tree = render(React.createElement(FakeScanAnimationScreen, { onElapsed }));
     act(() => {
       tree.unmount();
     });

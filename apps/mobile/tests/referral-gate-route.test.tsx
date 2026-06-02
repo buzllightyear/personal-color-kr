@@ -78,7 +78,10 @@ const replaceSpy = vi.fn();
 
 vi.mock('expo-router', () => {
   return {
-    useRouter: (): { push: (path: string) => void; replace: (path: string) => void } => ({
+    useRouter: (): {
+      push: (path: string) => void;
+      replace: (path: string) => void;
+    } => ({
       push: pushSpy,
       replace: replaceSpy,
     }),
@@ -110,9 +113,7 @@ function findHostByTestId(
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = TestRenderer.create(
-      React.createElement(FunnelStateProvider, null, element),
-    );
+    tree = TestRenderer.create(React.createElement(FunnelStateProvider, null, element));
   });
   if (!tree) throw new Error('render: tree not created');
   return tree;

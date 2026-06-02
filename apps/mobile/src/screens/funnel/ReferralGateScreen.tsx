@@ -208,9 +208,7 @@ export interface ReferralGateScreenProps {
 
 const SCREEN = FUNNEL_SCREENS.referral_gate;
 
-export function ReferralGateScreen(
-  props: ReferralGateScreenProps,
-): React.ReactElement {
+export function ReferralGateScreen(props: ReferralGateScreenProps): React.ReactElement {
   const { onShareKakao, onCopyLink, onSkip } = props;
   return (
     <FunnelScreenLayout

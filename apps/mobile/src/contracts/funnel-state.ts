@@ -129,11 +129,12 @@ export type FunnelOnboardingAnswers = {
  * Exposed as a `const` (not a function) because the value is fully
  * immutable — every consumer can share the same reference safely.
  */
-export const INITIAL_FUNNEL_ONBOARDING_ANSWERS: FunnelOnboardingAnswers =
-  Object.freeze({
+export const INITIAL_FUNNEL_ONBOARDING_ANSWERS: FunnelOnboardingAnswers = Object.freeze(
+  {
     selfieEditStyle: null,
     priorDiagnosis: null,
-  });
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Updater signature
@@ -212,10 +213,9 @@ export type FunnelDiagnosisInput = {
  * mutate it fails loud rather than corrupting other tests via shared
  * reference — same pattern as {@link INITIAL_FUNNEL_ONBOARDING_ANSWERS}.
  */
-export const INITIAL_FUNNEL_DIAGNOSIS_INPUT: FunnelDiagnosisInput =
-  Object.freeze({
-    selfieUri: null,
-  });
+export const INITIAL_FUNNEL_DIAGNOSIS_INPUT: FunnelDiagnosisInput = Object.freeze({
+  selfieUri: null,
+});
 
 /**
  * Partial update accepted by `setDiagnosisInput`.
@@ -543,9 +543,7 @@ export type SetIsPremium = (isPremium: boolean) => void;
  * `undefined` is a compile error (`exactOptionalPropertyTypes: true` is on)
  * — callers must spell `null` to explicitly clear the selection.
  */
-export type SetSelectedPaymentMethod = (
-  method: PaymentMethod | null,
-) => void;
+export type SetSelectedPaymentMethod = (method: PaymentMethod | null) => void;
 
 // ---------------------------------------------------------------------------
 // Public context value

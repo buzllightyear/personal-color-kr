@@ -179,11 +179,7 @@ export function validateScanOption(
 
   if (!isPlainObject(input)) {
     errors.push(
-      issue(
-        pathPrefix,
-        'not_object',
-        'value must be a non-null, non-array object',
-      ),
+      issue(pathPrefix, 'not_object', 'value must be a non-null, non-array object'),
     );
     return fail(errors);
   }
@@ -221,9 +217,7 @@ export function validateScanOption(
         `expected number, got ${typeof input.slot}`,
       ),
     );
-  } else if (
-    !(SCAN_OPTION_SLOTS as readonly number[]).includes(input.slot)
-  ) {
+  } else if (!(SCAN_OPTION_SLOTS as readonly number[]).includes(input.slot)) {
     errors.push(
       issue(
         `${pathPrefix}.slot`,
@@ -236,7 +230,6 @@ export function validateScanOption(
   }
 
   // displayLabelKo: non-empty string with ≥ 1 Hangul codepoint
-  let labelOk = false;
   if (typeof input.displayLabelKo !== 'string') {
     errors.push(
       issue(
@@ -261,8 +254,6 @@ export function validateScanOption(
         'displayLabelKo must contain at least one Hangul (가-힣) codepoint',
       ),
     );
-  } else {
-    labelOk = true;
   }
 
   // placeholder: boolean
@@ -533,9 +524,7 @@ export function validateScanOptionCatalogue(
 /**
  * Throw-on-failure variant for the catalogue.
  */
-export function parseScanOptionCatalogue(
-  input: unknown,
-): readonly ScanOption[] {
+export function parseScanOptionCatalogue(input: unknown): readonly ScanOption[] {
   const result = validateScanOptionCatalogue(input);
   if (!result.valid) {
     throw new ScanOptionValidationError(result.errors);

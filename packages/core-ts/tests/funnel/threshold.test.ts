@@ -214,7 +214,10 @@ describe('evaluateConversionRateThreshold — custom thresholds', () => {
   });
 
   it.each([
-    ['target out of range high', { targetPercent: 101, needsAdjustmentLowerBoundPercent: 0 }],
+    [
+      'target out of range high',
+      { targetPercent: 101, needsAdjustmentLowerBoundPercent: 0 },
+    ],
     ['target negative', { targetPercent: -1, needsAdjustmentLowerBoundPercent: -2 }],
     ['lowerBound negative', { targetPercent: 5, needsAdjustmentLowerBoundPercent: -1 }],
     ['target NaN', { targetPercent: Number.NaN, needsAdjustmentLowerBoundPercent: 0 }],

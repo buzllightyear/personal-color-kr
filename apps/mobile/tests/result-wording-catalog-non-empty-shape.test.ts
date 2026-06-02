@@ -11,10 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  RESULT_WORDING_CATALOG,
-  SEASONS,
-} from '../src/wording/result-wording-catalog';
+import { RESULT_WORDING_CATALOG, SEASONS } from '../src/wording/result-wording-catalog';
 
 describe('result-wording catalog — non-empty per-season shape (Phase 3.4 invariant 3/5)', () => {
   for (const season of SEASONS) {

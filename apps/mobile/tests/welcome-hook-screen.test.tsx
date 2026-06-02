@@ -57,8 +57,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -74,20 +73,14 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
 
 describe('WelcomeHookScreen — render', () => {
   it('renders the Korean headline from FUNNEL_SCREENS.welcome_hook', () => {
-    const tree = render(
-      React.createElement(WelcomeHookScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(WelcomeHookScreen, { onNext: vi.fn() }));
     const headline = findHostByTestId(tree, 'welcome-hook-headline');
     expect(headline).toBeTruthy();
-    expect(headline?.props.children).toBe(
-      '내 퍼스널 컬러로 셀카가 한 장 더 빛나도록',
-    );
+    expect(headline?.props.children).toBe('내 퍼스널 컬러로 셀카가 한 장 더 빛나도록');
   });
 
   it('renders the Korean subhead from FUNNEL_SCREENS.welcome_hook', () => {
-    const tree = render(
-      React.createElement(WelcomeHookScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(WelcomeHookScreen, { onNext: vi.fn() }));
     const subhead = findHostByTestId(tree, 'welcome-hook-subhead');
     expect(subhead).toBeTruthy();
     expect(subhead?.props.children).toBe(
@@ -96,9 +89,7 @@ describe('WelcomeHookScreen — render', () => {
   });
 
   it('renders the primary CTA with label "1분 진단 시작"', () => {
-    const tree = render(
-      React.createElement(WelcomeHookScreen, { onNext: vi.fn() }),
-    );
+    const tree = render(React.createElement(WelcomeHookScreen, { onNext: vi.fn() }));
     const cta = findHostByTestId(tree, 'welcome-hook-cta');
     expect(cta).toBeTruthy();
     expect(cta?.props.accessibilityRole).toBe('button');
@@ -109,9 +100,7 @@ describe('WelcomeHookScreen — render', () => {
 describe('WelcomeHookScreen — interaction', () => {
   it('invokes onNext exactly once when the CTA is pressed', () => {
     const onNext = vi.fn();
-    const tree = render(
-      React.createElement(WelcomeHookScreen, { onNext }),
-    );
+    const tree = render(React.createElement(WelcomeHookScreen, { onNext }));
     const cta = findHostByTestId(tree, 'welcome-hook-cta');
     const onPress = cta?.props.onPress as (e: unknown) => void;
     act(() => {

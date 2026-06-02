@@ -559,9 +559,7 @@ describe('FunnelStateProvider — paywallOutcome:error state transition (Sub-AC 
       applyErrorTransition(value);
     });
 
-    expect(capture.latest?.setPaymentProcessing).toBe(
-      initialSetPaymentProcessing,
-    );
+    expect(capture.latest?.setPaymentProcessing).toBe(initialSetPaymentProcessing);
     expect(capture.latest?.setIsPremium).toBe(initialSetIsPremium);
   });
 

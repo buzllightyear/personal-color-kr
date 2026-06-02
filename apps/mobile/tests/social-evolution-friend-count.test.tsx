@@ -49,10 +49,8 @@ vi.mock('react-native', async () => {
 
 vi.mock('react-native-safe-area-context', () => {
   return {
-    SafeAreaView: (props: {
-      children?: React.ReactNode;
-      [key: string]: unknown;
-    }) => React.createElement('SafeAreaView', props, props.children),
+    SafeAreaView: (props: { children?: React.ReactNode; [key: string]: unknown }) =>
+      React.createElement('SafeAreaView', props, props.children),
   };
 });
 
@@ -75,9 +73,8 @@ const fetchReferralMeMock = vi.fn();
 vi.mock('../src/fetch-referral-me', () => {
   return {
     createReferralMeTransport: (): (() => Promise<unknown>) => async () => ({}),
-    fetchReferralMe: (
-      ...args: readonly unknown[]
-    ): Promise<unknown> => fetchReferralMeMock(...args),
+    fetchReferralMe: (...args: readonly unknown[]): Promise<unknown> =>
+      fetchReferralMeMock(...args),
   };
 });
 
@@ -149,15 +146,10 @@ describe('social-evolution friend-count wiring (Phase 4.5)', () => {
     const tree = await renderRoute(true);
 
     expect(fetchReferralMeMock).toHaveBeenCalledTimes(1);
-    const countText = findHostByTestId(
-      tree,
-      'social-evolution-friend-used-count-text',
-    );
+    const countText = findHostByTestId(tree, 'social-evolution-friend-used-count-text');
     expect(countText).toBeTruthy();
     expect(collectText(countText)).toBe(buildFriendUsedCountText(7));
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeNull();
   });
 
   it('does not fetch on the shared=false branch', async () => {
@@ -185,11 +177,7 @@ describe('social-evolution friend-count wiring (Phase 4.5)', () => {
     expect(fetchReferralMeMock).toHaveBeenCalledTimes(1);
     expect(tree).toBeDefined();
     // No count host — the empty state remains so the soft gate never breaks.
-    expect(
-      findHostByTestId(tree!, 'social-evolution-friend-used-count'),
-    ).toBeNull();
-    expect(
-      findHostByTestId(tree!, 'social-evolution-empty-friend-list'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree!, 'social-evolution-friend-used-count')).toBeNull();
+    expect(findHostByTestId(tree!, 'social-evolution-empty-friend-list')).toBeTruthy();
   });
 });

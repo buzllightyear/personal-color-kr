@@ -261,8 +261,7 @@ export function SocialEvolutionSharedTrueBranch(
   // fetch is in-flight / failed). A positive count renders the "friends
   // joined" state; `0` / `null` / omitted falls back to the empty state so a
   // silent fetch failure degrades to the original Phase 2.4 surface.
-  const hasFriends =
-    typeof friendUsedCount === 'number' && friendUsedCount > 0;
+  const hasFriends = typeof friendUsedCount === 'number' && friendUsedCount > 0;
   return (
     <FunnelScreenLayout
       testID="social-evolution-shared-true-screen"
@@ -274,19 +273,13 @@ export function SocialEvolutionSharedTrueBranch(
           subhead={SCREEN.subhead}
           testIDPrefix="social-evolution"
         />
-        <View
-          style={styles.confirmation}
-          testID="social-evolution-share-confirmation"
-        >
+        <View style={styles.confirmation} testID="social-evolution-share-confirmation">
           <Text style={styles.confirmationText}>
             {SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT}
           </Text>
         </View>
         {hasFriends ? (
-          <View
-            style={styles.emptyState}
-            testID="social-evolution-friend-used-count"
-          >
+          <View style={styles.emptyState} testID="social-evolution-friend-used-count">
             <Text
               style={styles.emptyEmoji}
               testID="social-evolution-friend-used-count-emoji"
@@ -303,10 +296,7 @@ export function SocialEvolutionSharedTrueBranch(
             </Text>
           </View>
         ) : (
-          <View
-            style={styles.emptyState}
-            testID="social-evolution-empty-friend-list"
-          >
+          <View style={styles.emptyState} testID="social-evolution-empty-friend-list">
             <Text
               style={styles.emptyEmoji}
               testID="social-evolution-empty-friend-list-emoji"

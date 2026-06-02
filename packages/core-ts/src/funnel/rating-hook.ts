@@ -52,14 +52,8 @@ import {
   type RatingTriggerDecision,
   type RatingTriggerStage,
 } from './rating-gate.js';
-import type {
-  RatingPersistedState,
-  RatingPersistence,
-} from './rating-persistence.js';
-import type {
-  RatingBridge,
-  RatingBridgeResult,
-} from './rating-bridge.js';
+import type { RatingPersistedState, RatingPersistence } from './rating-persistence.js';
+import type { RatingBridge, RatingBridgeResult } from './rating-bridge.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -293,7 +287,9 @@ function validateNow(value: unknown): asserts value is () => string {
   }
 }
 
-function validateCallback(value: unknown): asserts value is (...args: unknown[]) => unknown {
+function validateCallback(
+  value: unknown,
+): asserts value is (...args: unknown[]) => unknown {
   if (typeof value !== 'function') {
     throw new RatingHookError(
       'invalid_callback',

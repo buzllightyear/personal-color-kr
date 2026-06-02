@@ -59,8 +59,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -107,9 +106,15 @@ describe('ScanOptionSelectScreen — render', () => {
         onSelectPersonalColor: NO_OP,
       }),
     );
-    expect(findHostByTestId(tree, 'scan-option-select-option-personal-color')).toBeTruthy();
-    expect(findHostByTestId(tree, 'scan-option-select-option-secondary-slot-2')).toBeTruthy();
-    expect(findHostByTestId(tree, 'scan-option-select-option-secondary-slot-3')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'scan-option-select-option-personal-color'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'scan-option-select-option-secondary-slot-2'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'scan-option-select-option-secondary-slot-3'),
+    ).toBeTruthy();
   });
 
   it('primary option renders the Korean label "퍼스널 컬러 진단" and is enabled', () => {
@@ -121,7 +126,9 @@ describe('ScanOptionSelectScreen — render', () => {
     const primary = findHostByTestId(tree, 'scan-option-select-option-personal-color');
     expect(primary).toBeTruthy();
     expect(primary?.props.accessibilityLabel).toBe('퍼스널 컬러 진단');
-    expect((primary?.props.accessibilityState as { disabled: boolean }).disabled).toBe(false);
+    expect((primary?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      false,
+    );
   });
 
   it('secondary options render the "곧 오픈" badge and are disabled', () => {
@@ -134,10 +141,18 @@ describe('ScanOptionSelectScreen — render', () => {
     const slot3 = findHostByTestId(tree, 'scan-option-select-option-secondary-slot-3');
     expect(slot2).toBeTruthy();
     expect(slot3).toBeTruthy();
-    expect((slot2?.props.accessibilityState as { disabled: boolean }).disabled).toBe(true);
-    expect((slot3?.props.accessibilityState as { disabled: boolean }).disabled).toBe(true);
-    expect(findHostByTestId(tree, 'scan-option-select-coming-soon-secondary-slot-2')).toBeTruthy();
-    expect(findHostByTestId(tree, 'scan-option-select-coming-soon-secondary-slot-3')).toBeTruthy();
+    expect((slot2?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      true,
+    );
+    expect((slot3?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      true,
+    );
+    expect(
+      findHostByTestId(tree, 'scan-option-select-coming-soon-secondary-slot-2'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'scan-option-select-coming-soon-secondary-slot-3'),
+    ).toBeTruthy();
   });
 });
 

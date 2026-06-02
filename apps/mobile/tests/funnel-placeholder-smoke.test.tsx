@@ -33,10 +33,8 @@ import { describe, expect, it, vi } from 'vitest';
 // host-component shape the CJS stub provides.
 vi.mock('react-native', async () => {
   const reactActual: any = await vi.importActual('react');
-  const makeHost =
-    (label: string) =>
-    (props: any) =>
-      reactActual.createElement(label, props, props?.children);
+  const makeHost = (label: string) => (props: any) =>
+    reactActual.createElement(label, props, props?.children);
   return {
     View: makeHost('View'),
     Text: makeHost('Text'),
@@ -86,15 +84,9 @@ function render(element: React.ReactElement) {
   return makeQuery(tree);
 }
 
-import {
-  FUNNEL_STEPS_ORDERED,
-  type FunnelStepId,
-} from 'core-ts/funnel/types';
+import { FUNNEL_STEPS_ORDERED, type FunnelStepId } from 'core-ts/funnel/types';
 
-import {
-  FUNNEL_KEBAB_SLUGS,
-  toKebabSlug,
-} from '../src/linking.config';
+import { FUNNEL_KEBAB_SLUGS, toKebabSlug } from '../src/linking.config';
 import { FunnelPlaceholder } from '../src/funnel-placeholder';
 
 describe('FunnelPlaceholder — smoke render for all 12 v0.2 steps (AC 8)', () => {
@@ -134,7 +126,9 @@ describe('FunnelPlaceholder — smoke render for all 12 v0.2 steps (AC 8)', () =
     const result = render(
       React.createElement(FunnelPlaceholder, { stepId: 'welcome_hook' }),
     );
-    expect(result.getByTestId('funnel-placeholder-params-dump').props.children).toBe('(none)');
+    expect(result.getByTestId('funnel-placeholder-params-dump').props.children).toBe(
+      '(none)',
+    );
   });
 
   it('renders the live route params dump when params are passed', () => {
@@ -144,7 +138,8 @@ describe('FunnelPlaceholder — smoke render for all 12 v0.2 steps (AC 8)', () =
         routeParams: { utm_source: 'instagram', referrer_code: 'abc123' },
       }),
     );
-    const dump = result.getByTestId('funnel-placeholder-params-dump').props.children as string;
+    const dump = result.getByTestId('funnel-placeholder-params-dump').props
+      .children as string;
     expect(dump).toContain('utm_source');
     expect(dump).toContain('"instagram"');
     expect(dump).toContain('referrer_code');
@@ -160,7 +155,9 @@ describe('FunnelPlaceholder — share_token preview mode (AC 12)', () => {
         isPreviewMode: false,
       }),
     );
-    expect(result.getByTestId('funnel-placeholder-preview-flag').props.children).toBe('false');
+    expect(result.getByTestId('funnel-placeholder-preview-flag').props.children).toBe(
+      'false',
+    );
   });
 
   it('renders preview: true when isPreviewMode is true (share_token branch)', () => {
@@ -171,8 +168,11 @@ describe('FunnelPlaceholder — share_token preview mode (AC 12)', () => {
         routeParams: { share_token: 'opaque_token_xyz' },
       }),
     );
-    expect(result.getByTestId('funnel-placeholder-preview-flag').props.children).toBe('true');
-    const dump = result.getByTestId('funnel-placeholder-params-dump').props.children as string;
+    expect(result.getByTestId('funnel-placeholder-preview-flag').props.children).toBe(
+      'true',
+    );
+    const dump = result.getByTestId('funnel-placeholder-params-dump').props
+      .children as string;
     expect(dump).toContain('share_token');
   });
 
@@ -192,7 +192,8 @@ describe('FunnelPlaceholder — guard stub status surface (AC 11 fail-loud visib
         guardStatus: { name: 'shouldBypassReferral', value: false },
       }),
     );
-    const text = result.getByTestId('funnel-placeholder-guard-status').props.children as string;
+    const text = result.getByTestId('funnel-placeholder-guard-status').props
+      .children as string;
     expect(text).toBe('shouldBypassReferral → false (stub)');
   });
 

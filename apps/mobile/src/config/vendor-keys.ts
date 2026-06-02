@@ -85,7 +85,10 @@ function readExtraObject(): Readonly<Record<string, unknown>> {
  * missing one (it would pass a truthiness check but fail vendor auth
  * with an opaque server-side error).
  */
-function readStringField(extra: Readonly<Record<string, unknown>>, name: string): string | undefined {
+function readStringField(
+  extra: Readonly<Record<string, unknown>>,
+  name: string,
+): string | undefined {
   const value = extra[name];
   return typeof value === 'string' ? value : undefined;
 }

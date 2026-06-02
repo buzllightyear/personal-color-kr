@@ -86,9 +86,7 @@ interface MockGateway extends PaymentGateway {
   };
 }
 
-function makeMockGateway(
-  override: Partial<CheckoutHandoffResult> = {},
-): MockGateway {
+function makeMockGateway(override: Partial<CheckoutHandoffResult> = {}): MockGateway {
   const initiate = vi.fn((req: CheckoutHandoffRequest): CheckoutHandoffResult => {
     return Object.freeze({
       handoffId: req.handoffId,
@@ -101,11 +99,13 @@ function makeMockGateway(
   return { initiate };
 }
 
-function triggerWithDefaults(overrides: {
-  machine?: FunnelMachine;
-  plan?: PaymentPlanId;
-  gateway?: MockGateway;
-} = {}) {
+function triggerWithDefaults(
+  overrides: {
+    machine?: FunnelMachine;
+    plan?: PaymentPlanId;
+    gateway?: MockGateway;
+  } = {},
+) {
   const machine = overrides.machine ?? machineAtPayment();
   const gateway: MockGateway = overrides.gateway ?? makeMockGateway();
   return {
@@ -127,10 +127,7 @@ function triggerWithDefaults(overrides: {
 
 describe('PAYMENT_PLAN_CATALOGUE', () => {
   it('exposes exactly the two Korean-variant plans: monthly + annual', () => {
-    expect(Object.keys(PAYMENT_PLAN_CATALOGUE).sort()).toEqual([
-      'annual',
-      'monthly',
-    ]);
+    expect(Object.keys(PAYMENT_PLAN_CATALOGUE).sort()).toEqual(['annual', 'monthly']);
   });
 
   it('mirrors FUNNEL_SCREENS.payment_model.metadata for both plans', () => {
@@ -183,9 +180,7 @@ describe('PAYMENT_PLAN_CATALOGUE', () => {
     expect(Object.isFrozen(PAYMENT_PLAN_CATALOGUE)).toBe(true);
     expect(Object.isFrozen(PAYMENT_PLAN_CATALOGUE.monthly)).toBe(true);
     expect(Object.isFrozen(PAYMENT_PLAN_CATALOGUE.annual)).toBe(true);
-    expect(Object.isFrozen(PAYMENT_PLAN_CATALOGUE.annual.trialBreakdown)).toBe(
-      true,
-    );
+    expect(Object.isFrozen(PAYMENT_PLAN_CATALOGUE.annual.trialBreakdown)).toBe(true);
   });
 });
 

@@ -122,17 +122,23 @@ describe('app.config.ts — extra block vendor key forwarding', () => {
     // Defence-in-depth: assert no `extra` value matches the Fal.ai
     // secret under any name, in case a future refactor renames the key.
     for (const [name, value] of Object.entries(extra)) {
-      expect(value, `extra.${name} must not equal process.env.FAL_API_KEY`).not.toBe(falValue);
+      expect(value, `extra.${name} must not equal process.env.FAL_API_KEY`).not.toBe(
+        falValue,
+      );
     }
   });
 
   it('reads from process.env at call time, not module-load time', () => {
     const first = defineExpoConfig({ config: {} });
-    expect((first.extra as Record<string, unknown>).posthogApiKey).toBe('phc_test_posthog');
+    expect((first.extra as Record<string, unknown>).posthogApiKey).toBe(
+      'phc_test_posthog',
+    );
 
     process.env.POSTHOG_API_KEY = 'phc_rotated_value';
     const second = defineExpoConfig({ config: {} });
-    expect((second.extra as Record<string, unknown>).posthogApiKey).toBe('phc_rotated_value');
+    expect((second.extra as Record<string, unknown>).posthogApiKey).toBe(
+      'phc_rotated_value',
+    );
   });
 
   it('merges inbound config.extra rather than clobbering it', () => {

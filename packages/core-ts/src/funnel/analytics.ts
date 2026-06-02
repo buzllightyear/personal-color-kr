@@ -22,10 +22,7 @@
  *     the funnel north-star metric.
  *   - Unknown step ids throw loudly so analytics never reports ghost steps.
  */
-import {
-  FUNNEL_STEPS_ORDERED,
-  type FunnelStepId,
-} from './types.js';
+import { FUNNEL_STEPS_ORDERED, type FunnelStepId } from './types.js';
 import {
   FUNNEL_SCREENS,
   type FunnelCta,
@@ -48,8 +45,7 @@ export const FUNNEL_ANALYTICS_EVENT_TYPES = Object.freeze([
   'step_drop',
 ] as const);
 
-export type FunnelAnalyticsEventType =
-  (typeof FUNNEL_ANALYTICS_EVENT_TYPES)[number];
+export type FunnelAnalyticsEventType = (typeof FUNNEL_ANALYTICS_EVENT_TYPES)[number];
 
 /**
  * Fields every funnel analytics event carries.  Mapped to PostHog event
@@ -57,8 +53,8 @@ export type FunnelAnalyticsEventType =
  */
 interface FunnelAnalyticsBasePayload {
   readonly stepId: FunnelStepId;
-  readonly stepNumber: number;            // 1..12
-  readonly timestamp: number;             // ms epoch
+  readonly stepNumber: number; // 1..12
+  readonly timestamp: number; // ms epoch
   readonly sessionId: string;
   readonly variantTag: FunnelVariantTag | null;
 }
@@ -79,10 +75,7 @@ export interface StepDropEvent extends FunnelAnalyticsBasePayload {
   readonly reason: string;
 }
 
-export type FunnelAnalyticsEvent =
-  | StepViewEvent
-  | StepCtaClickEvent
-  | StepDropEvent;
+export type FunnelAnalyticsEvent = StepViewEvent | StepCtaClickEvent | StepDropEvent;
 
 /**
  * Pluggable sink — PostHog client in prod, a vi.fn / array recorder in tests.
@@ -133,9 +126,7 @@ function assertCtaBelongsToStep(stepId: FunnelStepId, cta: FunnelCta): void {
   const screen = FUNNEL_SCREENS[stepId];
   const match = screen.ctas.find(
     (c) =>
-      c.action === cta.action &&
-      c.variant === cta.variant &&
-      c.label === cta.label,
+      c.action === cta.action && c.variant === cta.variant && c.label === cta.label,
   );
   if (!match) {
     throw new Error(
@@ -180,10 +171,7 @@ export function createFunnelAnalytics(
     return event;
   }
 
-  function emitStepCtaClick(
-    stepId: FunnelStepId,
-    cta: FunnelCta,
-  ): StepCtaClickEvent {
+  function emitStepCtaClick(stepId: FunnelStepId, cta: FunnelCta): StepCtaClickEvent {
     // Validates stepId first (lookupStep throws on unknown), then CTA membership.
     const base = baseFields(stepId);
     assertCtaBelongsToStep(stepId, cta);

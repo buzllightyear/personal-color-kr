@@ -99,18 +99,13 @@ export default function SocialEvolutionRoute(): React.ReactElement {
   // the friend-count effect reuses a single instance. The backend JWT is
   // supplied by the auth-session store once wired; until then the request
   // degrades silently (see the effect below).
-  const referralMeTransport = React.useMemo(
-    () => createReferralMeTransport(),
-    [],
-  );
+  const referralMeTransport = React.useMemo(() => createReferralMeTransport(), []);
   // Live `friend_used_count` from the server (single source of truth). `null`
   // while the fetch is in-flight, fails, or the gate has not been shared —
   // the shared=true branch renders the empty state for `null`/`0`, so a
   // silent fetch failure degrades gracefully rather than crashing the soft
   // gate (Seed: silent degradation; share_url/count are server-owned).
-  const [friendUsedCount, setFriendUsedCount] = React.useState<number | null>(
-    null,
-  );
+  const [friendUsedCount, setFriendUsedCount] = React.useState<number | null>(null);
 
   // Fetch the friend-used count only on the shared=true branch — the
   // empty/false branch never shows a count. Guarded by an `active` flag so a
@@ -124,9 +119,7 @@ export default function SocialEvolutionRoute(): React.ReactElement {
     let active = true;
     void (async (): Promise<void> => {
       try {
-        const { friendUsedCount: count } = await fetchReferralMe(
-          referralMeTransport,
-        );
+        const { friendUsedCount: count } = await fetchReferralMe(referralMeTransport);
         if (active) {
           setFriendUsedCount(count);
         }

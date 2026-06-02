@@ -129,9 +129,7 @@ export const TOTAL_EXTERNAL_ALLOWED_FUNNEL_KEBAB_SLUGS = 3 as const;
  *   diffs readable.
  */
 function computeInternalOnlyFunnelKebabSlugs(): readonly FunnelKebabSlug[] {
-  const externalAllowed = new Set<FunnelKebabSlug>(
-    EXTERNAL_ALLOWED_FUNNEL_KEBAB_SLUGS,
-  );
+  const externalAllowed = new Set<FunnelKebabSlug>(EXTERNAL_ALLOWED_FUNNEL_KEBAB_SLUGS);
   return Object.freeze(
     FUNNEL_KEBAB_SLUGS_ORDERED.filter((slug) => !externalAllowed.has(slug)),
   );
@@ -209,9 +207,7 @@ export function getInternalOnlyFunnelKebabSlugs(): readonly FunnelKebabSlug[] {
  *   `false` for an unknown segment correctly says "this is not in the
  *   blocked-internal cohort"; upstream decides what to do with unknowns.
  */
-export function isInternalOnlyFunnelKebabSlug(
-  pathSegment: string,
-): boolean {
+export function isInternalOnlyFunnelKebabSlug(pathSegment: string): boolean {
   return INTERNAL_ONLY_FUNNEL_KEBAB_SLUGS.includes(pathSegment);
 }
 
@@ -232,8 +228,6 @@ export function isInternalOnlyFunnelKebabSlug(
  * input returns `false` from both. The disjointness invariant is asserted
  * by the sibling test.
  */
-export function isExternalDeepLinkAllowedFunnelKebabSlug(
-  pathSegment: string,
-): boolean {
+export function isExternalDeepLinkAllowedFunnelKebabSlug(pathSegment: string): boolean {
   return EXTERNAL_ALLOWED_FUNNEL_KEBAB_SLUGS.includes(pathSegment);
 }

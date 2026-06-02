@@ -109,8 +109,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
  * named constant so unit tests and parent screens that want a stable handle
  * can refer to it by symbol rather than the raw string literal.
  */
-export const SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID =
-  'selfie-upload-pressable';
+export const SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID = 'selfie-upload-pressable';
 
 /**
  * Korean label shown on the capture surface before any tap has occurred.
@@ -253,9 +252,7 @@ export function SelfieUploadPressable(
           📷
         </Text>
         <Text style={styles.label} testID={labelTestID}>
-          {hasCapturedSelfie
-            ? SELFIE_UPLOAD_CAPTURED_LABEL
-            : SELFIE_UPLOAD_IDLE_LABEL}
+          {hasCapturedSelfie ? SELFIE_UPLOAD_CAPTURED_LABEL : SELFIE_UPLOAD_IDLE_LABEL}
         </Text>
       </Pressable>
     </View>

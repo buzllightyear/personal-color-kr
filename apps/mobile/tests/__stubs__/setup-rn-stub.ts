@@ -135,7 +135,11 @@ function makeStubExports(): StubReactNative {
       // children. Rendering the host as a string type makes
       // react-test-renderer surface it as a host node — that's the contract
       // `detectHostComponentNames` relies on.
-      return React.createElement(label, props, (props as { children?: unknown }).children);
+      return React.createElement(
+        label,
+        props,
+        (props as { children?: unknown }).children,
+      );
     };
   }
 
@@ -150,7 +154,7 @@ function makeStubExports(): StubReactNative {
   // route tests already pick.
   const platformStub: StubPlatform = {
     OS: 'ios',
-    select: <T,>(specifics: {
+    select: <T>(specifics: {
       readonly ios?: T;
       readonly android?: T;
       readonly default?: T;

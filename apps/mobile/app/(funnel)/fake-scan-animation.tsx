@@ -22,8 +22,6 @@ import { FakeScanAnimationScreen } from '../../src/screens/funnel/FakeScanAnimat
 export default function FakeScanAnimationRoute(): React.ReactElement {
   const router = useRouter();
   return (
-    <FakeScanAnimationScreen
-      onElapsed={() => router.push('/(funnel)/result-reveal')}
-    />
+    <FakeScanAnimationScreen onElapsed={() => router.push('/(funnel)/result-reveal')} />
   );
 }

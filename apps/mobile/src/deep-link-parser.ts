@@ -83,9 +83,7 @@ import {
   FUNNEL_KEBAB_SLUGS_ORDERED,
   type FunnelKebabSlug,
 } from './linking.config.js';
-import {
-  isInternalOnlyFunnelKebabSlug,
-} from './internal-only-routes.js';
+import { isInternalOnlyFunnelKebabSlug } from './internal-only-routes.js';
 
 // ---------------------------------------------------------------------------
 // Public types

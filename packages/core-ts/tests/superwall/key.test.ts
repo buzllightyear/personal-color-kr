@@ -180,13 +180,16 @@ describe('assertValidSuperwallApiKey', () => {
   });
 });
 
-describe.skipIf(!ROOT_ENV_PRESENT)('root .env SUPERWALL_API_KEY (live AC 11 smoke)', () => {
-  it('is present and passes validation', () => {
-    const env = loadRootEnv();
-    const key = env['SUPERWALL_API_KEY'];
-    expect(key, 'SUPERWALL_API_KEY missing from root .env').toBeDefined();
-    expect(isValidSuperwallApiKey(key)).toBe(true);
-    // Throwing variant should also succeed and return a string.
-    expect(typeof assertValidSuperwallApiKey(key)).toBe('string');
-  });
-});
+describe.skipIf(!ROOT_ENV_PRESENT)(
+  'root .env SUPERWALL_API_KEY (live AC 11 smoke)',
+  () => {
+    it('is present and passes validation', () => {
+      const env = loadRootEnv();
+      const key = env['SUPERWALL_API_KEY'];
+      expect(key, 'SUPERWALL_API_KEY missing from root .env').toBeDefined();
+      expect(isValidSuperwallApiKey(key)).toBe(true);
+      // Throwing variant should also succeed and return a string.
+      expect(typeof assertValidSuperwallApiKey(key)).toBe('string');
+    });
+  },
+);

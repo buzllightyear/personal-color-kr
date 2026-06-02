@@ -135,7 +135,7 @@ export function createReferralMeTransport(
 ): ReferralMeTransport {
   const baseUrl = config.baseUrl ?? getApiBaseUrl();
   const accessToken = config.accessToken ?? null;
-  const fetchImpl = config.fetchImpl ?? (globalThis.fetch as unknown as FetchLike);
+  const fetchImpl = config.fetchImpl ?? globalThis.fetch;
 
   return async (): Promise<ReferralMeWireResponse> => {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -147,9 +147,7 @@ export function createReferralMeTransport(
       headers,
     });
     if (!response.ok) {
-      throw new Error(
-        `GET ${REFERRALS_ME_PATH} failed with status ${response.status}`,
-      );
+      throw new Error(`GET ${REFERRALS_ME_PATH} failed with status ${response.status}`);
     }
     return (await response.json()) as ReferralMeWireResponse;
   };

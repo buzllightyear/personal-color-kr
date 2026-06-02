@@ -97,9 +97,7 @@ export default function PostPaymentLayout(): JSX.Element {
   // a concrete `true` / `false`. Default-true on first install is the
   // fail-loud-but-safe stance: the reveal SHOULD fire on the very
   // first entry, matching Seed AC 1.
-  const [diagnosisRevealSeen, setDiagnosisRevealSeen] = useState<boolean | null>(
-    null,
-  );
+  const [diagnosisRevealSeen, setDiagnosisRevealSeen] = useState<boolean | null>(null);
   useEffect(() => {
     let cancelled = false;
     void readDiagnosisRevealSeen().then((seen) => {

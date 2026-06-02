@@ -24,26 +24,26 @@
  * Numeric ordering is meaningful — transitions must respect 1 → 2 → ... → 12.
  */
 export type FunnelStepId =
-  | 'welcome_hook'           // Step 1: 퍼스널 컬러 진단 hook 인입
-  | 'value_props'            // Step 2: 가치 제안 (트렌드 맞춤 편집/생성)
-  | 'onboarding_priming'     // Step 3 (v0.2): 진단 시작 전 priming · social_proof_intro 대체
-  | 'rating_gate'            // Step 4: iOS native 별점 dialog (dismissable)
-  | 'fake_loader'            // Step 5 (v0.2): 가짜 로더 (price_anchoring 자리로 이동)
-  | 'scan_option_select'     // Step 6: 3개 스캔 옵션 (메인=퍼스널 컬러)
-  | 'diagnosis_input'        // Step 7 (v0.2): 셀카 업로드만 단독
-  | 'fake_scan_animation'    // Step 8 (v0.2): 셀카 위 24-point 스캔 애니메이션 신설
-  | 'result_reveal'          // Step 9: 진단 결과 부분 공개 (잠금)
-  | 'referral_gate'          // Step 10 (KR variant): 1명 친구 추천 게이트
-  | 'social_evolution'       // Step 11 (KR variant, v0.2): UGC + 인플루언서 인용 · social_proof 흡수
-  | 'payment_model';         // Step 12 (KR variant): $12/월 or $59/연 + 37일 무료체험
+  | 'welcome_hook' // Step 1: 퍼스널 컬러 진단 hook 인입
+  | 'value_props' // Step 2: 가치 제안 (트렌드 맞춤 편집/생성)
+  | 'onboarding_priming' // Step 3 (v0.2): 진단 시작 전 priming · social_proof_intro 대체
+  | 'rating_gate' // Step 4: iOS native 별점 dialog (dismissable)
+  | 'fake_loader' // Step 5 (v0.2): 가짜 로더 (price_anchoring 자리로 이동)
+  | 'scan_option_select' // Step 6: 3개 스캔 옵션 (메인=퍼스널 컬러)
+  | 'diagnosis_input' // Step 7 (v0.2): 셀카 업로드만 단독
+  | 'fake_scan_animation' // Step 8 (v0.2): 셀카 위 24-point 스캔 애니메이션 신설
+  | 'result_reveal' // Step 9: 진단 결과 부분 공개 (잠금)
+  | 'referral_gate' // Step 10 (KR variant): 1명 친구 추천 게이트
+  | 'social_evolution' // Step 11 (KR variant, v0.2): UGC + 인플루언서 인용 · social_proof 흡수
+  | 'payment_model'; // Step 12 (KR variant): $12/월 or $59/연 + 37일 무료체험
 
 /**
  * Terminal states (not numbered steps).
  */
 export type FunnelTerminalState =
-  | 'idle'        // 시작 전 (before step 1)
-  | 'completed'   // 결제 완료 (after step 12)
-  | 'abandoned';  // 사용자 이탈
+  | 'idle' // 시작 전 (before step 1)
+  | 'completed' // 결제 완료 (after step 12)
+  | 'abandoned'; // 사용자 이탈
 
 /**
  * Full state space: the current location of a user in the funnel.
@@ -93,7 +93,7 @@ export const TOTAL_FUNNEL_STEPS = 12 as const;
 export type FunnelEventType =
   | 'step_entered'
   | 'step_completed'
-  | 'step_skipped'   // only allowed for `rating_gate`
+  | 'step_skipped' // only allowed for `rating_gate`
   | 'funnel_started'
   | 'funnel_completed'
   | 'funnel_abandoned';
@@ -105,7 +105,7 @@ export interface FunnelEvent {
   readonly type: FunnelEventType;
   readonly state: FunnelState;
   readonly stepNumber: number | null; // 1..12, null for idle/completed/abandoned
-  readonly timestamp: number;          // ms epoch
+  readonly timestamp: number; // ms epoch
 }
 
 /**
@@ -113,9 +113,9 @@ export interface FunnelEvent {
  */
 export interface FunnelProgress {
   readonly state: FunnelState;
-  readonly stepNumber: number | null;     // 1..12, null in terminal non-step states
+  readonly stepNumber: number | null; // 1..12, null in terminal non-step states
   readonly completedSteps: readonly FunnelStepId[];
-  readonly progressPercent: number;       // 0..100 (rounded to nearest integer)
+  readonly progressPercent: number; // 0..100 (rounded to nearest integer)
   readonly isComplete: boolean;
   readonly isAbandoned: boolean;
 }

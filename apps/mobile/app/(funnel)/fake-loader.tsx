@@ -12,8 +12,6 @@ import { FakeLoaderScreen } from '../../src/screens/funnel/FakeLoaderScreen';
 export default function FakeLoaderRoute(): JSX.Element {
   const router = useRouter();
   return (
-    <FakeLoaderScreen
-      onElapsed={() => router.push('/(funnel)/scan-option-select')}
-    />
+    <FakeLoaderScreen onElapsed={() => router.push('/(funnel)/scan-option-select')} />
   );
 }

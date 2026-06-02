@@ -52,10 +52,6 @@ import {
   TOTAL_FUNNEL_STEPS,
   type FunnelStepId,
 } from 'core-ts/funnel/types';
-import {
-  DEEP_LINK_PREFIXES,
-  UNIVERSAL_LINK_DOMAINS,
-} from './deep-link-paths';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -122,9 +118,7 @@ export function toKebabSlug(snakeId: string): FunnelKebabSlug {
  * re-implementing the kebab transform.
  */
 function buildFunnelKebabSlugs(): Readonly<Record<FunnelStepId, FunnelKebabSlug>> {
-  const entries = FUNNEL_STEPS_ORDERED.map(
-    (id) => [id, toKebabSlug(id)] as const,
-  );
+  const entries = FUNNEL_STEPS_ORDERED.map((id) => [id, toKebabSlug(id)] as const);
   const map = Object.fromEntries(entries) as Record<FunnelStepId, FunnelKebabSlug>;
   return Object.freeze(map);
 }
@@ -170,9 +164,7 @@ export const FUNNEL_KEBAB_SLUGS_ORDERED: readonly FunnelKebabSlug[] = Object.fre
  * kebab-case route-name keys. We rebuild here so both maps coexist
  * with the correct key shape for their consumer.
  */
-function buildFunnelScreensBlock(): Readonly<
-  Record<FunnelKebabSlug, FunnelKebabSlug>
-> {
+function buildFunnelScreensBlock(): Readonly<Record<FunnelKebabSlug, FunnelKebabSlug>> {
   const entries = FUNNEL_KEBAB_SLUGS_ORDERED.map((slug) => [slug, slug] as const);
   return Object.freeze(Object.fromEntries(entries));
 }

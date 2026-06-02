@@ -8,10 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  API_BASE_URL_ENV_KEY,
-  getApiBaseUrl,
-} from '../src/config/api-base-url';
+import { API_BASE_URL_ENV_KEY, getApiBaseUrl } from '../src/config/api-base-url';
 
 describe('getApiBaseUrl', () => {
   const original = process.env[API_BASE_URL_ENV_KEY];

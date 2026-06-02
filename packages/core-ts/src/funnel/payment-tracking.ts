@@ -135,11 +135,7 @@ export class PaymentEventSchemaError extends Error {
   public readonly field: PaymentEventSchemaField;
   public readonly value: unknown;
 
-  constructor(
-    field: PaymentEventSchemaField,
-    message: string,
-    value: unknown,
-  ) {
+  constructor(field: PaymentEventSchemaField, message: string, value: unknown) {
     super(message);
     this.field = field;
     this.value = value;
@@ -178,10 +174,7 @@ function isValidTimestamp(value: unknown): value is number {
   );
 }
 
-function assertString(
-  field: PaymentEventSchemaField,
-  value: unknown,
-): void {
+function assertString(field: PaymentEventSchemaField, value: unknown): void {
   if (!isNonEmptyString(value)) {
     throw new PaymentEventSchemaError(
       field,

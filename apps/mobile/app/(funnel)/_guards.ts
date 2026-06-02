@@ -56,7 +56,7 @@ export function shouldDismissRating(): boolean {
   // batch or debounce — a silent stub is exactly the failure mode this
   // guard is designed to prevent. The message names the function so a
   // developer reading logs can locate it without grepping.
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[funnel/_guards] shouldDismissRating() called — stub returning conservative default `false`. Real rating-skip state lookup is not implemented yet (Phase 3/4).',
   );
@@ -112,7 +112,7 @@ export function shouldBypassReferral(): boolean {
   // batch or debounce — a silent stub is exactly the failure mode this
   // guard is designed to prevent. The message names the function so a
   // developer reading logs can locate it without grepping.
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[funnel/_guards] shouldBypassReferral() called — stub returning conservative default `false`. Real referral / invited-state lookup is not implemented yet (Phase 3/4).',
   );
@@ -168,7 +168,7 @@ export function shouldSkipFunnelSubscribed(): boolean {
   // batch or debounce — a silent stub is exactly the failure mode this
   // guard is designed to prevent. The message names the function so a
   // developer reading logs can locate it without grepping.
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[funnel/_guards] shouldSkipFunnelSubscribed() called — stub returning conservative default `false`. Real returning-user subscription_active lookup is not implemented yet (Phase 3/4).',
   );

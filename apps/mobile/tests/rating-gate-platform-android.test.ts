@@ -135,7 +135,7 @@ vi.mock('react-native', () => {
     ScrollView: noopComponent,
     ActivityIndicator: noopComponent,
     StyleSheet: {
-      create: <T,>(stylesheet: T): T => stylesheet,
+      create: <T>(stylesheet: T): T => stylesheet,
     },
   };
 });

@@ -55,10 +55,7 @@
  *   means vitest never touches `@superwall/react-native-superwall` and
  *   the Flow/Objective-C-backed shim never reaches Node's parser.
  */
-import {
-  assertValidSuperwallApiKey,
-  type SuperwallApiKey,
-} from 'core-ts/superwall';
+import { assertValidSuperwallApiKey, type SuperwallApiKey } from 'core-ts/superwall';
 
 // The native SDK is imported as a namespace so we never reach into
 // internals that may move between SDK versions. A single import site is
@@ -208,11 +205,10 @@ export async function configureSuperwall(apiKey: string): Promise<void> {
     await Superwall.configure({ apiKey: validated });
     configured = true;
     // TODO(phase-4): replace with posthog.capture('superwall_configured')
-    // eslint-disable-next-line no-console
+
     console.log('[superwall] configured');
   } catch (cause) {
-    const message =
-      cause instanceof Error ? cause.message : 'unknown error';
+    const message = cause instanceof Error ? cause.message : 'unknown error';
     throw new SuperwallNotConfiguredError(
       `Superwall.configure() rejected: ${message}`,
       cause,

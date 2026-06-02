@@ -158,14 +158,12 @@ function useConfigureSuperwallOnce(): void {
       return;
     }
     configureSuperwall(superwallApiKey).catch((err: unknown) => {
-      // eslint-disable-next-line no-console
       console.error('[superwall] configure failed', err);
     });
     // Empty deps — Sub-AC 2.2 contract: exactly once across initial
     // render + rerender. The key is fetched fresh inside the effect
     // so a future rotation does not require a different deps array
     // (a rotation still ships in a new build).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
 

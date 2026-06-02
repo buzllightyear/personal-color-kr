@@ -101,9 +101,7 @@ describe('renderScanAnimationComponent — idle / 기본값', () => {
     const vm = renderScanAnimationComponent(idle);
     const def = renderScanAnimationComponent();
     expect(vm.phase).toBe(def.phase);
-    expect(vm.items.map((it) => it.status)).toEqual(
-      def.items.map((it) => it.status),
-    );
+    expect(vm.items.map((it) => it.status)).toEqual(def.items.map((it) => it.status));
   });
 });
 
@@ -132,9 +130,7 @@ describe('renderScanAnimationComponent — running 단계 0..7 각각의 출력'
 
       // 현재 단계 라벨 / 진행률.
       expect(vm.currentStageIndex).toBe(expectedStage);
-      expect(vm.currentStageLabel).toBe(
-        SCAN_ANIMATION_STAGE_LABELS[expectedStage],
-      );
+      expect(vm.currentStageLabel).toBe(SCAN_ANIMATION_STAGE_LABELS[expectedStage]);
       expect(vm.progressPercent).toBe(state.progressPercent);
       expect(vm.progressPercentText).toBe(`${state.progressPercent}%`);
       expect(vm.elapsedMs).toBe(state.elapsedMs);
@@ -320,9 +316,7 @@ describe('renderScanAnimationComponent — Sub-AC 2: complete latch holds across
   it('정각 3200ms에 complete로 래치되고 마지막 단계에 머문다', () => {
     const { completeState } = completedTimeline();
     expect(completeState.phase).toBe('complete');
-    expect(completeState.currentStageIndex).toBe(
-      SCAN_ANIMATION_TOTAL_STAGES - 1,
-    );
+    expect(completeState.currentStageIndex).toBe(SCAN_ANIMATION_TOTAL_STAGES - 1);
     expect(completeState.elapsedMs).toBe(SCAN_ANIMATION_TOTAL_DURATION_MS);
     expect(completeState.progressPercent).toBe(100);
   });
@@ -418,10 +412,7 @@ describe('scanAnimationAutoAdvanceSignal — Sub-AC 3: 5000ms auto-advance 경�
   it('t=4999ms → auto-advance 신호 없음 (5000ms 직전)', () => {
     const started = startScanAnimation(createScanAnimation(), 0);
     expect(
-      scanAnimationAutoAdvanceSignal(
-        started,
-        SCAN_ANIMATION_AUTO_ADVANCE_MS - 1,
-      ),
+      scanAnimationAutoAdvanceSignal(started, SCAN_ANIMATION_AUTO_ADVANCE_MS - 1),
     ).toBe(false);
   });
 

@@ -74,11 +74,7 @@ import type { PostHog } from 'posthog-react-native';
  * cross-referencing PostHog timelines with router state in downstream
  * BI.
  */
-export type PostPaymentTabKey =
-  | 'edit'
-  | 'diagnosis'
-  | 'guide'
-  | 'curation';
+export type PostPaymentTabKey = 'edit' | 'diagnosis' | 'guide' | 'curation';
 
 /**
  * Structured payload for every `post_payment_tab_viewed` event. Shaped
@@ -106,8 +102,7 @@ export interface TrackPostPaymentTabViewedPayload {
  * `post_payment_revealed`) and satisfies the Seed constraint
  * "analytics events follow the snake_case + verb form precedent".
  */
-export const POST_PAYMENT_TAB_VIEWED_EVENT_NAME =
-  'post_payment_tab_viewed' as const;
+export const POST_PAYMENT_TAB_VIEWED_EVENT_NAME = 'post_payment_tab_viewed' as const;
 
 /**
  * Emit the PostHog `post_payment_tab_viewed` event from the

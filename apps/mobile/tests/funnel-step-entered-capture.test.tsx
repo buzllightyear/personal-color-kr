@@ -31,7 +31,11 @@ vi.mock('posthog-react-native', async () => {
   const MockContext = reactActual.createContext(undefined);
 
   function MockPostHogProvider(props: any) {
-    return reactActual.createElement(MockContext.Provider, { value: props.client }, props.children);
+    return reactActual.createElement(
+      MockContext.Provider,
+      { value: props.client },
+      props.children,
+    );
   }
   function mockUsePostHog() {
     return reactActual.useContext(MockContext);

@@ -77,8 +77,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -102,20 +101,12 @@ describe('SocialEvolutionSharedFalseBranch — render', () => {
         onSkip: NO_OP,
       }),
     );
-    const headline = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-headline',
-    );
-    const subhead = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-subhead',
-    );
+    const headline = findHostByTestId(tree, 'social-evolution-shared-false-headline');
+    const subhead = findHostByTestId(tree, 'social-evolution-shared-false-subhead');
     // Source-of-truth alignment with FUNNEL_SCREENS.social_evolution — the
     // shared=false branch reuses the canonical social-proof headline so the
     // user reads the same framing whether they shared or not.
-    expect(headline?.props.children).toBe(
-      '@user_kim · @beautymee 가 직접 쓴 후기',
-    );
+    expect(headline?.props.children).toBe('@user_kim · @beautymee 가 직접 쓴 후기');
     expect(subhead?.props.children).toBe(
       '실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적',
     );
@@ -128,18 +119,9 @@ describe('SocialEvolutionSharedFalseBranch — render', () => {
         onSkip: NO_OP,
       }),
     );
-    const card = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-upsell-card',
-    );
-    const title = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-upsell-title',
-    );
-    const body = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-upsell-body',
-    );
+    const card = findHostByTestId(tree, 'social-evolution-shared-false-upsell-card');
+    const title = findHostByTestId(tree, 'social-evolution-shared-false-upsell-title');
+    const body = findHostByTestId(tree, 'social-evolution-shared-false-upsell-body');
     // Card container must mount — anchors the soft-pink nudge surface.
     expect(card).toBeTruthy();
     // Title + body bind to the exported constants so a Phase 2.5 copy
@@ -173,15 +155,10 @@ describe('SocialEvolutionSharedFalseBranch — render', () => {
         onSkip: NO_OP,
       }),
     );
-    const skip = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-skip',
-    );
+    const skip = findHostByTestId(tree, 'social-evolution-shared-false-skip');
     expect(skip).toBeTruthy();
     expect(skip?.props.accessibilityRole).toBe('button');
-    expect(skip?.props.accessibilityLabel).toBe(
-      SOCIAL_EVOLUTION_SKIP_CTA_LABEL,
-    );
+    expect(skip?.props.accessibilityLabel).toBe(SOCIAL_EVOLUTION_SKIP_CTA_LABEL);
   });
 
   it('mounts a stable testID on the branch layout root', () => {
@@ -193,9 +170,7 @@ describe('SocialEvolutionSharedFalseBranch — render', () => {
     );
     // The route file uses this testID to detect "shared=false branch is
     // mounted" without re-asserting interior structure.
-    expect(
-      findHostByTestId(tree, 'social-evolution-shared-false-branch'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-shared-false-branch')).toBeTruthy();
   });
 });
 
@@ -232,10 +207,7 @@ describe('SocialEvolutionSharedFalseBranch — interaction', () => {
         onSkip,
       }),
     );
-    const skip = findHostByTestId(
-      tree,
-      'social-evolution-shared-false-skip',
-    );
+    const skip = findHostByTestId(tree, 'social-evolution-shared-false-skip');
     const onPress = skip?.props.onPress as (() => void) | undefined;
     expect(typeof onPress).toBe('function');
     act(() => {

@@ -49,10 +49,7 @@ import {
   EXTERNAL_ALLOWED_FUNNEL_KEBAB_SLUGS,
   INTERNAL_ONLY_FUNNEL_KEBAB_SLUGS,
 } from '../src/internal-only-routes';
-import {
-  FUNNEL_KEBAB_SLUGS,
-  FUNNEL_KEBAB_SLUGS_ORDERED,
-} from '../src/linking.config';
+import { FUNNEL_KEBAB_SLUGS, FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
 import {
   MAGAZINE_SCREEN_ID,
   parseDeepLink,
@@ -115,8 +112,7 @@ describe('parseDeepLink — scheme 1: /<kebab>?utm…', () => {
 
   it('strips unknown query keys (PII allowlist enforcement)', () => {
     // Seed constraint: PII like distinct_id must never reach route params.
-    const url =
-      `${SCHEME_PREFIX}welcome-hook?utm_source=ig&distinct_id=secret&email=x@y`;
+    const url = `${SCHEME_PREFIX}welcome-hook?utm_source=ig&distinct_id=secret&email=x@y`;
     const result = expectOk(parseDeepLink(url));
     expect(result.params).toEqual({ utm_source: 'ig' });
     expect(result.params).not.toHaveProperty('distinct_id');
@@ -147,8 +143,7 @@ describe('parseDeepLink — scheme 1: /<kebab>?utm…', () => {
     // Campaign-attributed share link: `?utm_source=email&share_token=tok`.
     // Both pieces of attribution must survive the parser for the
     // downstream Zod validator to consume.
-    const url =
-      `${SCHEME_PREFIX}result-reveal?utm_source=email&share_token=tok-xyz`;
+    const url = `${SCHEME_PREFIX}result-reveal?utm_source=email&share_token=tok-xyz`;
     const result = expectOk(parseDeepLink(url));
     expect(result.screen).toBe(FUNNEL_KEBAB_SLUGS.result_reveal);
     expect(result.params).toEqual({
@@ -242,7 +237,9 @@ describe('parseDeepLink — scheme 5: /magazine/:month', () => {
 
 describe('parseDeepLink — scheme 6: universal-link (.invalid) prefixes', () => {
   it('accepts the primary .invalid host (pcolor.invalid)', () => {
-    const result = expectOk(parseDeepLink(`${HTTPS_PRIMARY}/welcome-hook?utm_source=fb`));
+    const result = expectOk(
+      parseDeepLink(`${HTTPS_PRIMARY}/welcome-hook?utm_source=fb`),
+    );
     expect(result.screen).toBe(FUNNEL_KEBAB_SLUGS.welcome_hook);
     expect(result.params).toEqual({ utm_source: 'fb' });
   });
@@ -479,9 +476,7 @@ describe('parseDeepLink — purity + frozen invariants', () => {
     // and uses every key in a single URL, asserting the parser preserves
     // exactly those keys. A future drift between the parser's allowlist
     // reference and the source constant would surface here.
-    const queryString = FUNNEL_UTM_QUERY_PARAMS.map(
-      (k, i) => `${k}=v${i}`,
-    ).join('&');
+    const queryString = FUNNEL_UTM_QUERY_PARAMS.map((k, i) => `${k}=v${i}`).join('&');
     const url = `${SCHEME_PREFIX}welcome-hook?${queryString}`;
     const result = expectOk(parseDeepLink(url));
     for (let i = 0; i < FUNNEL_UTM_QUERY_PARAMS.length; i += 1) {

@@ -49,12 +49,8 @@ describe('SCAN_ANIMATION_STEPS — 길이', () => {
   });
 
   it('라벨 SSoT와 길이가 정합한다', () => {
-    expect(SCAN_ANIMATION_STEPS.length).toBe(
-      SCAN_ANIMATION_STAGE_LABELS.length,
-    );
-    expect(SCAN_ANIMATION_STEPS.length).toBe(
-      CANONICAL_SCAN_ANIMATION_STAGES.length,
-    );
+    expect(SCAN_ANIMATION_STEPS.length).toBe(SCAN_ANIMATION_STAGE_LABELS.length);
+    expect(SCAN_ANIMATION_STEPS.length).toBe(CANONICAL_SCAN_ANIMATION_STAGES.length);
   });
 });
 
@@ -129,13 +125,15 @@ describe('getScanAnimationStep — 정상 접근', () => {
 
 describe('getScanAnimationStep — 범위 밖 입력', () => {
   it('-1이면 RangeError', () => {
-    expect(() => getScanAnimationStep(-1 as unknown as ScanAnimationStageIndex))
-      .toThrowError(RangeError);
+    expect(() =>
+      getScanAnimationStep(-1 as unknown as ScanAnimationStageIndex),
+    ).toThrowError(RangeError);
   });
 
   it('8(=총 단계 수)이면 RangeError', () => {
-    expect(() => getScanAnimationStep(8 as unknown as ScanAnimationStageIndex))
-      .toThrowError(RangeError);
+    expect(() =>
+      getScanAnimationStep(8 as unknown as ScanAnimationStageIndex),
+    ).toThrowError(RangeError);
   });
 
   it('소수점 인덱스는 RangeError', () => {

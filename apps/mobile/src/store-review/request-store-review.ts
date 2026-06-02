@@ -112,7 +112,6 @@ function resolvePlatform(): StoreReviewPlatform {
  */
 function devWarn(message: string): void {
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    // eslint-disable-next-line no-console
     console.warn(message);
   }
 }

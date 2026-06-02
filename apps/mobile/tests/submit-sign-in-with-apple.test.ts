@@ -87,11 +87,10 @@ describe('submitSignInWithApple (Phase 4.5 — cleanup after attribution)', () =
         Parameters<SignInWithAppleTransport>,
         ReturnType<SignInWithAppleTransport>
       >(async () => ({ status: 200 }));
-      await submitSignInWithApple(
-        { identityToken: IDENTITY_TOKEN },
-        transport,
-        { readStash: readerReturning('codeABCD'), clearStash: async () => undefined },
-      );
+      await submitSignInWithApple({ identityToken: IDENTITY_TOKEN }, transport, {
+        readStash: readerReturning('codeABCD'),
+        clearStash: async () => undefined,
+      });
       expect(transport).toHaveBeenCalledTimes(1);
       const body = transport.mock.calls[0]?.[0];
       expect(body?.identity_token).toBe(IDENTITY_TOKEN);
@@ -113,11 +112,10 @@ describe('submitSignInWithApple (Phase 4.5 — cleanup after attribution)', () =
       const clearStash = async (): Promise<void> => {
         order.push('clear');
       };
-      await submitSignInWithApple(
-        { identityToken: IDENTITY_TOKEN },
-        transport,
-        { readStash, clearStash },
-      );
+      await submitSignInWithApple({ identityToken: IDENTITY_TOKEN }, transport, {
+        readStash,
+        clearStash,
+      });
       expect(order).toEqual(['read', 'transport', 'clear']);
     });
   });

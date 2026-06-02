@@ -11,8 +11,6 @@ import { ValuePropsScreen } from '../../src/screens/funnel/ValuePropsScreen';
 export default function ValuePropsRoute(): JSX.Element {
   const router = useRouter();
   return (
-    <ValuePropsScreen
-      onNext={() => router.push('/(funnel)/onboarding-priming')}
-    />
+    <ValuePropsScreen onNext={() => router.push('/(funnel)/onboarding-priming')} />
   );
 }

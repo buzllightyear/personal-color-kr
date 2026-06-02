@@ -128,11 +128,7 @@ export class ThresholdJudgmentError extends Error {
   public readonly reason: ThresholdJudgmentErrorReason;
   public readonly value: unknown;
 
-  constructor(
-    reason: ThresholdJudgmentErrorReason,
-    message: string,
-    value: unknown,
-  ) {
+  constructor(reason: ThresholdJudgmentErrorReason, message: string, value: unknown) {
     super(message);
     this.reason = reason;
     this.value = value;
@@ -191,8 +187,7 @@ function resolveThresholds(options?: ThresholdOptions): {
   targetPercent: number;
   needsAdjustmentLowerBoundPercent: number;
 } {
-  const targetPercent =
-    options?.targetPercent ?? DEFAULT_NORTH_STAR_TARGET_PERCENT;
+  const targetPercent = options?.targetPercent ?? DEFAULT_NORTH_STAR_TARGET_PERCENT;
   const needsAdjustmentLowerBoundPercent =
     options?.needsAdjustmentLowerBoundPercent ??
     DEFAULT_NEEDS_ADJUSTMENT_LOWER_BOUND_PERCENT;

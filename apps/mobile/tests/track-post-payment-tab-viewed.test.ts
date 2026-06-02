@@ -48,9 +48,7 @@ describe('trackPostPaymentTabViewed (Phase 3.3 — Sub-AC 13.2)', () => {
   });
 
   it('silently no-ops in degraded mode (posthog === undefined)', () => {
-    expect(() =>
-      trackPostPaymentTabViewed(undefined, { tab: 'guide' }),
-    ).not.toThrow();
+    expect(() => trackPostPaymentTabViewed(undefined, { tab: 'guide' })).not.toThrow();
 
     expect(captureFn).not.toHaveBeenCalled();
     expect(consoleLogSpy).not.toHaveBeenCalled();

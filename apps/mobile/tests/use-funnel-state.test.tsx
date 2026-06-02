@@ -183,11 +183,9 @@ describe('useFunnelState — successful read inside provider (Sub-AC 7.3)', () =
 describe('useFunnelState — outside-provider error case (Sub-AC 7.3)', () => {
   it('throws when called without a <FunnelStateProvider> ancestor', () => {
     // Mute React's expected render-error log so the test output stays clean.
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* expected: React logs the render error before rethrowing */
-      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* expected: React logs the render error before rethrowing */
+    });
 
     try {
       expect(() => {
@@ -201,11 +199,9 @@ describe('useFunnelState — outside-provider error case (Sub-AC 7.3)', () => {
   });
 
   it('throws a FunnelStateProviderMissingError (distinguishable subclass)', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* expected */
-      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* expected */
+    });
 
     try {
       expect(() => {
@@ -219,11 +215,9 @@ describe('useFunnelState — outside-provider error case (Sub-AC 7.3)', () => {
   });
 
   it('error.name is "FunnelStateProviderMissingError" for stable matching', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* expected */
-      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* expected */
+    });
 
     let caught: unknown = null;
     try {
@@ -243,11 +237,9 @@ describe('useFunnelState — outside-provider error case (Sub-AC 7.3)', () => {
   });
 
   it('error message names both the hook and the missing provider', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {
-        /* expected */
-      });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* expected */
+    });
 
     let caught: unknown = null;
     try {

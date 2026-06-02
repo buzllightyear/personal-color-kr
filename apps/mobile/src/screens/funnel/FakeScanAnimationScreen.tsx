@@ -290,10 +290,7 @@ export function FakeScanAnimationScreen(
         testIDPrefix="fake-scan-animation"
       />
       <View style={styles.scanArea} testID="fake-scan-animation-scan-area">
-        <View
-          style={styles.faceOval}
-          testID="fake-scan-animation-face-oval"
-        >
+        <View style={styles.faceOval} testID="fake-scan-animation-face-oval">
           {FACE_POINTS.map((point, index) => {
             const left = point.x * FACE_WIDTH;
             const top = point.y * FACE_HEIGHT;

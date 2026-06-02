@@ -87,8 +87,7 @@ function findAllByTestId(
   // component, so `findAll` would otherwise return two matches per testID
   // (the wrapper FC + the rendered host); we want the host node only.
   return tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   ) as unknown as readonly TestInstance[];
 }
 
@@ -101,9 +100,7 @@ function getByTestId(
     throw new Error(`getByTestId('${testID}'): no match`);
   }
   if (matches.length > 1) {
-    throw new Error(
-      `getByTestId('${testID}'): ${matches.length} matches (expected 1)`,
-    );
+    throw new Error(`getByTestId('${testID}'): ${matches.length} matches (expected 1)`);
   }
   // matches[0] is guaranteed defined by the length checks above; the cast
   // narrows away the `noUncheckedIndexedAccess` `| undefined`.
@@ -128,9 +125,7 @@ function collectLabelTexts(
     (node) =>
       typeof node.type === 'string' &&
       typeof node.props?.testID === 'string' &&
-      new RegExp(`^${prefix}-item-\\d+-label$`).test(
-        node.props.testID as string,
-      ),
+      new RegExp(`^${prefix}-item-\\d+-label$`).test(node.props.testID as string),
   );
   return labelNodes.map((node) => String(node.props.children));
 }
@@ -204,12 +199,8 @@ describe('GuideList — testID convention', () => {
       React.createElement(GuideList, { testIDPrefix: 'selfie-prep' }),
     );
     expect(getByTestId(tree, 'selfie-prep')).toBeTruthy();
-    expect(getByTestId(tree, 'selfie-prep-item-0-label').props.children).toBe(
-      '정면',
-    );
-    expect(getByTestId(tree, 'selfie-prep-item-2-label').props.children).toBe(
-      '민낯',
-    );
+    expect(getByTestId(tree, 'selfie-prep-item-0-label').props.children).toBe('정면');
+    expect(getByTestId(tree, 'selfie-prep-item-2-label').props.children).toBe('민낯');
     // The default prefix must NOT appear when a custom prefix is supplied.
     expect(findAllByTestId(tree, 'guide-list')).toHaveLength(0);
   });

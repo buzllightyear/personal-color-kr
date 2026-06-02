@@ -98,9 +98,7 @@ const ALL_COMBINATIONS: ReadonlyArray<
 
 describe('TYPOGRAPHY — theme typography scale tokens', () => {
   it('exposes exactly the five required levels (headline, subhead, body, caption, button)', () => {
-    expect(Object.keys(TYPOGRAPHY).sort()).toEqual(
-      [...LEVELS].sort(),
-    );
+    expect(Object.keys(TYPOGRAPHY).sort()).toEqual([...LEVELS].sort());
   });
 
   it('produces exactly 15 typography combinations (5 levels × 3 weights)', () => {
@@ -113,9 +111,7 @@ describe('TYPOGRAPHY — theme typography scale tokens', () => {
 
   describe.each(LEVELS)('level %s', (level) => {
     it('exposes exactly the three documented weights (bold, medium, regular)', () => {
-      expect(Object.keys(TYPOGRAPHY[level]).sort()).toEqual(
-        [...WEIGHTS].sort(),
-      );
+      expect(Object.keys(TYPOGRAPHY[level]).sort()).toEqual([...WEIGHTS].sort());
     });
 
     it('fontSize is invariant under weight (size axis decoupled from weight axis)', () => {
