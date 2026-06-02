@@ -124,6 +124,7 @@
 | 4.5 | 2026-05-30 | 2026-06-01 | `orch_bc32d9fef5e3` + 0-LOC hybrid | `a456fb0` | CI PASS · **20/20 orch (full)** + worktree-harvest (0 LOC manual code; 1 round CI fix) — Q00#1202 **upstream fixed** |
 | 5.x | — | — | | | |
 | 6.1 | 2026-06-02 | 2026-06-02 | `orch_8af0ba7b7cd0` + 0-LOC hybrid | `beb74d9` | CI PASS · **24/24 orch (full)** + worktree-harvest (0 LOC manual code; **0 CI rounds**) |
+| 6.2 | 2026-06-02 | 2026-06-02 | `orch_bc933521eebc` + 0-LOC hybrid | `f8ac886` | CI PASS · **18/18 orch (full)** + in-place harvest (0 LOC manual code; **0 CI rounds**) — ambiguity **0.0845** 최저 |
 | 6.x (rest) | — | — | | | |
 | 7.x | — | — | | | |
 
@@ -1408,6 +1409,72 @@ Tests (Phase 4.5 mobile 1107 → Phase 6.1 **1153** vitest, +46 신규; core-ts 
 - Custom rating gate UI (별 5개 선택 등) — 시스템 prompt 의존, 별도 UI 없음.
 
 **Seed**: `~/.ouroboros/seeds/seed_2aecdf435ed7_unit_6_1.yaml` (v1.0.0, ambiguity 0.122)
+
+### Phase 6.2 결과 요약 (2026-06-02)
+
+**산출물 (core-ts ↔ mobile RN 접합 — 첫 양 패키지 surface phase)**:
+
+Phase 3.x에서 만들어 두고 mobile에 mount 안 했던 core-ts pure view-model state machine 2종 (`analyzing-loader` 5-stage, `scan-animation` 8-stage)을 RN 화면에 wiring. 공유 `StageLadder` 컴포넌트 + `useSyncExternalStore` 기반 adapter hook 1개로 두 화면 모두 커버.
+
+Mobile Source (apps/mobile/src/):
+- `components/StageLadder.tsx` (NEW): `{ items, progress, ariaLive, testIDPrefix }` 받는 leaf RN 컴포넌트. pending = `COLORS.grayscale.border`, active = `COLORS.base.coral` + bold, done = `'✓ '` (U+2713) prefix + `COLORS.grayscale.disabled`. 기존 design tokens만 사용 (zero new hex).
+- `hooks/use-stage-ladder.ts` (NEW): `useSyncExternalStore(controller.subscribe, controller.snapshot)` 기반 adapter. core-ts controller factory (`useAnalyzingLoader`, `useScanAnimation`)를 wrap. mount 시 `start()`, unmount 시 `cancel()`. RN layer에 timer 0개 (모든 timing은 controller의 injected scheduler가 소유). 두 화면용 wrapper `useScanAnimationLadder()` + `useAnalyzingLoaderLadder()` 노출.
+- `screens/funnel/FakeLoaderScreen.tsx` (+60/-): ActivityIndicator spinner 제거 → 5-stage analyzing-loader ladder가 primary visual로 swap (partial replace). `FunnelHeadline` (FUNNEL_SCREENS 출처) 유지.
+- `screens/funnel/FakeScanAnimationScreen.tsx` (+26/-): **additive composition** — 기존 24-point face oval + sweep line + counter + headline + subhead 모두 byte-identical 유지, 8-stage ladder를 face oval `<View>` 와 counter `<View>` 사이에 추가. `ladderWrapper` 스타일만 신규.
+
+core-ts Source (packages/core-ts/src/):
+- `scan_option/scan-animation-component.ts` (+43/-): pure helper `scanAnimationAutoAdvanceSignal(state, nowMs): boolean` 추가 — startedAtMs 기준 5000ms 경과 시 true. 5000ms auto-advance 신호와 3200ms complete latch가 독립적 timeline임을 코드로 명시.
+- `scan_option/scan-animation-component.ts`: const `SCAN_ANIMATION_AUTO_ADVANCE_MS = 5_000` 추가. FUNNEL_SCREENS 메타데이터와 정합하지만 funnel import는 회피 (순환/교차 도메인 결합 회피).
+- `scan_option/index.ts` (+31/-): 신규 export wiring.
+
+Tests (Phase 6.1 mobile 1153 → Phase 6.2 **1242** vitest, +89 신규; core-ts 809 → **827**, +18 신규):
+- Mobile vitest 신규 6개: `stage-ladder.test.tsx` (pure render — pending/active/done 색상 + checkmark + testID), `stage-ladder-aria-live.test.tsx` (ARIA live forwarding), `use-stage-ladder.test.tsx`, `use-scan-animation-controller.test.tsx`, `use-analyzing-loader-controller.test.tsx` (fake scheduler synchronous tick driving), screen integration 2개 갱신.
+- Mobile 갱신: `fake-loader-screen.test.tsx` (+171/-), `fake-scan-animation-screen.test.tsx` (+120/-) — ladder presence + 기존 surface 보존 단언.
+- core-ts vitest 갱신: `scan-animation-component.test.ts` (+259/-) — 3200ms latch + 5000ms auto-advance 분리 timeline + boundary cases (NaN, startedAtMs null).
+
+**4중 정합 (local pre-push)**:
+- `pnpm --filter mobile run typecheck` → clean
+- `pnpm --filter mobile test` → **1,242 passed, 2 skipped** (128 test files)
+- `pnpm --filter core-ts run typecheck` → clean
+- `pnpm --filter core-ts test` → **827 passed, 1 skipped** (25 test files)
+- CI (Test Node 20 / Python 3.12) → **PASS** (typecheck + vitest + pytest), 2m6s + 2m13s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/orch_bc933521eebc_manual` (auto-deleted post-merge)
+- 핵심 commit: 14 files (+3,307 / -21 LOC; Mobile 11 files + core-ts 3 files)
+- PR #35 squash merge commit: `f8ac886`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 3차 검증, 첫 core-ts + mobile cross-package)**:
+
+- Interview: `interview_20260602_105009` — 4 round Socratic (placement 분기 / 공유 컴포넌트 / adapter pattern / 스타일링 + 테스트 contract). **Ambiguity 0.0845** — Phase 4.4 (0.076) 이후 최저, 양 view-model이 동일 contract 공유 + 명확한 additive vs partial-replace 분기 + zero new design tokens 덕분.
+- Seed: `~/.ouroboros/seeds/seed_dbe73ef38b50_unit_6_2.yaml` (18 ACs / 9 constraints / 11 ontology fields / 10 evaluation principles / 6 exit conditions).
+- Run #1 (`orch_bc933521eebc`): **18/18 ACs (Level 6/6, Sub-AC 3/3 full)** — Phase 4.5 → 6.1 → 6.2 **3회 연속 full orchestrator 성공**. 6-level structure (이전 1-level) 처음.
+- **Q00#1202 UPSTREAM FIXED 재확인**: archive `NJXasZxUhG2vBDimZ65bN/lib/python3.12/site-packages/ouroboros/mcp/tools/execution_handlers.py:589` 동일. 3회 연속 보존.
+- Hybrid completion (**0 LOC manual code**): orchestrator가 main 작업 디렉토리에 직접 write (worktree 미경유 — Phase 6.1과 다른 패턴). Branch 분기 + 실 4-gate → 모두 first try green.
+- **CI 회복: 0 round** — Phase 6.1에 이어 **2회 연속 zero-recovery**.
+
+**Phase 6.1 비교 (cross-package 첫 시도, 추가 안정화)**:
+| 측면 | Phase 6.1 | Phase 6.2 |
+|---|---|---|
+| Orchestrator 결과 | 24/24 (full) | **18/18 (full)** |
+| Manual completion | 0 LOC | **0 LOC** (재현) |
+| Ambiguity | 0.122 | **0.0845** (Phase 4.4 이후 최저) |
+| Surface | mobile only | **mobile + core-ts cross-package** |
+| Q00#1202 상태 | upstream fixed (2차 검증) | **upstream fixed (3차 검증)** |
+| CI round | 0 | **0** (재현) |
+| 산출 합계 | 17 files / +2,180 LOC | 14 files / +3,307 LOC (core-ts 3 + mobile 11) |
+| 테스트 증가 | +46 vitest | **+89 mobile vitest + 18 core-ts vitest** |
+| 실행 구조 | 1-level (24 AC) | **6-level (18 AC × Sub-AC 3)** — 더 깊은 계층 분해 |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- 24-point face oval 애니메이션 수정 — 기존 surface 유지가 명시 constraint (Phase 2.x 자산)
+- Lottie / SVG / react-native-reanimated — Seed `commoditized_stack` constraint
+- FUNNEL_SCREENS 메타데이터 변경 — Phase 1.2부터 locked
+- 신규 funnel step 삽입 — step set immutable
+- 신규 hex color value — design token reuse 100%
+- Snapshot tests — behavioral assertions only
+
+**Seed**: `~/.ouroboros/seeds/seed_dbe73ef38b50_unit_6_2.yaml` (v1.0.0, ambiguity 0.0845)
 
 ## 참고
 
