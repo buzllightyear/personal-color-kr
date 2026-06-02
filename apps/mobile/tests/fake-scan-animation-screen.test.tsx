@@ -185,6 +185,19 @@ function findAllHosts(tree: TestRenderer.ReactTestRenderer): readonly TestInstan
   ) as unknown as readonly TestInstance[];
 }
 
+/**
+ * Depth-first render-order list of every host node's `testID` (skipping nodes
+ * without one). Used to assert *relative document order* between the existing
+ * face oval, the additively-composed stage ladder, and the existing counter.
+ */
+function testIdsInRenderOrder(
+  tree: TestRenderer.ReactTestRenderer,
+): readonly string[] {
+  return findAllHosts(tree)
+    .map((h) => h.props?.testID)
+    .filter((id): id is string => typeof id === 'string');
+}
+
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
@@ -257,6 +270,113 @@ describe('FakeScanAnimationScreen — render', () => {
       (h) => h.props?.accessibilityRole === 'button',
     );
     expect(buttons).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8-stage Korean-label scan ladder (additive composition, Phase 6.2)
+// ---------------------------------------------------------------------------
+
+describe('FakeScanAnimationScreen — 8-stage scan ladder', () => {
+  /** The eight Korean signature labels, in stage order (from core-ts). */
+  const SCAN_LADDER_LABELS: readonly string[] = [
+    '얼굴 감지',
+    '윤곽 분석',
+    '피부 영역 추출',
+    '눈 영역 분석',
+    '입술 영역 분석',
+    '컬러 샘플링',
+    '톤 매칭',
+    '결과 준비',
+  ];
+
+  it('renders the shared StageLadder container with the scan-animation prefix', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    expect(findHostByTestId(tree, 'scan-animation-ladder')).toBeTruthy();
+  });
+
+  it('renders exactly 8 Korean-label ladder rows in stage order', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    SCAN_LADDER_LABELS.forEach((label, index) => {
+      const row = findHostByTestId(
+        tree,
+        `scan-animation-ladder-item-${index}-label`,
+      );
+      expect(row, `ladder row ${index}`).toBeTruthy();
+      expect(row?.props.children).toBe(label);
+    });
+    // No 9th row — the ladder is pinned to the 8 core-ts stages.
+    expect(
+      findHostByTestId(tree, 'scan-animation-ladder-item-8-label'),
+    ).toBeNull();
+  });
+
+  it('places the ladder BELOW the face oval and ABOVE the X/24 counter', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    const order = testIdsInRenderOrder(tree);
+    const ovalIdx = order.indexOf('fake-scan-animation-face-oval');
+    const ladderIdx = order.indexOf('scan-animation-ladder');
+    const counterIdx = order.indexOf('fake-scan-animation-counter');
+    expect(ovalIdx).toBeGreaterThanOrEqual(0);
+    expect(ladderIdx).toBeGreaterThanOrEqual(0);
+    expect(counterIdx).toBeGreaterThanOrEqual(0);
+    // Render order is exactly: face oval → ladder → counter.
+    expect(ovalIdx).toBeLessThan(ladderIdx);
+    expect(ladderIdx).toBeLessThan(counterIdx);
+  });
+
+  it('mounts the ladder wrapper strictly after the scan-area (below the face oval)', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    const order = testIdsInRenderOrder(tree);
+    const scanAreaIdx = order.indexOf('fake-scan-animation-scan-area');
+    const wrapperIdx = order.indexOf('fake-scan-animation-ladder-wrapper');
+    // Both containers exist…
+    expect(scanAreaIdx).toBeGreaterThanOrEqual(0);
+    expect(wrapperIdx).toBeGreaterThanOrEqual(0);
+    // …and the additively-composed ladder wrapper renders below the entire
+    // scan-area (which houses the face oval + sweep line), never inside or
+    // before it. This is the container-level guarantee of "below face oval".
+    expect(wrapperIdx).toBeGreaterThan(scanAreaIdx);
+    // The face oval itself is nested within the scan-area, so it too precedes
+    // the ladder wrapper — the additive composition never reorders the
+    // existing visual surface.
+    const ovalIdx = order.indexOf('fake-scan-animation-face-oval');
+    expect(ovalIdx).toBeGreaterThan(scanAreaIdx);
+    expect(wrapperIdx).toBeGreaterThan(ovalIdx);
+  });
+
+  it('forwards an ARIA live region onto the ladder container', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    const ladder = findHostByTestId(tree, 'scan-animation-ladder');
+    // The container forwards the view-model's politeness (idle→none,
+    // running→polite, complete→assertive). Whatever the initial phase, the
+    // value is one of RN's accepted live-region members — never `'off'`.
+    expect(['none', 'polite', 'assertive']).toContain(
+      ladder?.props.accessibilityLiveRegion,
+    );
+  });
+
+  it('does not disturb the existing 24-point face oval, sweep line, or counter', () => {
+    const tree = render(
+      React.createElement(FakeScanAnimationScreen, { onElapsed: vi.fn() }),
+    );
+    // Existing surface remains intact alongside the additive ladder.
+    expect(findHostByTestId(tree, 'fake-scan-animation-face-oval')).toBeTruthy();
+    expect(findHostByTestId(tree, 'fake-scan-animation-sweep-line')).toBeTruthy();
+    expect(findHostByTestId(tree, 'fake-scan-animation-counter')).toBeTruthy();
+    for (let i = 0; i < 24; i++) {
+      expect(findHostByTestId(tree, `fake-scan-animation-dot-${i}`)).toBeTruthy();
+    }
   });
 });
 

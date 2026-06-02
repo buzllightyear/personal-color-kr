@@ -82,8 +82,10 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { FUNNEL_SCREENS } from 'core-ts/funnel';
 
 import { FunnelHeadline } from '../../components/FunnelHeadline';
+import { StageLadder } from '../../components/StageLadder';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { useAutoAdvanceTimer } from '../../hooks/use-auto-advance-timer';
+import { useScanAnimationLadder } from '../../hooks/use-stage-ladder';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
 
 const SCREEN = FUNNEL_SCREENS.fake_scan_animation;
@@ -223,6 +225,18 @@ export function FakeScanAnimationScreen(
   // on unmount by the hook's contract.
   useAutoAdvanceTimer({ durationMs, onElapsed });
 
+  // 8-stage Korean-label scan ladder, driven entirely by the core-ts
+  // scan-animation controller (3,200ms = 400ms × 8). The controller owns ALL
+  // timing through its injected scheduler; this screen schedules no timer for
+  // it. The ladder latches into `'complete'` at 3,200ms and holds that state
+  // until the independent 5,000ms `useAutoAdvanceTimer` navigates away — the
+  // two timelines are decoupled, so the latch coexists without conflict. The
+  // returned frozen view-model is passed straight through to the shared
+  // `StageLadder` leaf (no remapping glue): `items` carry the core-ts
+  // `status`/`isActive`/`isDone` shape that `resolveItemState` already
+  // normalises.
+  const ladder = useScanAnimationLadder();
+
   // Drive the Animated.Value 0 → 1 over `durationMs`. The listener on the
   // value updates `scannedCount` so the counter Text re-renders as the scan
   // progresses. Both the animation handle and the listener are cleaned up on
@@ -298,6 +312,14 @@ export function FakeScanAnimationScreen(
             testID="fake-scan-animation-sweep-line"
           />
         </View>
+      </View>
+      <View style={styles.ladderWrapper} testID="fake-scan-animation-ladder-wrapper">
+        <StageLadder
+          items={ladder.items}
+          progress={ladder.progressPercent}
+          ariaLive={ladder.ariaLive}
+          testIDPrefix="scan-animation-ladder"
+        />
       </View>
       <View style={styles.counterWrapper}>
         <Text
@@ -393,6 +415,10 @@ const styles = StyleSheet.create({
     right: 0,
     height: SWEEP_LINE_HEIGHT,
     backgroundColor: COLORS.base.coral,
+  },
+  ladderWrapper: {
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   counterWrapper: {
     alignItems: 'center',

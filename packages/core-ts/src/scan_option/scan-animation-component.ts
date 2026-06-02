@@ -178,6 +178,49 @@ function currentStageLabel(state: ScanAnimationState): string | null {
 export const SCAN_ANIMATION_COMPONENT_TEST_ID = 'scan-animation' as const;
 
 /**
+ * 화면(funnel step 8 `fake_scan_animation`)이 다음 단계(step 9 result reveal)로
+ * 자동 전환하는 시점(ms).
+ *
+ * 스캔 *비주얼*은 `SCAN_ANIMATION_TOTAL_DURATION_MS`(= 3200ms)에 끝나지만
+ * (8단계 × 400ms), sunk-cost priming 을 위해 화면은 그 이후로도 1800ms 더
+ * 머문 뒤 5000ms 정각에 auto-advance 한다.  즉 두 타임라인은 분리되어 있다:
+ *   - 3200ms → 시각 완료(complete 래치, 마지막 단계 done 고정)
+ *   - 5000ms → 화면 auto-advance 신호(다음 funnel 단계로 이동)
+ *
+ * `FUNNEL_SCREENS.fake_scan_animation.metadata.durationMs`(= 5000)와 정합하는
+ * 값이며, 본 모듈은 funnel 메타데이터를 import 하지 않고(순환/교차도메인 결합
+ * 회피) 같은 상수를 로컬에 명시한다 — 둘은 동일해야 한다.
+ */
+export const SCAN_ANIMATION_AUTO_ADVANCE_MS = 5_000 as const;
+
+/**
+ * 순수 사상 — 상태 머신의 `startedAtMs` 기준 경과 시간으로부터 **auto-advance
+ * 신호**(boolean)를 도출한다.  타이머/스케줄러를 소유하지 않으며, 호출자가
+ * 주입한 `nowMs` 로만 평가하는 순수 함수다.
+ *
+ * 경계 규약:
+ *   - `nowMs - startedAtMs < 5000` → `false` (아직 머무름)
+ *   - `nowMs - startedAtMs >= 5000` → `true`  (정각 5000ms에 신호 발생)
+ *
+ * 완료 래치(3200ms)와 독립적이다.  상태가 `'complete'` 로 래치된 이후에도
+ * `startedAtMs` 는 보존되므로(`tickScanAnimation` 의 complete 분기 참고)
+ * 본 함수는 3200ms~5000ms 사이의 1800ms 윈도를 정확히 가로지른다.
+ *
+ * 방어:
+ *   - 시작 전(`startedAtMs === null`) → 항상 `false`.
+ *   - `nowMs` 가 NaN → `false` (경계 평가 불가 시 보수적으로 머무름).
+ */
+export function scanAnimationAutoAdvanceSignal(
+  state: ScanAnimationState,
+  nowMs: number,
+): boolean {
+  if (state.startedAtMs === null) return false;
+  const elapsed = nowMs - state.startedAtMs;
+  if (Number.isNaN(elapsed)) return false;
+  return elapsed >= SCAN_ANIMATION_AUTO_ADVANCE_MS;
+}
+
+/**
  * 순수 사상 — 주어진 `ScanAnimationState`로부터 호스트 UI가 그릴 프로즌
  * 뷰모델을 만든다.  같은 입력은 (구조 동등성 기준으로) 같은 출력을 만든다.
  *
