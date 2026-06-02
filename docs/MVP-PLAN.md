@@ -126,7 +126,7 @@
 | 6.1 | 2026-06-02 | 2026-06-02 | `orch_8af0ba7b7cd0` + 0-LOC hybrid | `beb74d9` | CI PASS · **24/24 orch (full)** + worktree-harvest (0 LOC manual code; **0 CI rounds**) |
 | 6.2 | 2026-06-02 | 2026-06-02 | `orch_bc933521eebc` + 0-LOC hybrid | `f8ac886` | CI PASS · **18/18 orch (full)** + in-place harvest (0 LOC manual code; **0 CI rounds**) — ambiguity **0.0845** 최저 |
 | 6.3 | 2026-06-02 | 2026-06-02 | `orch_1bf9c122f569` + 1-LOC hybrid | `46efb11` | CI PASS · 10/17 orch (rate-limit halt) + in-place harvest (**1 LOC** manual: `datetime.utcnow` deprecation; **0 CI rounds**) — ambiguity 0.08 |
-| 6.x (rest) | — | — | | | |
+| 6.4 | 2026-06-03 | 2026-06-03 | `orch_10cab809a53a` + 0-LOC hybrid | `38a2e17` | CI PASS · **16/16 orch (full)** + branch-isolate harvest (**0 LOC** manual; **0 CI rounds**) — ambiguity **0.07** 신규 최저, CI +20s only |
 | 7.x | — | — | | | |
 
 ### Phase 1.1 결과 요약 (2026-05-17)
@@ -1538,6 +1538,90 @@ Tests (Phase 4.5 279 → Phase 6.3 **334** pytest, +55 신규):
 - Admin-only auth gate — Phase 7.x
 
 **Seed**: `~/.ouroboros/seeds/seed_e92876254f31_unit_6_3.yaml` (v1.0.0, ambiguity 0.08)
+
+### Phase 6.4 결과 요약 (2026-06-03)
+
+**산출물 (TS lint/format tooling 추가 — Phase 4.2 Python 4-gate parity 달성)**:
+
+apps/mobile + packages/core-ts에 ESLint 9.x flat config + Prettier 3.x 도입. CI에 2개 hard-blocking gate 추가, Phase 4.2의 Python mypy/ruff/black/pytest와 동급 strictness 확립.
+
+Config (NEW):
+- `/.prettierrc.json` (NEW, 8 LOC): `{ printWidth: 88, singleQuote: true, trailingComma: 'all', semi: true, arrowParens: 'always' }`. printWidth 88로 Black과 정합 — 모노레포 단일 line-length.
+- `/.prettierignore` (NEW, 17 LOC): node_modules, dist, coverage, *.md, pnpm-lock.yaml 제외.
+- `apps/mobile/eslint.config.mjs` (NEW, 117 LOC): flat config, `typescript-eslint/recommended` 베이스 + 4 cherry-picked type-checked rules (`no-floating-promises`, `no-misused-promises`, `await-thenable`, `no-unnecessary-type-assertion`) + `eslint-plugin-react recommended` + `eslint-plugin-react-hooks` (`exhaustive-deps` warn-only) + `eslint-config-prettier` LAST.
+- `packages/core-ts/eslint.config.mjs` (NEW, 73 LOC): 동일 base + 4 type-checked rules + prettier-config (React 플러그인 없음, JSX 없음).
+
+Scripts + CI:
+- `apps/mobile/package.json` + `packages/core-ts/package.json` (+6/-) — `lint` (eslint check), `lint:fix` (eslint --fix), `format` (prettier --write), `format:check` (prettier --check) 추가.
+- `package.json` (+8/-) — root devDeps: eslint ^9.x, @typescript-eslint/eslint-plugin ^8.x, @typescript-eslint/parser ^8.x, eslint-plugin-react ^7.x, eslint-plugin-react-hooks ^5.x, eslint-config-prettier ^9.x, prettier ^3.x (pnpm hoist).
+- `.github/workflows/ci.yml` (+27/-): 2 신규 hard-blocking step — `Format check (TS, prettier --check)` + `Lint (TS, eslint)`, typecheck 이후 / vitest 이전 배치.
+
+Auto-fix (commit 2):
+- `style(mobile,core-ts): apply Prettier 3 formatting (mechanical auto-fix)`: 202 .ts/.tsx 파일 mechanical reformat. **Zero behavioral changes** — no new `any` casts, no `eslint-disable` for 4 protected type-checked rules.
+
+Type-checked rule 검증 (commit 3 불필요):
+- 4 cherry-picked type-checked rules가 auto-fix 후 **0개 위반** 검출. 기존 strict TypeScript + Phase 6.x 코드 품질 덕분에 floating promise / misused promise 패턴이 코드베이스에 부재. commit 3 (manual fixes) 생략.
+
+Lockfile (`pnpm-lock.yaml`, +906/-): eslint 9.x + plugins + prettier 3.x 의존성 정리.
+
+Tests (Phase 6.3 baseline 보존):
+- mobile vitest: **1,242 passed** (변화 없음)
+- core-ts vitest: **827 passed** (변화 없음)
+- apps/api pytest: **334 passed** (영향 없음)
+
+**4중 정합 (local pre-push)**:
+- `pnpm -r run lint` → **0 errors** (eslint pass both workspaces)
+- `pnpm -r run format:check` → **0 violations** (prettier pass both workspaces)
+- `pnpm --filter {mobile,core-ts} run typecheck` → both clean
+- `pnpm --filter {mobile,core-ts} test` → 1242 + 827 passed
+- CI (Test Node 20 / Python 3.12) → **PASS**, 2m35s + 2m45s — 2 신규 gate 추가에도 **+20s 만 증가** (<30s 예산 부합), **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/orch_10cab809a53a_manual` (auto-deleted post-merge)
+- Commit 1 (`1d8c4cf`): config-only (CI yml + eslint configs + prettier + scripts + lockfile)
+- Commit 2 (`49614ef`): mechanical reformat (202 files, zero behavioral changes)
+- Commit 3: 불필요 (type-checked rules 0 violations)
+- PR #39 squash merge commit: `38a2e17`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 5차 검증, 첫 tooling tier phase)**:
+
+- Interview: `interview_20260602_170135` — 5 round Socratic (ruleset 선택 / Prettier config / commit topology + CI mode / React plugins + flat config / exit criteria 9개). **Ambiguity 0.07** (Phase 6.3 0.08 → 0.07, 최저 갱신).
+- Seed: `~/.ouroboros/seeds/seed_4e83f5ad418a_unit_6_4.yaml` (16 ACs / 22 constraints / 15 ontology fields / 6 evaluation principles / 6 exit conditions).
+- Run #1 (`orch_10cab809a53a`): **16/16 ACs (full)** — Phase 4.5 → 6.1 → 6.2 → 6.4 **4회 연속 full orchestrator 성공** (6.3은 rate-limit halt 예외).
+- **Q00#1202 UPSTREAM FIXED 5차 검증**: archive `NJXasZxUhG2vBDimZ65bN` 동일 line 589.
+- Harvest 패턴 변화: orchestrator가 **main에 직접 2 commit** → branch 분리 (`git branch ooo/... && git reset --hard origin/main`) → 4-gate verify → push. **0 LOC manual** (config과 reformat 모두 orchestrator 산출).
+- **CI 회복: 0 round** — Phase 6.1/6.2/6.4 zero-recovery (6.3은 rate-limit 외 사유로 1 LOC fix).
+
+**Phase 6.3 비교 (tooling tier 안정화 정점)**:
+| 측면 | Phase 6.3 | Phase 6.4 |
+|---|---|---|
+| Orchestrator 결과 | 10/17 (rate-limit halt) | **16/16 (full)** |
+| Manual completion | 1 LOC (deprecation) | **0 LOC** (재현) |
+| Ambiguity | 0.08 | **0.07** (신규 최저) |
+| Surface | Python only | **TypeScript (mobile + core-ts), tooling tier** |
+| Q00#1202 상태 | upstream fixed (4차) | **upstream fixed (5차)** |
+| CI round | 0 | **0** |
+| 산출 합계 | 13 files / ~1,400 LOC | 207 files (config 9 + auto-fix 198) |
+| 테스트 증가 | +55 pytest | **0** (tooling phase, no test changes) |
+| Commit 구조 | 1-commit | **2-commit (config + reformat)** clean separation |
+| CI 시간 증가 | 0 | **+20s only** (<30s 예산 부합) |
+
+**Phase 6 시리즈 종합 (6.1 → 6.4 모두 완료, 0 manual 평균)**:
+- Total commits: 4 feature PRs + 4 docs PRs = 8 squash merges
+- Total tests added: 89 (6.1) + 89 mobile + 18 core-ts (6.2) + 55 pytest (6.3) + 0 (6.4) = 251 신규 테스트
+- Total CI rounds: 0 (3/4 phase) + 0 (6.4) = 0 round recovery 4/4 success
+- Total manual LOC: 0 + 0 + 1 + 0 = **2 LOC** across entire Phase 6
+- Ambiguity 추이: 0.122 → 0.0845 → 0.08 → **0.07** (monotonic decrease)
+- Orchestrator full success: 6.1, 6.2, 6.4 (3/4, 6.3는 rate-limit halt for coverage gate eval)
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- Pre-commit hooks (husky/lint-staged) — Phase 6.5+ 또는 skip
+- `eslint-plugin-react-native` — Phase 7.x (mixed reputation, outdated for Expo 51+)
+- Stylelint, markdownlint — out of scope
+- Custom ESLint rules / plugin authoring — out of scope
+- Shared internal eslint-config package — 2 workspaces로 abstraction 불필요 (60 LOC 중복 수용)
+
+**Seed**: `~/.ouroboros/seeds/seed_4e83f5ad418a_unit_6_4.yaml` (v1.0.0, ambiguity 0.07)
 
 ## 참고
 
