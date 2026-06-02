@@ -123,7 +123,8 @@
 | 4.4 | 2026-05-29 | 2026-05-30 | `orch_d46b4c3e28f5` + 0-LOC hybrid | `217cdba` | CI PASS · 10/23 orch + worktree-harvest (0 LOC manual code; 1 round CI fix) |
 | 4.5 | 2026-05-30 | 2026-06-01 | `orch_bc32d9fef5e3` + 0-LOC hybrid | `a456fb0` | CI PASS · **20/20 orch (full)** + worktree-harvest (0 LOC manual code; 1 round CI fix) — Q00#1202 **upstream fixed** |
 | 5.x | — | — | | | |
-| 6.x | — | — | | | |
+| 6.1 | 2026-06-02 | 2026-06-02 | `orch_8af0ba7b7cd0` + 0-LOC hybrid | `beb74d9` | CI PASS · **24/24 orch (full)** + worktree-harvest (0 LOC manual code; **0 CI rounds**) |
+| 6.x (rest) | — | — | | | |
 | 7.x | — | — | | | |
 
 ### Phase 1.1 결과 요약 (2026-05-17)
@@ -1351,6 +1352,62 @@ Tests (Phase 4.4 207 → Phase 4.5 **279** pytest, +72 신규; mobile vitest **1
 - Batch POST endpoint, dedup key, admin role / HMAC, rate limiting — Phase 6+
 
 **Seed**: `~/.ouroboros/seeds/seed_1847a2866a57_unit_4_5.yaml` (v1.0.0, ambiguity 0.123)
+
+### Phase 6.1 결과 요약 (2026-06-02)
+
+**산출물 (첫 Phase 6 단위 — iOS native `SKStoreReviewController` + Android Play In-App Review unified wiring)**:
+
+rating-gate funnel screen의 submit CTA에 `expo-store-review` SDK를 wiring. Phase 2.4의 placeholder 핸들러를 실 native review prompt + PostHog analytics로 swap. iOS/Android 동일 helper 사용 (cross-platform unified semantics).
+
+Mobile Source (apps/mobile/):
+- `src/store-review/request-store-review.ts` (NEW): async helper. `isAvailableAsync()` guard → `requestReview()` fire-and-forget dispatch. `StoreReviewOutcome { attempted: bool, available: bool, platform: 'ios'|'android'|'other' }` return. `__DEV__` gated `console.warn` for dispatch/unavailable/error paths (QA observability).
+- `src/analytics/track-rating-prompt-completed.ts` (NEW) + `track-rating-prompt-skipped.ts` (NEW): Phase 2.6 PostHog track wrappers. Events: `rating_prompt_completed { attempted, available, platform }` (submit CTA) + `rating_prompt_skipped { platform }` (skip CTA).
+- `app/(funnel)/rating-gate.tsx` (+78/-2): iOS `RatingGateDefaultVariant` + Android `RatingGateSecondaryVariant` 둘 다 submit handler 가 `requestStoreReview()` 호출 → outcome 으로 `rating_prompt_completed` 발화. Skip CTA 는 helper 호출 없이 `rating_prompt_skipped` 만 발화. Navigation 은 store-review outcome 과 무관 (best-effort, 절대 block 안 함).
+- `package.json` (+1/-): `expo-store-review: ~7.0.2` dependency 추가.
+
+Tests (Phase 4.5 mobile 1107 → Phase 6.1 **1153** vitest, +46 신규; core-ts 809 unchanged):
+- Mobile vitest 신규 12개: `request-store-review.test.ts` (helper unit, `expo-store-review` 직접 mock), `store-review-helper.test.ts` (StoreReviewOutcome shape), `store-review-outcome.test.ts`, `store-review-dev-warn.test.ts` (__DEV__ 분기), `store-review-isavailable-throw.test.ts` (isAvailableAsync throw path), `rating-gate-route-{android-submit,ios-skip,skip-analytics,submit-analytics,submit-sequence}.test.tsx` (route-level, helper mock), `request-store-review.test.ts`, `track-rating-prompt-completed.test.ts`.
+- Mobile 갱신: `rating-gate-platform-{ios,android}.test.ts` (실 helper wiring 검증), `rating-gate-screen.test.tsx` (shared content rendering).
+
+**4중 정합 (local pre-push)**:
+- `pnpm --filter mobile run typecheck` → clean
+- `pnpm --filter mobile test` → **1153 passed, 2 skipped** (123 test files)
+- `pnpm --filter core-ts run typecheck + test` → clean + 809 passed
+- CI (Test Node 20 / Python 3.12) → **PASS** (typecheck + vitest + pytest), 2m16s + 2m26s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/orch_8af0ba7b7cd0_manual` (auto-deleted post-merge)
+- 핵심 commit: `a54ac3e` (17 files: +2,180 / -2 LOC)
+- PR #33 squash merge commit: `beb74d9`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 2차 검증, 첫 mobile-only phase)**:
+
+- Interview: `interview_20260602_1822` — 4 round Socratic (helper 형태 + outcome shape + analytics 발화 위치 + 테스트 mock 레이어). Ambiguity **0.122** (Phase 4.5 0.123 와 비슷, mobile-only 표면이라 도메인 폭은 좁음).
+- Seed: `~/.ouroboros/seeds/seed_2aecdf435ed7_unit_6_1.yaml` (25 ACs / 6 ontology fields).
+- Run #1 (`orch_8af0ba7b7cd0`): **24/24 ACs (full)** — Phase 4.5에 이어 **2회 연속 full orchestrator 성공**.
+- **Q00#1202 UPSTREAM FIXED 재확인**: 최신 archive `NJXasZxUhG2vBDimZ65bN/lib/python3.12/site-packages/ouroboros/mcp/tools/execution_handlers.py:589` 동일 패턴 (`fat_harness_mode = execution_mode == "fat_harness"`). Phase 4.5 에서 회수한 upstream fix 가 새 archive 에도 그대로 보존됨.
+- Hybrid completion (**0 LOC manual code**): worktree 자산 (17 파일) → main repo branch `ooo/orch_8af0ba7b7cd0_manual` 로 copy → 실 4-gate → 모두 first try green.
+- **CI 회복: 0 round** — Phase 4.4 (1 round) / 4.5 (1 round) 보다도 개선. 첫 푸시에서 즉시 CI green.
+
+**Phase 4.5 비교 (orchestrator 안정화 지속 + CI fix 감소)**:
+| 측면 | Phase 4.5 | Phase 6.1 |
+|---|---|---|
+| Orchestrator 결과 | 20/20 (full) | **24/24 (full)** |
+| Manual completion | 0 LOC | **0 LOC** (재현) |
+| Ambiguity | 0.123 | 0.122 |
+| Surface | Python + TypeScript | **TypeScript only (mobile)** |
+| Q00#1202 상태 | upstream fixed (1차 검증) | **upstream fixed (2차 검증, 새 archive 에도 보존)** |
+| CI round | 1 | **0** |
+| 산출 합계 | 56 files / +5,793 LOC | 17 files / +2,180 LOC |
+| 테스트 증가 | +72 pytest + 12 mobile | **+46 mobile vitest (12 신규 파일)** |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- AsyncStorage persistence of rating-prompt-shown state — 재표시 억제는 SKStoreReviewController 가 OS-level 로 처리 (per Apple guideline, ≤3 prompts/year per app). Android Play In-App Review API도 자체 throttling.
+- `shouldDismissRating` guard change — Phase 2.4 funnel 의 routing logic 은 unchanged.
+- Re-display suppression / cooldown 메커니즘 — OS-level throttling 으로 충분.
+- Custom rating gate UI (별 5개 선택 등) — 시스템 prompt 의존, 별도 UI 없음.
+
+**Seed**: `~/.ouroboros/seeds/seed_2aecdf435ed7_unit_6_1.yaml` (v1.0.0, ambiguity 0.122)
 
 ## 참고
 
