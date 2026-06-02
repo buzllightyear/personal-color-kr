@@ -125,6 +125,7 @@
 | 5.x | — | — | | | |
 | 6.1 | 2026-06-02 | 2026-06-02 | `orch_8af0ba7b7cd0` + 0-LOC hybrid | `beb74d9` | CI PASS · **24/24 orch (full)** + worktree-harvest (0 LOC manual code; **0 CI rounds**) |
 | 6.2 | 2026-06-02 | 2026-06-02 | `orch_bc933521eebc` + 0-LOC hybrid | `f8ac886` | CI PASS · **18/18 orch (full)** + in-place harvest (0 LOC manual code; **0 CI rounds**) — ambiguity **0.0845** 최저 |
+| 6.3 | 2026-06-02 | 2026-06-02 | `orch_1bf9c122f569` + 1-LOC hybrid | `46efb11` | CI PASS · 10/17 orch (rate-limit halt) + in-place harvest (**1 LOC** manual: `datetime.utcnow` deprecation; **0 CI rounds**) — ambiguity 0.08 |
 | 6.x (rest) | — | — | | | |
 | 7.x | — | — | | | |
 
@@ -1475,6 +1476,68 @@ Tests (Phase 6.1 mobile 1153 → Phase 6.2 **1242** vitest, +89 신규; core-ts 
 - Snapshot tests — behavioral assertions only
 
 **Seed**: `~/.ouroboros/seeds/seed_dbe73ef38b50_unit_6_2.yaml` (v1.0.0, ambiguity 0.0845)
+
+### Phase 6.3 결과 요약 (2026-06-02)
+
+**산출물 (in-process latency 모니터링 + P95 alert — Python apps/api 단일 패키지)**:
+
+요청별 latency를 60s rolling window로 (method, path_template) 버킷별로 누적, nearest-rank P50/P95/P99 산출, transition-based alert (`request_slow_started` / `request_slow_recovered` 구조화 JSON 로그) + `GET /v1/metrics/latency` 인증 엔드포인트. Phase 7.2 Sentry/Datadog 같은 외부 모니터링은 별도 phase로 분리, 6.3은 in-process scope만.
+
+Backend Source (apps/api/src/api/):
+- `services/latency_aggregator.py` (NEW, 268 LOC): `LatencyAggregator` 클래스 + frozen `LatencyBucket` dataclass. `record(method, path_template, timestamp_ns, latency_ms)` → 버킷별 `deque(maxlen=1024)` 에 `(timestamp_ns, latency_ms)` 적재, lazy prune (insert 마다 60s 초과분 제거). `snapshot(now_ns)` → 모든 버킷의 현재 percentile + is_alerting 반환. `_evaluate_alert(bucket, threshold_ms)` → P95 > threshold AND sample_count ≥ 10 AND NOT was_alerting → emit `request_slow_started`, set was_alerting=True. 역방향도 동일 (`request_slow_recovered`). 단일 uvicorn worker + asyncio cooperative scheduling 가정 docstring에 명시.
+- `services/__init__.py` (NEW): public re-exports.
+- `schemas/latency.py` (NEW, 58 LOC): Pydantic v2 `LatencyMetricsResponse` (`buckets: list[LatencyBucketModel]`, `generated_at: str` ISO 8601, `window_seconds: int`, `threshold_ms: int`) + `LatencyBucketModel` (percentile fields `int | None`, `is_alerting: bool`).
+- `routers/metrics.py` (+158/-): `GET /v1/metrics/latency` 추가. `require_current_user` 인증. `request.app.state.latency_aggregator.snapshot()` 호출, response sort key `(path_template, method)`. `generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")` (Python 3.12 deprecation 회피).
+- `middleware/request_id.py` (+15/-): 응답 dispatch 끝에 `request.app.state.latency_aggregator.record(method, path_template, time.perf_counter_ns(), latency_ms)` 1줄 추가. 기존 `latency_ms` 로그 그대로 유지.
+- `main.py` (+8/-): `app.state.latency_aggregator = LatencyAggregator(window_seconds=60, threshold_ms=get_latency_alert_p95_threshold_ms())` startup 초기화.
+- `config/env.py` (+38/-): `get_latency_alert_p95_threshold_ms() -> int` 추가. `LATENCY_ALERT_P95_THRESHOLD_MS` env, default 500, positive int validation (raise `ValueError` if non-positive or non-numeric).
+
+Tests (Phase 4.5 279 → Phase 6.3 **334** pytest, +55 신규):
+- 6개 신규 unit test 파일: `test_latency_aggregator.py` (22 tests — percentile 정확도, rolling window prune, deque maxlen, empty bucket null), `test_latency_aggregator_app_state.py` (4 tests — `app.state` lifecycle), `test_latency_alert_trigger.py` (10 tests — transition dedup, recovery, insufficient samples no-op), `test_latency_endpoint.py` (5 tests — schema shape, percentile projection, is_alerting bit), `test_latency_env.py` (10 tests — default, valid int, ValueError on invalid), `test_metrics_latency_endpoint.py` (5 tests — auth 401, routed vs unmatched path_template, schema 통합).
+
+**4중 정합 (local pre-push)**:
+- `python -m pytest -q apps/api` → **334 passed, 32 skipped** (integration tier, DATABASE_URL_TEST 미설정)
+- `python -m mypy --strict apps/api/src` → **no issues found in 54 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **126 files unchanged**
+- CI (Test Node 20 / Python 3.12) → **PASS** (typecheck + vitest + pytest), 2m18s + 2m22s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/orch_1bf9c122f569_manual` (auto-deleted post-merge)
+- 핵심 commit: 13 files (Mobile/core-ts unchanged)
+- PR #37 squash merge commit: `46efb11`
+
+**Ouroboros workflow (rate-limit halt + harvest 패턴 첫 검증)**:
+
+- Interview: `interview_20260602_124736` — 5 round Socratic (window strategy / alert mechanism / 엔드포인트 contract / memory bounds / 알고리듬 + AC enum). **Ambiguity 0.08** — Phase 6.2 0.0845 동률, 단일 패키지 Python으로 가장 명확.
+- Seed: `~/.ouroboros/seeds/seed_e92876254f31_unit_6_3.yaml` (17 ACs / 19 constraints / 15 ontology fields / 6 evaluation principles / 5 exit conditions).
+- Run #1 (`orch_1bf9c122f569`): **10/17 ACs 후 rate-limit으로 fail**. 하지만 모든 코드 작성은 완료 상태 (테스트 파일 6개 + service + schema + middleware/router 수정). AC 평가 단계에서 limit hit.
+- **Q00#1202 UPSTREAM FIXED 4차 검증**: archive `NJXasZxUhG2vBDimZ65bN` 동일.
+- Harvest 패턴 변화: in-place 작성 → branch 분기 → 실 4-gate. **1 LOC manual fix** (`datetime.utcnow()` deprecation, Python 3.12 warning). 첫 시도 4-gate green.
+- **CI 회복: 0 round** — Phase 6.1/6.2에 이어 3회 연속 zero-recovery.
+
+**Phase 6.2 비교 (rate-limit 회복 + Python 안정화)**:
+| 측면 | Phase 6.2 | Phase 6.3 |
+|---|---|---|
+| Orchestrator 결과 | 18/18 (full) | **10/17 (rate-limit halt)** |
+| Manual completion | 0 LOC | **1 LOC** (deprecation only) |
+| Ambiguity | 0.0845 | **0.08** (최저 동률) |
+| Surface | mobile + core-ts | **Python only (apps/api)** |
+| Q00#1202 상태 | upstream fixed (3차 검증) | **upstream fixed (4차 검증)** |
+| CI round | 0 | **0** (3회 연속 zero-recovery) |
+| 산출 합계 | 14 files / +3,307 LOC | 13 files / ~1,400 LOC (Python source 268 + 시그니처 + tests) |
+| 테스트 증가 | +89 mobile + 18 core-ts | **+55 pytest** |
+| 실행 구조 | 6-level (18 AC × Sub-AC 3) | 5-level (17 AC) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- External monitoring services (Sentry, Datadog, Prometheus, OpenTelemetry) — **Phase 7.2**
+- Distributed tracing — Phase 7.2+
+- Cross-worker aggregation — single uvicorn worker MVP
+- Slack/email/PagerDuty paging — Phase 7.2+
+- Database query latency tracking — out of scope
+- Admin-only auth gate — Phase 7.x
+
+**Seed**: `~/.ouroboros/seeds/seed_e92876254f31_unit_6_3.yaml` (v1.0.0, ambiguity 0.08)
 
 ## 참고
 
