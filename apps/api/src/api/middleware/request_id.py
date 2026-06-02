@@ -33,6 +33,47 @@ REQUEST_ID_HEADER: str = "X-Request-ID"
 #: under a single root.
 _LOGGER_NAME: str = "apps.api"
 
+#: Sentinel ``path_template`` for requests that never matched a route
+#: (404s, raw 405s). Keeps latency-bucket cardinality bounded to the static
+#: route set plus this one extra key.
+_UNMATCHED_PATH_TEMPLATE: str = "<unmatched>"
+
+
+def _extract_path_template(request: Request) -> str:
+    """Return the matched route template, or the unmatched sentinel.
+
+    Starlette populates ``scope["route"]`` once the request has been routed
+    (which has happened by the time ``call_next`` returns). Using the
+    template (``/v1/users/{user_id}``) rather than the raw path keeps the
+    latency aggregator's bucket cardinality bounded to the static route set.
+    """
+    route = request.scope.get("route")
+    template = getattr(route, "path", None)
+    if isinstance(template, str) and template:
+        return template
+    return _UNMATCHED_PATH_TEMPLATE
+
+
+def _record_latency_sample(
+    request: Request,
+    duration_ms: float,
+    timestamp_ns: int,
+) -> None:
+    """Feed one sample to the app-state latency aggregator, if present.
+
+    Defensive ``getattr``: an app constructed without the aggregator (older
+    test fixtures) simply skips sampling rather than raising mid-request.
+    """
+    aggregator = getattr(request.app.state, "latency_aggregator", None)
+    if aggregator is None:
+        return
+    aggregator.record(
+        request.method,
+        _extract_path_template(request),
+        duration_ms,
+        timestamp_ns,
+    )
+
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     """Attach a UUID4 request_id to every request + response.
@@ -73,7 +114,9 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
             )
             raise
 
-        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
+        end_ns = time.perf_counter_ns()
+        duration_ms = (end_ns - start_ns) / 1_000_000
+        _record_latency_sample(request, round(duration_ms, 3), end_ns)
         response.headers[REQUEST_ID_HEADER] = request_id_str
         logging.getLogger(_LOGGER_NAME).info(
             "request_completed",

@@ -286,6 +286,53 @@ def require_referral_base_url() -> str:
     return value
 
 
+# ---------------------------------------------------------------------------
+# Phase 7.1 — in-process latency monitoring threshold
+# (LATENCY_ALERT_P95_THRESHOLD_MS)
+# ---------------------------------------------------------------------------
+# The in-process latency aggregator (``api.services.latency_aggregator``)
+# fires a transition-based P95 alert when a route bucket's rolling-window
+# P95 latency crosses this threshold. Unlike the fail-fast ``require_*``
+# secrets above, this knob has a *sensible default* (500 ms): a missing,
+# empty, or malformed value must NOT crash the app — latency monitoring is
+# an observability aid, not a hard dependency. The getter therefore always
+# returns a positive ``int``, falling back to the default for any
+# unparseable / non-positive input.
+
+#: Default P95 alert threshold (milliseconds) when the env var is unset,
+#: empty, or malformed. Sensible-default, never fail-fast.
+DEFAULT_LATENCY_ALERT_P95_THRESHOLD_MS: Final[int] = 500
+
+
+def get_latency_alert_p95_threshold_ms() -> int:
+    """Return the P95 alert threshold in ms (default 500, never raises).
+
+    Reads ``LATENCY_ALERT_P95_THRESHOLD_MS`` from the environment (after
+    loading the root ``.env`` once). Any value that is unset, empty,
+    non-integer, or non-positive falls back to
+    :data:`DEFAULT_LATENCY_ALERT_P95_THRESHOLD_MS` (500). This mirrors the
+    Seed constraint that the threshold is a *sensible default*, not a
+    fail-fast secret — a misconfigured monitoring knob must never take the
+    API down.
+
+    Returns
+    -------
+    int
+        A strictly-positive threshold in milliseconds.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("LATENCY_ALERT_P95_THRESHOLD_MS")
+    if value is None or value == "":
+        return DEFAULT_LATENCY_ALERT_P95_THRESHOLD_MS
+    try:
+        parsed = int(value)
+    except ValueError:
+        return DEFAULT_LATENCY_ALERT_P95_THRESHOLD_MS
+    if parsed <= 0:
+        return DEFAULT_LATENCY_ALERT_P95_THRESHOLD_MS
+    return parsed
+
+
 def get_posthog_project_id() -> str | None:
     """Return ``POSTHOG_PROJECT_ID`` from env, or ``None`` if unset/empty.
 

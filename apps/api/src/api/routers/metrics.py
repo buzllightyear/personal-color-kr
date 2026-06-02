@@ -33,9 +33,10 @@ this calculation.
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta, timezone
+from time import perf_counter_ns
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from api.db.models.user import User
 from api.db.repositories.events_repository import (
@@ -44,7 +45,9 @@ from api.db.repositories.events_repository import (
 )
 from api.db.session import AsyncSession, get_session
 from api.dependencies.auth import require_current_user
+from api.schemas.latency import LatencyBucketModel, LatencyMetricsResponse
 from api.schemas.metrics import RetentionMetricsResponse
+from api.services.latency_aggregator import LatencyAggregator
 from retention.api import get_retention_metrics
 
 #: Router hosting ``GET /v1/metrics/retention``. The ``/v1`` prefix is
@@ -154,6 +157,52 @@ async def get_retention(
         threshold_value=data["threshold"],
         threshold_met=data["meets_threshold"],
         computed_at=datetime.now(timezone.utc),
+    )
+
+
+@router.get(
+    "/metrics/latency",
+    response_model=LatencyMetricsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Real-time in-process request latency percentiles",
+    description=(
+        "Returns P50/P95/P99 latency percentiles over a 60-second rolling "
+        "window per (method, path_template) bucket, plus each bucket's live "
+        "P95 alert state. Percentiles are null until a bucket has at least "
+        "10 in-window samples. Reads the in-process aggregator on "
+        "``app.state`` — no database access. Requires a valid backend JWT."
+    ),
+)
+async def get_latency(
+    request: Request,
+    current_user: User = Depends(require_current_user),
+) -> LatencyMetricsResponse:
+    """Project the in-process latency aggregator snapshot onto the wire model.
+
+    The aggregator lives on ``request.app.state.latency_aggregator`` (set by
+    :func:`api.main.create_app`). Reading it is a pure in-memory operation:
+    :meth:`LatencyAggregator.snapshot` lazily prunes each bucket's rolling
+    window to the last 60 seconds, then computes nearest-rank percentiles.
+    """
+    aggregator: LatencyAggregator = request.app.state.latency_aggregator
+    buckets = aggregator.snapshot(perf_counter_ns())
+    return LatencyMetricsResponse(
+        # Seed-pinned format: UTC isoformat with an explicit ``Z`` suffix.
+        generated_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        window_seconds=aggregator.window_seconds,
+        threshold_ms=aggregator.threshold_ms,
+        buckets=[
+            LatencyBucketModel(
+                method=bucket.method,
+                path_template=bucket.path_template,
+                sample_count=bucket.sample_count,
+                p50_ms=bucket.p50_ms,
+                p95_ms=bucket.p95_ms,
+                p99_ms=bucket.p99_ms,
+                is_alerting=bucket.is_alerting,
+            )
+            for bucket in buckets
+        ],
     )
 
 

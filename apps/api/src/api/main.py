@@ -17,8 +17,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from api.config.env import get_latency_alert_p95_threshold_ms
 from api.config.logging import configure_json_logging
 from api.middleware.request_id import RequestIdMiddleware
+from api.services.latency_aggregator import LatencyAggregator
 from api.routers import auth as auth_router
 from api.routers import diagnose as diagnose_router
 from api.routers import events as events_router
@@ -63,6 +65,15 @@ def create_app() -> FastAPI:
         docs_url=None,
         redoc_url=None,
         openapi_url="/openapi.json",
+    )
+
+    # Phase 7.1 — in-process latency aggregator shared via ``app.state``
+    # (never a module-level global). The request_id middleware feeds it one
+    # sample per completed request; ``GET /v1/metrics/latency`` reads it. The
+    # P95 alert threshold comes from ``LATENCY_ALERT_P95_THRESHOLD_MS`` (env,
+    # sensible-default 500ms — never fail-fast).
+    app.state.latency_aggregator = LatencyAggregator(
+        threshold_ms=get_latency_alert_p95_threshold_ms(),
     )
 
     # Register the request_id middleware (AC16) — single source of the
