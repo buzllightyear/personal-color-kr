@@ -171,9 +171,7 @@ export function ctaMicrocopyFor(season: Season): string {
 //                 blurb" format mirroring Python _format_recommendation_item.
 // ---------------------------------------------------------------------------
 
-export const RESULT_WORDING_CATALOG: Readonly<
-  Record<Season, ResultWordingEntry>
-> = {
+export const RESULT_WORDING_CATALOG: Readonly<Record<Season, ResultWordingEntry>> = {
   'spring-warm': {
     season: 'spring-warm',
     categoryLine: '당신은 봄 웜톤입니다.',

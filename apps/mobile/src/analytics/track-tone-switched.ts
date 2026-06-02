@@ -83,11 +83,7 @@ import type { PostHog } from 'posthog-react-native';
  * `DiagnosisResult` through PostHog into downstream BI — keeping the
  * literal identical avoids a translation layer.
  */
-export type Season =
-  | 'spring-warm'
-  | 'summer-cool'
-  | 'autumn-warm'
-  | 'winter-cool';
+export type Season = 'spring-warm' | 'summer-cool' | 'autumn-warm' | 'winter-cool';
 
 /**
  * Structured payload for every `tone_switched` event. Shaped to match

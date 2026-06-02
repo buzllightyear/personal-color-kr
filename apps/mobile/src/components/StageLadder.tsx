@@ -157,12 +157,11 @@ export interface StageLadderProps {
  * stage reads as "✓ 얼굴 인식", matching the Phase-6.2 AC that the done marker is
  * a "checkmark prefix (U+2713 space)".
  */
-const STATE_GLYPH: Readonly<Record<StageLadderItemState, string>> =
-  Object.freeze({
-    pending: '○',
-    active: '●',
-    done: '✓ ',
-  });
+const STATE_GLYPH: Readonly<Record<StageLadderItemState, string>> = Object.freeze({
+  pending: '○',
+  active: '●',
+  done: '✓ ',
+});
 
 /**
  * Normalise the tolerant {@link StageLadderItem} shape into a single
@@ -234,9 +233,7 @@ export function StageLadder(props: StageLadderProps): React.ReactElement {
       {progress !== undefined ? (
         <View style={styles.meter} testID={`${testIDPrefix}-meter`}>
           <View style={styles.meterTrack}>
-            <View
-              style={[styles.meterFill, { width: `${clampPercent(progress)}%` }]}
-            />
+            <View style={[styles.meterFill, { width: `${clampPercent(progress)}%` }]} />
           </View>
           <Text
             style={styles.progressText}
@@ -295,9 +292,10 @@ function glyphStyleFor(state: StageLadderItemState): { color: string } {
  * (`TYPOGRAPHY.body.regular`), so only `active` overrides the inherited
  * `fontWeight`; `done` / `pending` keep the regular weight implicitly.
  */
-function labelStyleFor(
-  state: StageLadderItemState,
-): { color: string; fontWeight?: FontWeightNumeric } {
+function labelStyleFor(state: StageLadderItemState): {
+  color: string;
+  fontWeight?: FontWeightNumeric;
+} {
   if (state === 'active') {
     return {
       color: COLORS.base.coral,

@@ -85,9 +85,7 @@ interface MockGateway extends PaymentGateway {
   };
 }
 
-function makeMockGateway(
-  override: Partial<CheckoutHandoffResult> = {},
-): MockGateway {
+function makeMockGateway(override: Partial<CheckoutHandoffResult> = {}): MockGateway {
   const initiate = vi.fn(
     (req: CheckoutHandoffRequest): CheckoutHandoffResult =>
       Object.freeze({
@@ -101,10 +99,12 @@ function makeMockGateway(
   return { initiate };
 }
 
-function makeOrchestrator(opts: {
-  sink?: ReturnType<typeof makeMockSink>;
-  gateway?: MockGateway;
-} = {}) {
+function makeOrchestrator(
+  opts: {
+    sink?: ReturnType<typeof makeMockSink>;
+    gateway?: MockGateway;
+  } = {},
+) {
   const sink = opts.sink ?? makeMockSink();
   const gateway = opts.gateway ?? makeMockGateway();
   const orchestrator = createFunnelOrchestrator({
@@ -384,9 +384,7 @@ describe('orchestrator.abandon', () => {
     expect(orchestrator.currentScreen).toBeNull();
     expect(orchestrator.progress.isAbandoned).toBe(true);
 
-    const drop = sink.captured.find(
-      (e): e is StepDropEvent => e.type === 'step_drop',
-    );
+    const drop = sink.captured.find((e): e is StepDropEvent => e.type === 'step_drop');
     expect(drop).toBeDefined();
     expect(drop?.stepId).toBe('value_props');
     expect(drop?.stepNumber).toBe(2);
@@ -397,9 +395,7 @@ describe('orchestrator.abandon', () => {
     const { orchestrator, sink } = makeOrchestrator();
     orchestrator.start();
     orchestrator.abandon();
-    const drop = sink.captured.find(
-      (e): e is StepDropEvent => e.type === 'step_drop',
-    );
+    const drop = sink.captured.find((e): e is StepDropEvent => e.type === 'step_drop');
     expect(drop?.reason).toBe('user_abandon');
   });
 
@@ -418,9 +414,7 @@ describe('orchestrator.triggerPayment', () => {
     const { orchestrator, gateway } = makeOrchestrator();
     orchestrator.start();
     // Still on welcome_hook (step 1)
-    expect(() => orchestrator.triggerPayment('annual')).toThrow(
-      CheckoutGuardError,
-    );
+    expect(() => orchestrator.triggerPayment('annual')).toThrow(CheckoutGuardError);
     expect(gateway.initiate).not.toHaveBeenCalled();
   });
 

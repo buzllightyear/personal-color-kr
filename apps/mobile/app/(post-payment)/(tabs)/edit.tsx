@@ -40,10 +40,7 @@ export default function EditTab(): React.ReactElement {
   return (
     <View style={styles.container} testID="post-payment-tab-edit">
       <ToneSwitcher />
-      <Text
-        style={styles.categoryLine}
-        testID="post-payment-tab-edit-category-line"
-      >
+      <Text style={styles.categoryLine} testID="post-payment-tab-edit-category-line">
         {data.categoryLine}
       </Text>
       <Image
@@ -53,10 +50,7 @@ export default function EditTab(): React.ReactElement {
       />
       <Text style={styles.caption}>{data.caption}</Text>
       <Text style={styles.vendor}>by {data.vendorName}</Text>
-      <Text
-        style={styles.ctaMicrocopy}
-        testID="post-payment-tab-edit-cta-microcopy"
-      >
+      <Text style={styles.ctaMicrocopy} testID="post-payment-tab-edit-cta-microcopy">
         {data.ctaMicrocopy}
       </Text>
       <Pressable

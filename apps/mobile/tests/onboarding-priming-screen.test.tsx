@@ -54,8 +54,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -83,7 +82,9 @@ describe('OnboardingPrimingScreen — render', () => {
     );
     expect(findHostByTestId(tree, 'onboarding-priming-q1-option-natural')).toBeTruthy();
     expect(findHostByTestId(tree, 'onboarding-priming-q1-option-subtle')).toBeTruthy();
-    expect(findHostByTestId(tree, 'onboarding-priming-q1-option-expressive')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'onboarding-priming-q1-option-expressive'),
+    ).toBeTruthy();
   });
 
   it('renders Q2 with 3 prior-diagnosis options', () => {
@@ -96,8 +97,12 @@ describe('OnboardingPrimingScreen — render', () => {
       }),
     );
     expect(findHostByTestId(tree, 'onboarding-priming-q2-option-never')).toBeTruthy();
-    expect(findHostByTestId(tree, 'onboarding-priming-q2-option-self-test')).toBeTruthy();
-    expect(findHostByTestId(tree, 'onboarding-priming-q2-option-professional')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'onboarding-priming-q2-option-self-test'),
+    ).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'onboarding-priming-q2-option-professional'),
+    ).toBeTruthy();
   });
 });
 
@@ -112,7 +117,10 @@ describe('OnboardingPrimingScreen — interaction', () => {
         onNext: NO_OP,
       }),
     );
-    const naturalOption = findHostByTestId(tree, 'onboarding-priming-q1-option-natural');
+    const naturalOption = findHostByTestId(
+      tree,
+      'onboarding-priming-q1-option-natural',
+    );
     const onPress = naturalOption?.props.onPress as () => void;
     act(() => onPress());
     expect(onSelect).toHaveBeenCalledWith('natural');
@@ -147,9 +155,16 @@ describe('OnboardingPrimingScreen — interaction', () => {
       }),
     );
     const subtleOption = findHostByTestId(tree, 'onboarding-priming-q1-option-subtle');
-    const naturalOption = findHostByTestId(tree, 'onboarding-priming-q1-option-natural');
-    expect((subtleOption?.props.accessibilityState as { selected: boolean }).selected).toBe(true);
-    expect((naturalOption?.props.accessibilityState as { selected: boolean }).selected).toBe(false);
+    const naturalOption = findHostByTestId(
+      tree,
+      'onboarding-priming-q1-option-natural',
+    );
+    expect(
+      (subtleOption?.props.accessibilityState as { selected: boolean }).selected,
+    ).toBe(true);
+    expect(
+      (naturalOption?.props.accessibilityState as { selected: boolean }).selected,
+    ).toBe(false);
   });
 });
 
@@ -164,7 +179,9 @@ describe('OnboardingPrimingScreen — submit gating', () => {
       }),
     );
     const submit = findHostByTestId(tree, 'onboarding-priming-submit');
-    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(true);
+    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      true,
+    );
   });
 
   it('submit CTA is disabled when only Q1 is answered', () => {
@@ -177,7 +194,9 @@ describe('OnboardingPrimingScreen — submit gating', () => {
       }),
     );
     const submit = findHostByTestId(tree, 'onboarding-priming-submit');
-    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(true);
+    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      true,
+    );
   });
 
   it('submit CTA is enabled when both answers are non-null', () => {
@@ -190,7 +209,9 @@ describe('OnboardingPrimingScreen — submit gating', () => {
       }),
     );
     const submit = findHostByTestId(tree, 'onboarding-priming-submit');
-    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(false);
+    expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      false,
+    );
   });
 
   it('submit CTA invokes onNext when pressed in enabled state', () => {

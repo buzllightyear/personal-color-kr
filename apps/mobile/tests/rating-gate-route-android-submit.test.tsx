@@ -48,11 +48,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // below (themselves hoisted above the SUT import) can close over them.
 // ---------------------------------------------------------------------------
 const helperSpies = vi.hoisted(() => ({
-  requestStoreReview: vi.fn(() => Promise.resolve({
-    attempted: true,
-    available: true,
-    platform: 'android' as const,
-  })),
+  requestStoreReview: vi.fn(() =>
+    Promise.resolve({
+      attempted: true,
+      available: true,
+      platform: 'android' as const,
+    }),
+  ),
 }));
 
 const routerSpies = vi.hoisted(() => ({
@@ -156,8 +158,7 @@ describe('rating-gate route — Android secondary variant submit', () => {
     // Ordering: requestStoreReview is dispatched BEFORE navigation ("calls
     // requestStoreReview then navigates"). invocationCallOrder is a strictly
     // increasing global counter across all vitest spies.
-    const dispatchOrder =
-      helperSpies.requestStoreReview.mock.invocationCallOrder[0];
+    const dispatchOrder = helperSpies.requestStoreReview.mock.invocationCallOrder[0];
     const navOrder = routerSpies.push.mock.invocationCallOrder[0];
     expect(dispatchOrder).toBeDefined();
     expect(navOrder).toBeDefined();

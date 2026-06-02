@@ -90,11 +90,7 @@ export class PostHogClientError extends Error {
   public readonly reason: PostHogClientErrorReason;
   public override readonly cause?: unknown;
 
-  constructor(
-    reason: PostHogClientErrorReason,
-    message: string,
-    cause?: unknown,
-  ) {
+  constructor(reason: PostHogClientErrorReason, message: string, cause?: unknown) {
     super(message);
     this.reason = reason;
     if (cause !== undefined) {

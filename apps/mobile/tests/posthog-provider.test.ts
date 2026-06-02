@@ -146,10 +146,9 @@ describe('PostHogProvider — singleton client construction', () => {
 
     // Argument-shape assertion: apiKey is positional arg 0, host travels
     // inside the options object as `options.host`.
-    expect(postHogConstructor).toHaveBeenCalledWith(
-      'phc_test_provider_key',
-      { host: 'https://us.i.posthog.com' },
-    );
+    expect(postHogConstructor).toHaveBeenCalledWith('phc_test_provider_key', {
+      host: 'https://us.i.posthog.com',
+    });
 
     // The bootstrap returned the constructed instance (not null).
     expect(client).not.toBeNull();

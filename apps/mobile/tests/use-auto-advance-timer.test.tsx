@@ -58,9 +58,7 @@ describe('useAutoAdvanceTimer', () => {
   it('fires onElapsed exactly once after durationMs', () => {
     const onElapsed = vi.fn();
     act(() => {
-      TestRenderer.create(
-        React.createElement(Probe, { durationMs: 5_000, onElapsed }),
-      );
+      TestRenderer.create(React.createElement(Probe, { durationMs: 5_000, onElapsed }));
     });
 
     expect(onElapsed).not.toHaveBeenCalled();
@@ -142,9 +140,7 @@ describe('useAutoAdvanceTimer', () => {
     // Re-render with a new duration. The previous timer (which would have
     // fired in 2_000ms more) must be cleared; a fresh 10_000ms timer starts.
     act(() => {
-      tree?.update(
-        React.createElement(Probe, { durationMs: 10_000, onElapsed }),
-      );
+      tree?.update(React.createElement(Probe, { durationMs: 10_000, onElapsed }));
     });
 
     // 2_000ms more would have fired the original 5_000ms timer — assert it

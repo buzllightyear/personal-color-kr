@@ -81,9 +81,7 @@ import {
  * `FunnelCtaAction` union; intentionally enumerated here so a future new
  * action type fails the compile until orchestrator semantics are decided.
  */
-const ADVANCE_ACTIONS: ReadonlySet<FunnelCta['action']> = new Set<
-  FunnelCta['action']
->([
+const ADVANCE_ACTIONS: ReadonlySet<FunnelCta['action']> = new Set<FunnelCta['action']>([
   'advance',
   'submit_rating',
   'select_scan_personal_color',
@@ -194,22 +192,15 @@ function ctaForPlan(plan: PaymentPlanId): FunnelCta {
   if (!cta) {
     // Defensive: should be impossible because both CTAs are registered in
     // screens.ts and the type system rejects plans outside monthly|annual.
-    throw new Error(
-      `payment_model screen is missing CTA for plan "${plan}"`,
-    );
+    throw new Error(`payment_model screen is missing CTA for plan "${plan}"`);
   }
   return cta;
 }
 
-function findCtaOnScreen(
-  screen: FunnelScreen,
-  cta: FunnelCta,
-): FunnelCta | undefined {
+function findCtaOnScreen(screen: FunnelScreen, cta: FunnelCta): FunnelCta | undefined {
   return screen.ctas.find(
     (c) =>
-      c.action === cta.action &&
-      c.variant === cta.variant &&
-      c.label === cta.label,
+      c.action === cta.action && c.variant === cta.variant && c.label === cta.label,
   );
 }
 

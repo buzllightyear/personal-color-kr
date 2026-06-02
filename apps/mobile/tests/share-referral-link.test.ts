@@ -30,10 +30,7 @@ describe('shareReferralLink — happy path', () => {
     });
 
     expect(present).toHaveBeenCalledTimes(1);
-    expect(present).toHaveBeenCalledWith(
-      'kakao',
-      'https://pcolor.example/r/abc12345',
-    );
+    expect(present).toHaveBeenCalledWith('kakao', 'https://pcolor.example/r/abc12345');
     expect(result).toEqual({
       shared: true,
       shareUrl: 'https://pcolor.example/r/abc12345',

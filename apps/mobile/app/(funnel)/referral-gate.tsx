@@ -75,10 +75,7 @@ export default function ReferralGateRoute(): React.ReactElement {
   // the share handlers share a single instance. The backend JWT is supplied
   // by the auth-session store once wired; until then the request degrades
   // silently (the share gate is soft) and navigation is always preserved.
-  const referralMeTransport = React.useMemo(
-    () => createReferralMeTransport(),
-    [],
-  );
+  const referralMeTransport = React.useMemo(() => createReferralMeTransport(), []);
   // `usePostHog()` returns `PostHog | undefined`. The `undefined` branch is
   // the documented degraded-mode contract (no api key in `.env` → provider
   // renders a fragment, no context value). The track helpers below

@@ -56,8 +56,7 @@ export interface TrackRatingPromptCompletedPayload {
  * against the constant rather than a duplicated string literal — any rename
  * becomes a single-point compile-time change.
  */
-export const RATING_PROMPT_COMPLETED_EVENT_NAME =
-  'rating_prompt_completed' as const;
+export const RATING_PROMPT_COMPLETED_EVENT_NAME = 'rating_prompt_completed' as const;
 
 /**
  * Capture the PostHog `rating_prompt_completed` event.

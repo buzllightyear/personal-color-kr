@@ -161,7 +161,9 @@ describe('ResultRevealScreen — locked assets', () => {
     expect(
       findHostByTestId(tree, 'result-reveal-locked-asset-full-category-card'),
     ).toBeTruthy();
-    expect(findHostByTestId(tree, 'result-reveal-locked-asset-guide-text')).toBeTruthy();
+    expect(
+      findHostByTestId(tree, 'result-reveal-locked-asset-guide-text'),
+    ).toBeTruthy();
     expect(
       findHostByTestId(tree, 'result-reveal-locked-asset-first-curation'),
     ).toBeTruthy();
@@ -176,19 +178,13 @@ describe('ResultRevealScreen — locked assets', () => {
       }),
     );
     expect(
-      findHostByTestId(
-        tree,
-        'result-reveal-locked-asset-full-category-card-hero-card',
-      ),
+      findHostByTestId(tree, 'result-reveal-locked-asset-full-category-card-hero-card'),
     ).toBeTruthy();
     expect(
       findHostByTestId(tree, 'result-reveal-locked-asset-guide-text-text-stack'),
     ).toBeTruthy();
     expect(
-      findHostByTestId(
-        tree,
-        'result-reveal-locked-asset-first-curation-grid-2x2',
-      ),
+      findHostByTestId(tree, 'result-reveal-locked-asset-first-curation-grid-2x2'),
     ).toBeTruthy();
   });
 

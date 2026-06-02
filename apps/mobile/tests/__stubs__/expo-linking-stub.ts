@@ -43,6 +43,9 @@ export function createURL(path: string): string {
   return path;
 }
 
-export function parse(url: string): { path: string | null; queryParams: Record<string, string> } {
+export function parse(url: string): {
+  path: string | null;
+  queryParams: Record<string, string>;
+} {
   return { path: url, queryParams: {} };
 }

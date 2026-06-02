@@ -77,7 +77,10 @@ describe('trackSocialEvolutionSkipped (Phase 2.6 — real PostHog capture wiring
     // string literal `'social_evolution_skipped'` so a rename in the SUT
     // triggers a compile-time / test-time failure here instead of silently
     // diverging from the PostHog dashboard's funnel definition.
-    expect(captureFn).toHaveBeenCalledWith(SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME, payload);
+    expect(captureFn).toHaveBeenCalledWith(
+      SOCIAL_EVOLUTION_SKIPPED_EVENT_NAME,
+      payload,
+    );
 
     // Belt-and-braces literal check: the constant MUST equal the exact
     // snake_case string the PostHog dashboard funnel is keyed on. This
@@ -92,9 +95,7 @@ describe('trackSocialEvolutionSkipped (Phase 2.6 — real PostHog capture wiring
     // `usePostHog()`. The helper MUST swallow this and do nothing — no
     // throw, no `console.log`/`.warn`/`.error`, zero captures recorded.
     const captureFn = vi.fn();
-    const consoleLogSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined);
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleWarnSpy = vi
       .spyOn(console, 'warn')
       .mockImplementation(() => undefined);

@@ -117,7 +117,16 @@ function isAcceptableSemverRange(spec: string): boolean {
   if (disallowedExact.has(spec.trim().toLowerCase())) return false;
 
   // Reject any non-registry resolver protocol.
-  const disallowedPrefixes = ['file:', 'link:', 'github:', 'git+', 'git:', 'http:', 'https:', 'workspace:'];
+  const disallowedPrefixes = [
+    'file:',
+    'link:',
+    'github:',
+    'git+',
+    'git:',
+    'http:',
+    'https:',
+    'workspace:',
+  ];
   for (const prefix of disallowedPrefixes) {
     if (spec.startsWith(prefix)) return false;
   }
@@ -167,18 +176,24 @@ describe('apps/mobile/package.json — @superwall/react-native-superwall declara
     const manifest = readManifest();
     const deps = manifest.dependencies as Record<string, unknown>;
 
-    expect(Object.prototype.hasOwnProperty.call(deps, SUPERWALL_DEPENDENCY_KEY)).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(deps, SUPERWALL_DEPENDENCY_KEY)).toBe(
+      true,
+    );
 
     // Regression guard: must NOT be in devDependencies — the wrapper
     // module imports it at runtime, so a dev-only listing would crash
     // the bundle at app launch.
     const devDeps = (manifest.devDependencies ?? {}) as Record<string, unknown>;
-    expect(Object.prototype.hasOwnProperty.call(devDeps, SUPERWALL_DEPENDENCY_KEY)).toBe(false);
+    expect(
+      Object.prototype.hasOwnProperty.call(devDeps, SUPERWALL_DEPENDENCY_KEY),
+    ).toBe(false);
 
     // And not in peerDependencies — this app is the consumer, not a
     // library that expects a host to provide the SDK.
     const peerDeps = (manifest.peerDependencies ?? {}) as Record<string, unknown>;
-    expect(Object.prototype.hasOwnProperty.call(peerDeps, SUPERWALL_DEPENDENCY_KEY)).toBe(false);
+    expect(
+      Object.prototype.hasOwnProperty.call(peerDeps, SUPERWALL_DEPENDENCY_KEY),
+    ).toBe(false);
   });
 
   it('declares a non-empty string semver range (no protocol/dist-tag aliases)', () => {

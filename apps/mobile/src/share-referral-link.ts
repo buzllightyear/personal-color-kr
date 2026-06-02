@@ -27,10 +27,7 @@
  *   navigates onward. `shareReferralLink` therefore swallows errors and
  *   reports success/failure via its boolean result instead of throwing.
  */
-import {
-  fetchReferralMe,
-  type ReferralMeTransport,
-} from './fetch-referral-me';
+import { fetchReferralMe, type ReferralMeTransport } from './fetch-referral-me';
 import type { ReferralShareMethod } from './analytics/track-referral-shared';
 
 /**

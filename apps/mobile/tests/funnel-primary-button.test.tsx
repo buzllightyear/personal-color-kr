@@ -36,10 +36,8 @@ import { describe, expect, it, vi } from 'vitest';
 // inspect resolved styles.
 vi.mock('react-native', async () => {
   const reactActual: any = await vi.importActual('react');
-  const makeHost =
-    (label: string) =>
-    (props: any) =>
-      reactActual.createElement(label, props, props?.children);
+  const makeHost = (label: string) => (props: any) =>
+    reactActual.createElement(label, props, props?.children);
   return {
     View: makeHost('View'),
     Text: makeHost('Text'),
@@ -83,8 +81,7 @@ function makeQuery(tree: TestRenderer.ReactTestRenderer) {
     // (the wrapper FC + the rendered host); the host node carries the
     // real onPress/disabled props we want to assert against.
     const matches = root.findAll(
-      (node) =>
-        typeof node.type === 'string' && node.props?.testID === testID,
+      (node) => typeof node.type === 'string' && node.props?.testID === testID,
     );
     return (matches[0] as unknown as TestInstance) ?? null;
   };
@@ -156,9 +153,7 @@ describe('FunnelPrimaryButton — render', () => {
         onPress: vi.fn(),
       }),
     );
-    expect(
-      result.queryByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID),
-    ).not.toBeNull();
+    expect(result.queryByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID)).not.toBeNull();
   });
 
   it('honours a caller-supplied testID (screen-scoped naming convention)', () => {
@@ -171,9 +166,7 @@ describe('FunnelPrimaryButton — render', () => {
     );
     expect(result.queryByTestId('welcome-hook-cta')).not.toBeNull();
     // Default sentinel must NOT also be present — the caller's value wins.
-    expect(
-      result.queryByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID),
-    ).toBeNull();
+    expect(result.queryByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID)).toBeNull();
   });
 });
 
@@ -227,9 +220,7 @@ describe('FunnelPrimaryButton — onPress wiring', () => {
         disabled: true,
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     expect(pressable.props.disabled).toBe(true);
   });
 
@@ -240,9 +231,7 @@ describe('FunnelPrimaryButton — onPress wiring', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     expect(pressable.props.disabled).toBe(false);
   });
 });
@@ -255,9 +244,7 @@ describe('FunnelPrimaryButton — accessibility', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     expect(pressable.props.accessibilityRole).toBe('button');
   });
 
@@ -268,9 +255,7 @@ describe('FunnelPrimaryButton — accessibility', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     expect(pressable.props.accessibilityLabel).toBe('시작하기');
   });
 
@@ -282,9 +267,7 @@ describe('FunnelPrimaryButton — accessibility', () => {
         accessibilityLabel: '다음 단계로 이동',
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     expect(pressable.props.accessibilityLabel).toBe('다음 단계로 이동');
   });
 
@@ -296,9 +279,7 @@ describe('FunnelPrimaryButton — accessibility', () => {
         disabled: true,
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const state = pressable.props.accessibilityState as {
       readonly disabled: boolean;
     };
@@ -312,9 +293,7 @@ describe('FunnelPrimaryButton — accessibility', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const state = pressable.props.accessibilityState as {
       readonly disabled: boolean;
     };
@@ -336,13 +315,10 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         ? (styleProp as (s: typeof state) => unknown)(state)
         : styleProp;
     if (Array.isArray(resolved)) {
-      return resolved.reduce(
-        (acc: Record<string, unknown>, item: unknown) => {
-          if (item == null || typeof item !== 'object') return acc;
-          return { ...acc, ...(item as Record<string, unknown>) };
-        },
-        {},
-      );
+      return resolved.reduce((acc: Record<string, unknown>, item: unknown) => {
+        if (item == null || typeof item !== 'object') return acc;
+        return { ...acc, ...(item as Record<string, unknown>) };
+      }, {});
     }
     return (resolved as Record<string, unknown>) ?? {};
   }
@@ -354,9 +330,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
     expect(style.backgroundColor).toBe(COLORS.base.coral);
   });
@@ -369,9 +343,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         disabled: true,
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
     expect(style.backgroundColor).toBe(COLORS.grayscale.disabled);
   });
@@ -383,9 +355,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const pressedStyle = resolveStyle(pressable, { pressed: true });
     const idleStyle = resolveStyle(pressable, { pressed: false });
     expect(pressedStyle.opacity).toBe(0.7);
@@ -402,9 +372,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         disabled: true,
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: true });
     // Disabled state pins the gray fill regardless of pressed flag.
     expect(style.backgroundColor).toBe(COLORS.grayscale.disabled);
@@ -418,9 +386,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
     expect(style.paddingVertical).toBe(SPACING.md);
     expect(style.paddingHorizontal).toBe(SPACING.xl);
@@ -433,9 +399,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
         onPress: vi.fn(),
       }),
     );
-    const pressable = result.getByTestId(
-      FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
-    );
+    const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
     expect(style.borderRadius).toBe(999);
   });

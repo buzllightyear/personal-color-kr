@@ -47,10 +47,10 @@ describe('trackPostPaymentContentEngaged (Phase 3.3 — Sub-AC 13.4)', () => {
     trackPostPaymentContentEngaged(stubPostHog, payload);
 
     expect(captureFn).toHaveBeenCalledTimes(1);
-    expect(captureFn).toHaveBeenCalledWith(
-      POST_PAYMENT_CONTENT_ENGAGED_EVENT_NAME,
-      { tab: 'guide', action: 'tile_opened' },
-    );
+    expect(captureFn).toHaveBeenCalledWith(POST_PAYMENT_CONTENT_ENGAGED_EVENT_NAME, {
+      tab: 'guide',
+      action: 'tile_opened',
+    });
   });
 
   it('silently no-ops in degraded mode (posthog === undefined)', () => {

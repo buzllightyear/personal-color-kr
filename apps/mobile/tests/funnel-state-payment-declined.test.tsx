@@ -516,9 +516,7 @@ describe('FunnelStateProvider — paywallOutcome:declined state transition (Sub-
       applyDeclinedTransition(value);
     });
 
-    expect(capture.latest?.setPaymentProcessing).toBe(
-      initialSetPaymentProcessing,
-    );
+    expect(capture.latest?.setPaymentProcessing).toBe(initialSetPaymentProcessing);
     expect(capture.latest?.setIsPremium).toBe(initialSetIsPremium);
   });
 

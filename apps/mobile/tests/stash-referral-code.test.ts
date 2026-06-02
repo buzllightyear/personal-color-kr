@@ -42,10 +42,7 @@ describe('stashReferralCodeFromDeepLink (Phase 4.5)', () => {
   describe('referral path — /r/:code', () => {
     it('stashes the code and returns it (custom scheme)', async () => {
       const { writes, write } = makeRecordingWriter();
-      const result = await stashReferralCodeFromDeepLink(
-        `${SCHEME}r/Ab3xY-z9`,
-        write,
-      );
+      const result = await stashReferralCodeFromDeepLink(`${SCHEME}r/Ab3xY-z9`, write);
       expect(result).toBe('Ab3xY-z9');
       expect(writes).toEqual(['Ab3xY-z9']);
     });

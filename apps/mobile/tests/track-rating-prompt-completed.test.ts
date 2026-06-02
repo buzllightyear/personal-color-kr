@@ -38,12 +38,8 @@ describe('trackRatingPromptCompleted (store-review submit analytics)', () => {
   beforeEach(() => {
     captureFn.mockReset();
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => undefined);
-    consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -100,9 +96,7 @@ describe('trackRatingPromptCompleted (store-review submit analytics)', () => {
       platform: 'other',
     };
 
-    expect(() =>
-      trackRatingPromptCompleted(undefined, payload),
-    ).not.toThrow();
+    expect(() => trackRatingPromptCompleted(undefined, payload)).not.toThrow();
 
     expect(captureFn).not.toHaveBeenCalled();
     expect(consoleLogSpy).not.toHaveBeenCalled();

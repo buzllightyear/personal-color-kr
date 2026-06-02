@@ -29,11 +29,7 @@ import { existsSync } from 'node:fs';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  REQUIRED_ENV_KEYS,
-  ROOT_ENV_PATH,
-  loadRootEnv,
-} from '../app.config';
+import { REQUIRED_ENV_KEYS, ROOT_ENV_PATH, loadRootEnv } from '../app.config';
 
 // `.env`-content tests skip when no `.env` exists in the checkout — CI and
 // fresh clones lack it by design (the file is gitignored). Pure path-math /
@@ -83,31 +79,43 @@ describe('app.config.ts — root .env loading', () => {
     expect(result.path).toBe(ROOT_ENV_PATH);
   });
 
-  it.skipIf(!ROOT_ENV_PRESENT)('populates process.env with every required vendor key', () => {
-    // Pre-condition: beforeEach cleared the keys.
-    for (const key of REQUIRED_ENV_KEYS) {
-      expect(process.env[key]).toBeUndefined();
-    }
+  it.skipIf(!ROOT_ENV_PRESENT)(
+    'populates process.env with every required vendor key',
+    () => {
+      // Pre-condition: beforeEach cleared the keys.
+      for (const key of REQUIRED_ENV_KEYS) {
+        expect(process.env[key]).toBeUndefined();
+      }
 
-    loadRootEnv();
+      loadRootEnv();
 
-    for (const key of REQUIRED_ENV_KEYS) {
-      const value = process.env[key];
-      expect(value, `process.env.${key} must be present after loadRootEnv()`).toBeTypeOf('string');
-      expect(value, `process.env.${key} must be non-empty after loadRootEnv()`).not.toBe('');
-    }
-  });
+      for (const key of REQUIRED_ENV_KEYS) {
+        const value = process.env[key];
+        expect(
+          value,
+          `process.env.${key} must be present after loadRootEnv()`,
+        ).toBeTypeOf('string');
+        expect(
+          value,
+          `process.env.${key} must be non-empty after loadRootEnv()`,
+        ).not.toBe('');
+      }
+    },
+  );
 
-  it.skipIf(!ROOT_ENV_PRESENT)('parses at least one of the required keys from the .env file itself', () => {
-    // Defence against a silently-empty .env: ensure dotenv actually parsed
-    // content from the file (not just that env was already set elsewhere).
-    const result = loadRootEnv();
-    expect(result.error, 'dotenv.config() must not error').toBeUndefined();
-    const parsedKeys = Object.keys(result.parsed);
-    const intersection = REQUIRED_ENV_KEYS.filter((k) => parsedKeys.includes(k));
-    expect(
-      intersection.length,
-      `expected .env at ${ROOT_ENV_PATH} to define at least one of ${REQUIRED_ENV_KEYS.join(', ')}`,
-    ).toBeGreaterThan(0);
-  });
+  it.skipIf(!ROOT_ENV_PRESENT)(
+    'parses at least one of the required keys from the .env file itself',
+    () => {
+      // Defence against a silently-empty .env: ensure dotenv actually parsed
+      // content from the file (not just that env was already set elsewhere).
+      const result = loadRootEnv();
+      expect(result.error, 'dotenv.config() must not error').toBeUndefined();
+      const parsedKeys = Object.keys(result.parsed);
+      const intersection = REQUIRED_ENV_KEYS.filter((k) => parsedKeys.includes(k));
+      expect(
+        intersection.length,
+        `expected .env at ${ROOT_ENV_PATH} to define at least one of ${REQUIRED_ENV_KEYS.join(', ')}`,
+      ).toBeGreaterThan(0);
+    },
+  );
 });

@@ -121,7 +121,10 @@ const replaceSpy = vi.fn();
 
 vi.mock('expo-router', () => {
   return {
-    useRouter: (): { push: (path: string) => void; replace: (path: string) => void } => ({
+    useRouter: (): {
+      push: (path: string) => void;
+      replace: (path: string) => void;
+    } => ({
       push: pushSpy,
       replace: replaceSpy,
     }),
@@ -182,9 +185,7 @@ function findHostByTestId(
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = TestRenderer.create(
-      React.createElement(FunnelStateProvider, null, element),
-    );
+    tree = TestRenderer.create(React.createElement(FunnelStateProvider, null, element));
   });
   if (!tree) throw new Error('render: tree not created');
   return tree;
@@ -281,8 +282,8 @@ describe('payment-model route — skip flow (Phase 2.5 AC 10, Phase 2.6 capture 
       onPress?.();
     });
 
-    const skipCaptureOrders = captureFn.mock.invocationCallOrder.filter((_, i) =>
-      (captureFn.mock.calls[i]?.[0] ?? '') === 'payment_skipped',
+    const skipCaptureOrders = captureFn.mock.invocationCallOrder.filter(
+      (_, i) => (captureFn.mock.calls[i]?.[0] ?? '') === 'payment_skipped',
     );
     const replaceCallOrder = replaceSpy.mock.invocationCallOrder[0];
 

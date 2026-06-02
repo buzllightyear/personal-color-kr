@@ -126,9 +126,7 @@ export function ToneStateProvider({
   );
 
   return (
-    <ToneStateContext.Provider value={value}>
-      {children}
-    </ToneStateContext.Provider>
+    <ToneStateContext.Provider value={value}>{children}</ToneStateContext.Provider>
   );
 }
 

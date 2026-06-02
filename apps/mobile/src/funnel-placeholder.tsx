@@ -52,10 +52,7 @@
 import * as React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-import {
-  FUNNEL_STEPS_ORDERED,
-  type FunnelStepId,
-} from 'core-ts/funnel/types';
+import { FUNNEL_STEPS_ORDERED, type FunnelStepId } from 'core-ts/funnel/types';
 
 import { FUNNEL_KEBAB_SLUGS } from './linking.config';
 
@@ -78,7 +75,9 @@ export interface FunnelPlaceholderProps {
  * label even when the params are absent.  Renders one line per key so the
  * row stays readable on a phone-width screen.
  */
-function formatRouteParams(params: Readonly<Record<string, unknown>> | undefined): string {
+function formatRouteParams(
+  params: Readonly<Record<string, unknown>> | undefined,
+): string {
   if (!params || Object.keys(params).length === 0) return '(none)';
   return Object.entries(params)
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
@@ -159,7 +158,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 4,
   },
-  devLabel: { fontSize: 10, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1 },
+  devLabel: {
+    fontSize: 10,
+    opacity: 0.5,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   devValue: { fontSize: 12, fontFamily: 'Menlo' },
   nextButton: {
     marginTop: 24,

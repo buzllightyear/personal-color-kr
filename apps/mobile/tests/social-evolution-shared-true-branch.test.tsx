@@ -82,10 +82,8 @@ vi.mock('react-native', async () => {
 
 vi.mock('react-native-safe-area-context', () => {
   return {
-    SafeAreaView: (props: {
-      children?: React.ReactNode;
-      [key: string]: unknown;
-    }) => React.createElement('SafeAreaView', props, props.children),
+    SafeAreaView: (props: { children?: React.ReactNode; [key: string]: unknown }) =>
+      React.createElement('SafeAreaView', props, props.children),
   };
 });
 
@@ -167,59 +165,42 @@ describe('SocialEvolutionSharedTrueBranch — render (AC 4)', () => {
     // testID passed by the branch. The presence of this host proves the
     // shared frame is in place (and therefore the safe-area / padding /
     // background tokens land via the shared layout, not duplicated here).
-    expect(
-      findHostByTestId(tree, 'social-evolution-shared-true-screen'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-shared-true-screen')).toBeTruthy();
 
     // FunnelHeadline mounts a group container with the testIDPrefix.
     // Querying the group (not just the headline/subhead leaves) verifies
     // the canonical headline+subhead pair from
     // `FUNNEL_SCREENS.social_evolution` reached the rendered tree.
-    expect(
-      findHostByTestId(tree, 'social-evolution-headline-group'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-headline-group')).toBeTruthy();
 
     // Share confirmation row — the host exists AND carries the documented
     // Korean copy. Both the host presence and the copy assertion live in
     // one test (vs. two separate `it` blocks) because they describe a
     // single coherent contract: "this row is present and reads as the
     // documented thank-you message".
-    const confirmation = findHostByTestId(
-      tree,
-      'social-evolution-share-confirmation',
-    );
+    const confirmation = findHostByTestId(tree, 'social-evolution-share-confirmation');
     expect(confirmation).toBeTruthy();
     expect(collectText(confirmation)).toContain(
       SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT,
     );
 
     // Empty-state container — the wrapping `<View>` host exists.
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeTruthy();
 
     // Empty-state emoji glyph — assert the literal codepoint is rendered.
     // The emoji is the placeholder illustration; pinning the codepoint
     // (not the rendered pixel) keeps the test platform-independent (iOS
     // and Android render the same codepoint with different fonts).
-    const emoji = findHostByTestId(
-      tree,
-      'social-evolution-empty-friend-list-emoji',
-    );
+    const emoji = findHostByTestId(tree, 'social-evolution-empty-friend-list-emoji');
     expect(emoji).toBeTruthy();
     expect(collectText(emoji)).toBe(SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI);
 
     // Empty-state Korean copy — pinned against the documented constant so
     // a copy tweak in the component file fails this test loud rather
     // than silently shipping a regression.
-    const emptyText = findHostByTestId(
-      tree,
-      'social-evolution-empty-friend-list-text',
-    );
+    const emptyText = findHostByTestId(tree, 'social-evolution-empty-friend-list-text');
     expect(emptyText).toBeTruthy();
-    expect(collectText(emptyText)).toBe(
-      SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT,
-    );
+    expect(collectText(emptyText)).toBe(SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT);
 
     // Skip CTA host — Present and labelled with the documented
     // `SOCIAL_EVOLUTION_CONTINUE_CTA_LABEL` ("다음으로"). We assert the
@@ -279,12 +260,8 @@ describe('SocialEvolutionSharedTrueBranch — friend_used_count display (Phase 4
         onContinue: NO_OP,
       }),
     );
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'social-evolution-friend-used-count'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-friend-used-count')).toBeNull();
   });
 
   it('renders the empty state when friendUsedCount is null (loading / silent-degraded)', () => {
@@ -298,12 +275,8 @@ describe('SocialEvolutionSharedTrueBranch — friend_used_count display (Phase 4
         friendUsedCount: null,
       }),
     );
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'social-evolution-friend-used-count'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-friend-used-count')).toBeNull();
   });
 
   it('renders the empty state when friendUsedCount is 0 (no attributed referees yet)', () => {
@@ -315,12 +288,8 @@ describe('SocialEvolutionSharedTrueBranch — friend_used_count display (Phase 4
         friendUsedCount: 0,
       }),
     );
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeTruthy();
-    expect(
-      findHostByTestId(tree, 'social-evolution-friend-used-count'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeTruthy();
+    expect(findHostByTestId(tree, 'social-evolution-friend-used-count')).toBeNull();
   });
 
   it('renders the real friend_used_count when positive', () => {
@@ -334,21 +303,13 @@ describe('SocialEvolutionSharedTrueBranch — friend_used_count display (Phase 4
     );
 
     // The empty-state host is gone — the count surface replaced it.
-    expect(
-      findHostByTestId(tree, 'social-evolution-empty-friend-list'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeNull();
 
     // The friend-count container + the count text render the real number,
     // pinned against the builder so a copy/format change fails loud.
-    const countHost = findHostByTestId(
-      tree,
-      'social-evolution-friend-used-count',
-    );
+    const countHost = findHostByTestId(tree, 'social-evolution-friend-used-count');
     expect(countHost).toBeTruthy();
-    const countText = findHostByTestId(
-      tree,
-      'social-evolution-friend-used-count-text',
-    );
+    const countText = findHostByTestId(tree, 'social-evolution-friend-used-count-text');
     expect(countText).toBeTruthy();
     expect(collectText(countText)).toBe(buildFriendUsedCountText(3));
     // The rendered copy embeds the literal server count.

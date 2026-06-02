@@ -105,10 +105,7 @@ function completedInput(
 
 describe('PAYMENT_EVENT_TYPES', () => {
   it('exposes exactly the two checkout events in canonical order', () => {
-    expect(PAYMENT_EVENT_TYPES).toEqual([
-      'checkout_started',
-      'checkout_completed',
-    ]);
+    expect(PAYMENT_EVENT_TYPES).toEqual(['checkout_started', 'checkout_completed']);
   });
 
   it('is frozen — downstream dashboards rely on stable membership', () => {
@@ -177,10 +174,10 @@ describe('emitPaymentEvent — checkout_started', () => {
   it('honours an explicit timestamp in the input over the clock', () => {
     const sink = makeMockSink();
     const explicit = 999_999_999_999;
-    const event = emitPaymentEvent(
-      startedInput({ timestamp: explicit }),
-      { sink, now: () => FIXED_NOW },
-    );
+    const event = emitPaymentEvent(startedInput({ timestamp: explicit }), {
+      sink,
+      now: () => FIXED_NOW,
+    });
     expect(event.timestamp).toBe(explicit);
   });
 
@@ -298,10 +295,10 @@ describe('emitPaymentEvent — schema validation rejects bad input', () => {
 
     let caught: unknown;
     try {
-      emitPaymentEvent(
-        startedInput({ plan: 'lifetime' as unknown as 'annual' }),
-        { sink, now: () => FIXED_NOW },
-      );
+      emitPaymentEvent(startedInput({ plan: 'lifetime' as unknown as 'annual' }), {
+        sink,
+        now: () => FIXED_NOW,
+      });
     } catch (err) {
       caught = err;
     }
@@ -350,9 +347,21 @@ describe('emitPaymentEvent — schema validation rejects bad input', () => {
   });
 
   it.each([
-    ['missing orderId', { ...completedInput(), orderId: undefined } as unknown as PaymentEventInput, 'orderId'],
-    ['missing providerRef', { ...completedInput(), providerRef: undefined } as unknown as PaymentEventInput, 'providerRef'],
-    ['missing amountUsd', { ...completedInput(), amountUsd: undefined } as unknown as PaymentEventInput, 'amountUsd'],
+    [
+      'missing orderId',
+      { ...completedInput(), orderId: undefined } as unknown as PaymentEventInput,
+      'orderId',
+    ],
+    [
+      'missing providerRef',
+      { ...completedInput(), providerRef: undefined } as unknown as PaymentEventInput,
+      'providerRef',
+    ],
+    [
+      'missing amountUsd',
+      { ...completedInput(), amountUsd: undefined } as unknown as PaymentEventInput,
+      'amountUsd',
+    ],
   ])('rejects %s', (_label, input, expectedField) => {
     const sink = makeMockSink();
     const capture = vi.spyOn(sink, 'capture');

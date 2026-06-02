@@ -50,8 +50,7 @@ export interface TrackRatingPromptSkippedPayload {
  * Snake_case event-name literal. Exported so call sites and unit tests assert
  * against the constant rather than a duplicated string literal.
  */
-export const RATING_PROMPT_SKIPPED_EVENT_NAME =
-  'rating_prompt_skipped' as const;
+export const RATING_PROMPT_SKIPPED_EVENT_NAME = 'rating_prompt_skipped' as const;
 
 /**
  * Capture the PostHog `rating_prompt_skipped` event.

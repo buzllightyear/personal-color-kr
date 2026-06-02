@@ -235,9 +235,7 @@ export interface PaymentMethodRadioProps {
  *
  * @see PaymentMethodRadioProps for prop documentation.
  */
-export function PaymentMethodRadio(
-  props: PaymentMethodRadioProps,
-): React.ReactElement {
+export function PaymentMethodRadio(props: PaymentMethodRadioProps): React.ReactElement {
   const {
     value,
     onChange,
@@ -248,11 +246,7 @@ export function PaymentMethodRadio(
   const groupTestID = `${testIDPrefix}-method-radio-group`;
 
   return (
-    <View
-      style={styles.group}
-      testID={groupTestID}
-      accessibilityRole="radiogroup"
-    >
+    <View style={styles.group} testID={groupTestID} accessibilityRole="radiogroup">
       {PAYMENT_METHOD_RADIO_OPTIONS.map((method) => {
         const selected = value === method;
         const optionTestID = `${testIDPrefix}-method-option-${method}`;
@@ -265,9 +259,7 @@ export function PaymentMethodRadio(
         // has historical edge cases where a press fires during the
         // disabled transition; passing no callback at all guarantees
         // the parent never observes a press from a disabled option.
-        const handlePress = disabled
-          ? undefined
-          : (): void => onChange(method);
+        const handlePress = disabled ? undefined : (): void => onChange(method);
 
         const optionStyle = [
           styles.option,

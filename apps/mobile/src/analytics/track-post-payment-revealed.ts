@@ -72,11 +72,7 @@ import type { PostHog } from 'posthog-react-native';
  * `DiagnosisResult` through PostHog into downstream BI — keeping the
  * literal identical avoids a translation layer.
  */
-export type Season =
-  | 'spring-warm'
-  | 'summer-cool'
-  | 'autumn-warm'
-  | 'winter-cool';
+export type Season = 'spring-warm' | 'summer-cool' | 'autumn-warm' | 'winter-cool';
 
 /**
  * Structured payload for every `post_payment_revealed` event. Shaped
@@ -104,8 +100,7 @@ export interface TrackPostPaymentRevealedPayload {
  * and satisfies the Seed constraint "analytics events follow the
  * snake_case + verb form precedent".
  */
-export const POST_PAYMENT_REVEALED_EVENT_NAME =
-  'post_payment_revealed' as const;
+export const POST_PAYMENT_REVEALED_EVENT_NAME = 'post_payment_revealed' as const;
 
 /**
  * Emit the PostHog `post_payment_revealed` event from the

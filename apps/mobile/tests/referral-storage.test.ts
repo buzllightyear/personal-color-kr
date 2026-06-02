@@ -49,16 +49,14 @@ describe('referral-storage wrapper (Phase 4.5)', () => {
 
   describe('namespaced key constant', () => {
     it('pins the stashed_code key to its wire format', () => {
-      expect(STASHED_REFERRAL_CODE_STORAGE_KEY).toBe(
-        'pck.referral.stashed_code',
-      );
+      expect(STASHED_REFERRAL_CODE_STORAGE_KEY).toBe('pck.referral.stashed_code');
     });
 
     it('does not collide with the post_payment namespace', () => {
       expect(STASHED_REFERRAL_CODE_STORAGE_KEY.startsWith('pck.')).toBe(true);
-      expect(
-        STASHED_REFERRAL_CODE_STORAGE_KEY.startsWith('pck.post_payment.'),
-      ).toBe(false);
+      expect(STASHED_REFERRAL_CODE_STORAGE_KEY.startsWith('pck.post_payment.')).toBe(
+        false,
+      );
     });
   });
 
@@ -84,9 +82,7 @@ describe('referral-storage wrapper (Phase 4.5)', () => {
       await writeStashedReferralCode('bareCode');
       // The raw backing value is exactly the code — no timestamp / JSON
       // wrapper that an expiry sweep could key off of.
-      expect(backingStore.get(STASHED_REFERRAL_CODE_STORAGE_KEY)).toBe(
-        'bareCode',
-      );
+      expect(backingStore.get(STASHED_REFERRAL_CODE_STORAGE_KEY)).toBe('bareCode');
     });
   });
 

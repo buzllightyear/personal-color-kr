@@ -152,8 +152,11 @@ export function PostHogProvider({
     return React.createElement(React.Fragment, null, children);
   }
   // `posthog-react-native`'s `PostHogProviderProps` declares `children` as a
-  // required prop; React.createElement's third argument satisfies that at
-  // runtime but the static signature only consumes the props bag, so we
-  // include `children` in the props object explicitly.
+  // REQUIRED prop, so it must live in the props bag for `tsc` to accept the
+  // call (passing it only as the third `createElement` argument fails the
+  // overload — `children` is reported missing). `react/no-children-prop` is a
+  // false positive against this third-party type contract; disabled narrowly
+  // here (not one of the four protected type-checked rules).
+  // eslint-disable-next-line react/no-children-prop
   return React.createElement(RnPostHogProvider, { client, children });
 }

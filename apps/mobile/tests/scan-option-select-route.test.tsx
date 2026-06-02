@@ -115,10 +115,7 @@ describe('scan-option-select route wrapper — mount smoke (Sub-AC 2.1)', () => 
   it('forwards useRouter().push to onSelectPersonalColor (advances to /(funnel)/diagnosis-input)', () => {
     pushSpy.mockClear();
     const tree = render(React.createElement(ScanOptionSelectRoute));
-    const primary = findHostByTestId(
-      tree,
-      'scan-option-select-option-personal-color',
-    );
+    const primary = findHostByTestId(tree, 'scan-option-select-option-personal-color');
     expect(primary).toBeTruthy();
     const onPress = primary?.props.onPress as (() => void) | undefined;
     expect(typeof onPress).toBe('function');

@@ -143,9 +143,7 @@ describe('useScanAnimationLadder — mount + initial state (injected scheduler)'
 
     const model = vm();
     expect(model.items).toHaveLength(SCAN_ANIMATION_TOTAL_STAGES);
-    expect(model.items.map((i) => i.label)).toEqual([
-      ...SCAN_ANIMATION_STAGE_LABELS,
-    ]);
+    expect(model.items.map((i) => i.label)).toEqual([...SCAN_ANIMATION_STAGE_LABELS]);
     expect(model.phase).toBe('running');
     expect(model.items[0]?.status).toBe('active');
     expect(model.items[1]?.status).toBe('pending');
@@ -198,7 +196,11 @@ describe('useScanAnimationLadder — synchronous 400 ms tick cadence', () => {
     expect(vm().phase).toBe('running');
     // Stage 7 active, every earlier stage done, last one not yet done.
     expect(vm().items[7]?.status).toBe('active');
-    expect(vm().items.slice(0, 7).every((i) => i.status === 'done')).toBe(true);
+    expect(
+      vm()
+        .items.slice(0, 7)
+        .every((i) => i.status === 'done'),
+    ).toBe(true);
   });
 
   it('reports monotonically non-decreasing progress across ticks', () => {
@@ -313,9 +315,7 @@ function spyOnScanFactory(): {
   const real = scanModule.useScanAnimation as (
     ...args: unknown[]
   ) => Record<string, unknown>;
-  vi.spyOn(scanModule, 'useScanAnimation').mockImplementation(((
-    ...args: unknown[]
-  ) => {
+  vi.spyOn(scanModule, 'useScanAnimation').mockImplementation(((...args: unknown[]) => {
     const controller = real(...args);
     startSpy = vi.fn(controller.start as () => void);
     cancelSpy = vi.fn(controller.cancel as () => void);

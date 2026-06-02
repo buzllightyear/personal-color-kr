@@ -91,9 +91,7 @@ describe('trackPaymentSkipped (Phase 2.6 live wiring, Sub-AC 12.1)', () => {
     // (missing EXPO_PUBLIC_POSTHOG_API_KEY) returns `undefined` from
     // `usePostHog()`. The helper MUST swallow this and do nothing — no
     // throw, no `console.log`, zero captures recorded.
-    const consoleSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined);
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);

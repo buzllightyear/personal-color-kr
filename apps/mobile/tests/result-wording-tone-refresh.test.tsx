@@ -33,10 +33,7 @@ import { act, render } from '@testing-library/react-native';
 
 import type { Season } from '../src/contracts/post-payment-views';
 import { useDiagnosisContent } from '../src/hooks/use-diagnosis-content';
-import {
-  ToneStateProvider,
-  useToneState,
-} from '../src/providers/ToneStateProvider';
+import { ToneStateProvider, useToneState } from '../src/providers/ToneStateProvider';
 import { RESULT_WORDING_CATALOG } from '../src/wording/result-wording-catalog';
 
 function WordingProbe(): React.ReactElement {
@@ -45,10 +42,7 @@ function WordingProbe(): React.ReactElement {
   return (
     <>
       <Text testID="probe-category-line">{data?.categoryLine ?? ''}</Text>
-      <Text
-        testID="probe-set-winter"
-        onPress={() => setTone('winter-cool')}
-      >
+      <Text testID="probe-set-winter" onPress={() => setTone('winter-cool')}>
         switch-to-winter
       </Text>
     </>

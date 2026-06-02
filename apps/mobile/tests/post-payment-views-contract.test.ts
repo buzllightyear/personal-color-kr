@@ -59,9 +59,7 @@ import type {
 // only at runtime.
 // ---------------------------------------------------------------------------
 type Equal<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-    ? true
-    : false;
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type Expect<T extends true> = T;
 
 // ---------------------------------------------------------------------------
@@ -81,10 +79,7 @@ type _Season_RejectsArbitraryString = Expect<
 // Negative compile guard: a stray slug must NOT be assignable to Season.
 // We assert via `Extract<...>` that no extra members slipped in.
 type _Season_NoExtraMembers = Expect<
-  Equal<
-    Extract<Season, 'neutral' | 'unknown' | 'spring' | 'summer'>,
-    never
-  >
+  Equal<Extract<Season, 'neutral' | 'unknown' | 'spring' | 'summer'>, never>
 >;
 
 // ---------------------------------------------------------------------------
@@ -150,9 +145,7 @@ type MutableEditView = {
   categoryLine: string;
   ctaMicrocopy: string;
 };
-type _EditView_IsReadonly = Expect<
-  Equal<Equal<MutableEditView, EditView>, false>
->;
+type _EditView_IsReadonly = Expect<Equal<Equal<MutableEditView, EditView>, false>>;
 
 // Negative compile guards — these Python-only field names must NOT exist
 // on the TS EditView (deliberate divergence from `PipelineResult`).
@@ -202,9 +195,7 @@ type MutableGuideView = {
   tiles: GuideTile[];
   guideLines: string[];
 };
-type _GuideView_IsReadonly = Expect<
-  Equal<Equal<MutableGuideView, GuideView>, false>
->;
+type _GuideView_IsReadonly = Expect<Equal<Equal<MutableGuideView, GuideView>, false>>;
 
 type _GuideTile_NoCategoryField = Expect<
   Equal<'category' extends keyof GuideTile ? true : false, false>
@@ -320,9 +311,7 @@ type _CurationView_IsNotBundleMirror = Expect<
 // Each TS slice carries its own `season` field — a cardinal AC 12
 // invariant ("each hook returns its own season; the Tone Switcher keeps
 // them aligned via ToneState.current, not via a shared parent field").
-type _DiagnosisView_HasOwnSeason = Expect<
-  Equal<DiagnosisView['season'], Season>
->;
+type _DiagnosisView_HasOwnSeason = Expect<Equal<DiagnosisView['season'], Season>>;
 type _EditView_HasOwnSeason = Expect<Equal<EditView['season'], Season>>;
 type _GuideView_HasOwnSeason = Expect<Equal<GuideView['season'], Season>>;
 type _CurationView_HasOwnSeason = Expect<Equal<CurationView['season'], Season>>;
@@ -535,12 +524,7 @@ describe('PostPaymentViews contract (AC 12)', () => {
     expect(value.items).toHaveLength(4);
     expect(value.recommendationLines.length).toBeGreaterThanOrEqual(6);
     for (const item of value.items) {
-      expect(Object.keys(item).sort()).toEqual([
-        'blurb',
-        'id',
-        'name',
-        'toneTag',
-      ]);
+      expect(Object.keys(item).sort()).toEqual(['blurb', 'id', 'name', 'toneTag']);
       // The deliberate Python-divergence fields are absent.
       expect(item).not.toHaveProperty('kind');
       expect(item).not.toHaveProperty('tone');

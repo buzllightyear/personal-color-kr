@@ -217,10 +217,13 @@ describe('triggerPaywall — outcome mapping contract', () => {
 
     // Drive the SDK callback the way the real native module would
     // invoke onDismiss after a sandbox purchase completed.
-    handler.onDismissHandler?.({} /* info */, {
-      type: 'purchased',
-      productId: PRODUCT_ID,
-    });
+    handler.onDismissHandler?.(
+      {} /* info */,
+      {
+        type: 'purchased',
+        productId: PRODUCT_ID,
+      },
+    );
 
     const result = await outcomePromise;
     // Discriminator field is `outcome` (per Sub-AC 3.2), productId is
@@ -239,10 +242,13 @@ describe('triggerPaywall — outcome mapping contract', () => {
     // PurchaseController may attach one. The wrapper's structural
     // lookup (`result as { productId?: unknown }`) reads it and the
     // outcome carries the SKU into the route file's analytics tracker.
-    handler.onDismissHandler?.({} /* info */, {
-      type: 'restored',
-      productId: PRODUCT_ID,
-    });
+    handler.onDismissHandler?.(
+      {} /* info */,
+      {
+        type: 'restored',
+        productId: PRODUCT_ID,
+      },
+    );
 
     const result = await outcomePromise;
     expect(result).toEqual({ outcome: 'restored', productId: PRODUCT_ID });

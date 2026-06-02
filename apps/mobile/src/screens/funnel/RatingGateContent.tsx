@@ -40,9 +40,7 @@ function getCtaByAction(action: string): { readonly label: string } {
 const SUBMIT_CTA = getCtaByAction('submit_rating');
 const SKIP_CTA = getCtaByAction('skip');
 
-export function RatingGateContent(
-  props: RatingGateContentProps,
-): React.ReactElement {
+export function RatingGateContent(props: RatingGateContentProps): React.ReactElement {
   const { onSubmit, onSkip, variant } = props;
   return (
     <FunnelScreenLayout

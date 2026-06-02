@@ -94,8 +94,7 @@ function findHostByTestId(
   // component, so `findAll` would otherwise return two matches per testID
   // (the wrapper FC + the rendered host); we want the host node only.
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -147,13 +146,13 @@ describe('ScanOptionItem — enabled state', () => {
   it('renders a Pressable with disabled=false and the wired onPress callback', () => {
     const onPress = vi.fn();
     const option = makeOption({ enabled: true, testIdSuffix: 'personal-color' });
-    const tree = render(
-      React.createElement(ScanOptionItem, { option, onPress }),
-    );
+    const tree = render(React.createElement(ScanOptionItem, { option, onPress }));
     const card = findHostByTestId(tree, 'scan-option-select-option-personal-color');
     expect(card).toBeTruthy();
     expect(card?.props.disabled).toBe(false);
-    expect((card?.props.accessibilityState as { disabled: boolean }).disabled).toBe(false);
+    expect((card?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      false,
+    );
     // The Pressable's onPress is the supplied callback (not a no-op wrapper).
     expect(card?.props.onPress).toBe(onPress);
   });
@@ -161,9 +160,7 @@ describe('ScanOptionItem — enabled state', () => {
   it('invokes onPress exactly once when the enabled card is pressed', () => {
     const onPress = vi.fn();
     const option = makeOption({ enabled: true, testIdSuffix: 'personal-color' });
-    const tree = render(
-      React.createElement(ScanOptionItem, { option, onPress }),
-    );
+    const tree = render(React.createElement(ScanOptionItem, { option, onPress }));
     const card = findHostByTestId(tree, 'scan-option-select-option-personal-color');
     const handler = card?.props.onPress as (() => void) | undefined;
     expect(typeof handler).toBe('function');
@@ -190,13 +187,12 @@ describe('ScanOptionItem — disabled state (primary AC)', () => {
     const tree = render(
       React.createElement(ScanOptionItem, { option, onPress: NO_OP }),
     );
-    const card = findHostByTestId(
-      tree,
-      'scan-option-select-option-secondary-slot-2',
-    );
+    const card = findHostByTestId(tree, 'scan-option-select-option-secondary-slot-2');
     expect(card).toBeTruthy();
     expect(card?.props.disabled).toBe(true);
-    expect((card?.props.accessibilityState as { disabled: boolean }).disabled).toBe(true);
+    expect((card?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
+      true,
+    );
   });
 
   it('passes undefined for onPress on a disabled card (defence-in-depth)', () => {
@@ -204,10 +200,7 @@ describe('ScanOptionItem — disabled state (primary AC)', () => {
     const tree = render(
       React.createElement(ScanOptionItem, { option, onPress: NO_OP }),
     );
-    const card = findHostByTestId(
-      tree,
-      'scan-option-select-option-secondary-slot-2',
-    );
+    const card = findHostByTestId(tree, 'scan-option-select-option-secondary-slot-2');
     // Even when the parent supplies a callback, the leaf must NOT wire it to
     // the disabled Pressable. This pins the "non-pressable" contract from
     // the Sub-AC ("disabled options are non-pressable").
@@ -253,13 +246,8 @@ describe('ScanOptionItem — disabled state (primary AC)', () => {
   it('does not invoke the supplied onPress callback for a disabled card', () => {
     const onPress = vi.fn();
     const option = makeOption({ enabled: false, testIdSuffix: 'secondary-slot-2' });
-    const tree = render(
-      React.createElement(ScanOptionItem, { option, onPress }),
-    );
-    const card = findHostByTestId(
-      tree,
-      'scan-option-select-option-secondary-slot-2',
-    );
+    const tree = render(React.createElement(ScanOptionItem, { option, onPress }));
+    const card = findHostByTestId(tree, 'scan-option-select-option-secondary-slot-2');
     // The Pressable's `onPress` is `undefined` on a disabled card (asserted
     // above). Invoking it should be a no-op from the parent's perspective —
     // the supplied callback must never be called.
@@ -294,9 +282,7 @@ describe('ScanOptionItem — testID convention', () => {
         testIDPrefix: 'custom-prefix',
       }),
     );
-    expect(
-      findHostByTestId(tree, 'custom-prefix-option-personal-color'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'custom-prefix-option-personal-color')).toBeTruthy();
     expect(
       findHostByTestId(tree, 'scan-option-select-option-personal-color'),
     ).toBeNull();

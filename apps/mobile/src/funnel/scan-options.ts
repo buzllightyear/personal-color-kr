@@ -90,11 +90,7 @@ export function getScanOptions(): readonly ScanOption[] {
     );
   }
   const [primary, secondaryA, secondaryB] = ctas;
-  if (
-    primary === undefined ||
-    secondaryA === undefined ||
-    secondaryB === undefined
-  ) {
+  if (primary === undefined || secondaryA === undefined || secondaryB === undefined) {
     throw new Error('FUNNEL_SCREENS.scan_option_select CTAs malformed');
   }
   if (primary.action !== 'select_scan_personal_color') {

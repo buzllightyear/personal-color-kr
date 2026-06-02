@@ -88,9 +88,7 @@ describe('SPACING — theme spacing scale tokens', () => {
     });
 
     it('SPACING_KEYS_ORDERED covers every runtime key (no drift)', () => {
-      expect([...SPACING_KEYS_ORDERED].sort()).toEqual(
-        Object.keys(SPACING).sort(),
-      );
+      expect([...SPACING_KEYS_ORDERED].sort()).toEqual(Object.keys(SPACING).sort());
     });
 
     it('iterated in scale-order, every value is strictly greater than its predecessor', () => {

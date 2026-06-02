@@ -88,10 +88,7 @@ export function ScanOptionSelectScreen(
         subhead={SCREEN.subhead}
         testIDPrefix="scan-option-select"
       />
-      <View
-        style={styles.optionStack}
-        testID="scan-option-select-option-list"
-      >
+      <View style={styles.optionStack} testID="scan-option-select-option-list">
         {SCAN_OPTIONS.map((option) => (
           <ScanOptionItem
             key={option.key}

@@ -1,0 +1,17 @@
+# Dependencies & package manager artifacts
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+
+# Build / generated output
+dist/
+build/
+coverage/
+.expo/
+
+# Python tooling owns apps/api and packages/core-python (black/ruff)
+apps/api/
+packages/core-python/
+
+# Non-source assets
+*.md

@@ -150,9 +150,7 @@ export interface ScanOptionItemProps {
  *
  * @see ScanOptionItemProps
  */
-export function ScanOptionItem(
-  props: ScanOptionItemProps,
-): React.ReactElement {
+export function ScanOptionItem(props: ScanOptionItemProps): React.ReactElement {
   const {
     option,
     onPress,
@@ -173,20 +171,14 @@ export function ScanOptionItem(
       // from a disabled card.
       onPress={isEnabled ? onPress : undefined}
       disabled={!isEnabled}
-      style={[
-        styles.card,
-        isEnabled ? styles.cardEnabled : styles.cardDisabled,
-      ]}
+      style={[styles.card, isEnabled ? styles.cardEnabled : styles.cardDisabled]}
       testID={cardTestID}
       accessibilityRole="button"
       accessibilityLabel={option.label}
       accessibilityState={{ disabled: !isEnabled }}
     >
       <Text
-        style={[
-          styles.label,
-          isEnabled ? styles.labelEnabled : styles.labelDisabled,
-        ]}
+        style={[styles.label, isEnabled ? styles.labelEnabled : styles.labelDisabled]}
       >
         {option.label}
       </Text>

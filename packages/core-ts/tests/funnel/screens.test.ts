@@ -128,9 +128,9 @@ describe('renderAllSteps', () => {
 
 describe('Korean variant tagging', () => {
   const KR_VARIANT_STEPS: readonly FunnelStepId[] = [
-    'referral_gate',     // 10
-    'social_evolution',  // 11
-    'payment_model',     // 12
+    'referral_gate', // 10
+    'social_evolution', // 11
+    'payment_model', // 12
   ];
   const STANDARD_STEPS: readonly FunnelStepId[] = FUNNEL_STEPS_ORDERED.filter(
     (id) => !KR_VARIANT_STEPS.includes(id),

@@ -33,10 +33,7 @@ describe('presentReferralShare', () => {
 
   it('passes the server share_url as the share-sheet message for copy_link', async () => {
     shareSpy.mockClear();
-    await presentReferralShare(
-      'copy_link',
-      'https://pcolor.example/r/zzz99999',
-    );
+    await presentReferralShare('copy_link', 'https://pcolor.example/r/zzz99999');
     expect(shareSpy).toHaveBeenCalledWith({
       message: 'https://pcolor.example/r/zzz99999',
     });

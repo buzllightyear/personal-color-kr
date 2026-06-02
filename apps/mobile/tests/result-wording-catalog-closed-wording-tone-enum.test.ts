@@ -36,9 +36,7 @@ const EXPECTED_KOREAN_LABELS: Readonly<Record<WordingTone, string>> = {
 describe('result-wording catalog — closed 4-WordingTone enum (Phase 3.4 invariant 2/5)', () => {
   it('WORDING_TONES tuple has exactly 4 members', () => {
     expect(WORDING_TONES.length).toBe(4);
-    expect([...WORDING_TONES].sort()).toEqual(
-      [...EXPECTED_WORDING_TONES].sort(),
-    );
+    expect([...WORDING_TONES].sort()).toEqual([...EXPECTED_WORDING_TONES].sort());
   });
 
   it('WORDING_TONE_LABELS pairs each slug with the canonical Korean label (Python WordingTone.label parity)', () => {

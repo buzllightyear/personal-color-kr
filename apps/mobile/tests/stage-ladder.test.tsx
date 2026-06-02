@@ -87,9 +87,7 @@ function getByTestId(
 ): TestInstance {
   const matches = findAllByTestId(tree, testID);
   if (matches.length !== 1) {
-    throw new Error(
-      `getByTestId('${testID}'): ${matches.length} matches (expected 1)`,
-    );
+    throw new Error(`getByTestId('${testID}'): ${matches.length} matches (expected 1)`);
   }
   return matches[0] as TestInstance;
 }
@@ -141,15 +139,11 @@ describe('StageLadder — row rendering (1:1, in order)', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    expect(getByTestId(tree, 'ladder-item-0-label').props.children).toBe(
-      '얼굴 인식',
-    );
+    expect(getByTestId(tree, 'ladder-item-0-label').props.children).toBe('얼굴 인식');
     expect(getByTestId(tree, 'ladder-item-1-label').props.children).toBe(
       '피부 톤 측정',
     );
-    expect(getByTestId(tree, 'ladder-item-2-label').props.children).toBe(
-      '컬러 매칭',
-    );
+    expect(getByTestId(tree, 'ladder-item-2-label').props.children).toBe('컬러 매칭');
   });
 });
 
@@ -234,9 +228,7 @@ describe('StageLadder — accessibility', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe(
-      'polite',
-    );
+    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe('polite');
   });
 
   it('maps ariaLive=assertive to accessibilityLiveRegion=assertive', () => {
@@ -247,9 +239,7 @@ describe('StageLadder — accessibility', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe(
-      'assertive',
-    );
+    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe('assertive');
   });
 
   it('maps ariaLive=off to accessibilityLiveRegion=none', () => {
@@ -260,9 +250,7 @@ describe('StageLadder — accessibility', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe(
-      'none',
-    );
+    expect(getByTestId(tree, 'ladder').props.accessibilityLiveRegion).toBe('none');
   });
 });
 
@@ -303,12 +291,8 @@ describe('StageLadder — token colours (zero new hex)', () => {
     );
     // done (item-0) and pending (item-2) inherit the body.regular weight,
     // so only the active row is emphasised.
-    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).fontWeight).toBe(
-      '400',
-    );
-    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).fontWeight).toBe(
-      '400',
-    );
+    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).fontWeight).toBe('400');
+    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).fontWeight).toBe('400');
   });
 
   it('drives active colour purely from item state (state vs status agree)', () => {
@@ -352,8 +336,7 @@ describe('StageLadder — done-state checkmark marker', () => {
     tree: TestRenderer.ReactTestRenderer,
   ): readonly TestInstance[] {
     return tree.root.findAll(
-      (node) =>
-        typeof node.type === 'string' && node.props?.children === '✓ ',
+      (node) => typeof node.type === 'string' && node.props?.children === '✓ ',
     ) as unknown as readonly TestInstance[];
   }
 
@@ -376,9 +359,7 @@ describe('StageLadder — done-state checkmark marker', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    expect(flatStyle(findCheckmarks(tree)[0]).color).toBe(
-      COLORS.grayscale.disabled,
-    );
+    expect(flatStyle(findCheckmarks(tree)[0]).color).toBe(COLORS.grayscale.disabled);
   });
 
   it('hides the decorative checkmark from screen readers', () => {

@@ -292,9 +292,7 @@ export interface ResultRevealScreenProps {
   readonly onUnlock: () => void;
 }
 
-export function ResultRevealScreen(
-  props: ResultRevealScreenProps,
-): React.ReactElement {
+export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactElement {
   const { isPreviewMode, isPremium, onUnlock } = props;
 
   // The share-to-unlock CTA is only rendered on the default branch: the user
@@ -398,7 +396,10 @@ function LockedAsset(props: LockedAssetProps): React.ReactElement {
         style={[styles.lockedAssetPlaceholder, { opacity: placeholderOpacity }]}
         testID={`${config.testID}-placeholder`}
       >
-        <LockedAssetPlaceholderContent variant={config.variant} testIDPrefix={config.testID} />
+        <LockedAssetPlaceholderContent
+          variant={config.variant}
+          testIDPrefix={config.testID}
+        />
       </View>
       {!isPremium && (
         <View
@@ -439,12 +440,7 @@ function LockedAssetPlaceholderContent(
 ): React.ReactElement {
   const { variant, testIDPrefix } = props;
   if (variant === 'hero_card') {
-    return (
-      <View
-        style={styles.heroCardBlock}
-        testID={`${testIDPrefix}-hero-card`}
-      />
-    );
+    return <View style={styles.heroCardBlock} testID={`${testIDPrefix}-hero-card`} />;
   }
   if (variant === 'text_stack') {
     return (

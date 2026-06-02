@@ -67,11 +67,7 @@ describe('mapScanAnimationProgressToStageStatuses — 기본 계약', () => {
   });
 
   it('출력 원소는 모두 pending|active|done 셋 중 하나다', () => {
-    const allowed = new Set<ScanAnimationStageStatus>([
-      'pending',
-      'active',
-      'done',
-    ]);
+    const allowed = new Set<ScanAnimationStageStatus>(['pending', 'active', 'done']);
     for (let p = 0; p <= 100; p += 1) {
       const out = mapScanAnimationProgressToStageStatuses(p);
       for (const s of out) {
@@ -182,9 +178,7 @@ describe('mapScanAnimationProgressToStageStatuses — 잘못된 입력 클램핑
 describe('mapScanAnimationProgressToStageStatuses — scan-animation.ts 정합성', () => {
   it('start 직후 progress=0 → stage 0 active', () => {
     const started = startScanAnimation(createScanAnimation(), 0);
-    const out = mapScanAnimationProgressToStageStatuses(
-      started.progressPercent,
-    );
+    const out = mapScanAnimationProgressToStageStatuses(started.progressPercent);
     expectActivePattern(out, 0);
   });
 

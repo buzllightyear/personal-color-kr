@@ -87,8 +87,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -114,9 +113,7 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
  * premium branch (`isPremium: true` — CTA hidden) without simulating the
  * full payment_model placeholder flow.
  */
-function renderRoute(
-  initialIsPremium: boolean,
-): TestRenderer.ReactTestRenderer {
+function renderRoute(initialIsPremium: boolean): TestRenderer.ReactTestRenderer {
   return render(
     React.createElement(
       FunnelStateProvider,

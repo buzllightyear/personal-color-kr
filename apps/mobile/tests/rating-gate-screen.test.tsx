@@ -52,8 +52,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }

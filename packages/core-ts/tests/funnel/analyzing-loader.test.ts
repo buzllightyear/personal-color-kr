@@ -21,14 +21,7 @@
  *       * `cancel()` clears pending timers and resets to idle,
  *       * a fresh `start()` resets the timeline.
  */
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ANALYZING_STAGE_DURATION_MS,
@@ -64,9 +57,7 @@ describe('analyzing-loader — public constants', () => {
 
   it('aligns ANALYZING_TOTAL_DURATION_MS with FUNNEL_SCREENS.fake_loader durationMs', () => {
     const loaderScreen = FUNNEL_SCREENS.fake_loader;
-    expect(loaderScreen.metadata['durationMs']).toBe(
-      ANALYZING_TOTAL_DURATION_MS,
-    );
+    expect(loaderScreen.metadata['durationMs']).toBe(ANALYZING_TOTAL_DURATION_MS);
   });
 
   it('exposes exactly 5 Korean stage labels', () => {
@@ -261,9 +252,7 @@ describe('useAnalyzingLoader — fake-timer driven 1-second cadence', () => {
 
       const snap = controller.snapshot();
       expect(snap.phase, `at ${step.afterMs}ms`).toBe(step.phase);
-      expect(snap.currentStageIndex, `at ${step.afterMs}ms`).toBe(
-        step.stageIndex,
-      );
+      expect(snap.currentStageIndex, `at ${step.afterMs}ms`).toBe(step.stageIndex);
       expect(snap.progressPercent, `at ${step.afterMs}ms`).toBe(step.progress);
       expect(snap.elapsedMs, `at ${step.afterMs}ms`).toBe(step.afterMs);
     }

@@ -235,16 +235,8 @@ export function PriceCard(props: PriceCardProps): React.ReactElement {
   const headingTestID = `${testIDPrefix}-value-prop-heading`;
 
   return (
-    <View
-      style={styles.card}
-      testID={cardTestID}
-      accessibilityRole="summary"
-    >
-      <Text
-        style={styles.heading}
-        testID={headingTestID}
-        accessibilityRole="header"
-      >
+    <View style={styles.card} testID={cardTestID} accessibilityRole="summary">
+      <Text style={styles.heading} testID={headingTestID} accessibilityRole="header">
         {VALUE_PROP_CARD_HEADING}
       </Text>
       <View style={styles.list}>

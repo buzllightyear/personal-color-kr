@@ -126,9 +126,7 @@ export function mapScanAnimationProgressToStageStatuses(
   const clamped = clampProgressPercent(progressPercent);
   const activeIdx = activeStageIndexForProgress(clamped);
 
-  const statuses: ScanAnimationStageStatus[] = new Array(
-    SCAN_ANIMATION_TOTAL_STAGES,
-  );
+  const statuses: ScanAnimationStageStatus[] = new Array(SCAN_ANIMATION_TOTAL_STAGES);
 
   if (activeIdx >= SCAN_ANIMATION_TOTAL_STAGES) {
     // 100% → 전체 done.

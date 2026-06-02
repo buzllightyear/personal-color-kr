@@ -107,9 +107,7 @@ describe('requestStoreReview — __DEV__-gated console.warn (dev build)', () => 
     expect(warnSpy).toHaveBeenCalledTimes(1);
     const message = warnSpy.mock.calls[0]?.[0];
     expect(message).toEqual(expect.stringContaining('[store-review]'));
-    expect(String(message).toLowerCase()).toEqual(
-      expect.stringContaining('dispatch'),
-    );
+    expect(String(message).toLowerCase()).toEqual(expect.stringContaining('dispatch'));
   });
 
   it('warns on the UNAVAILABLE path (available=false)', async () => {
@@ -127,9 +125,7 @@ describe('requestStoreReview — __DEV__-gated console.warn (dev build)', () => 
   });
 
   it('warns on the ERROR-SWALLOWED path (isAvailableAsync throws)', async () => {
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error('native probe boom'),
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue(new Error('native probe boom'));
 
     await requestStoreReview();
 
@@ -139,9 +135,7 @@ describe('requestStoreReview — __DEV__-gated console.warn (dev build)', () => 
     expect(message).toEqual(expect.stringContaining('[store-review]'));
     // The swallowed-error breadcrumb surfaces the underlying cause for
     // simulator / TestFlight debugging.
-    expect(String(message)).toEqual(
-      expect.stringContaining('native probe boom'),
-    );
+    expect(String(message)).toEqual(expect.stringContaining('native probe boom'));
   });
 });
 
@@ -168,9 +162,7 @@ describe('requestStoreReview — production build stays silent (__DEV__ === fals
   });
 
   it('emits NO console.warn on the error-swallowed path', async () => {
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error('silent in prod'),
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue(new Error('silent in prod'));
 
     await requestStoreReview();
 

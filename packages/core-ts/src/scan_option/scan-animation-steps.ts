@@ -196,9 +196,7 @@ export function getScanAnimationStep(
  * 사용한다.  대소문자 / 공백 정규화는 하지 않는다 — 라벨은 시그니처 그대로의
  * 한국어 텍스트이므로 정확한 매칭이 강제다.
  */
-export function findScanAnimationStepByLabel(
-  label: string,
-): ScanAnimationStep | null {
+export function findScanAnimationStepByLabel(label: string): ScanAnimationStep | null {
   const found = SCAN_ANIMATION_STEPS.find((s) => s.label === label);
   return found ?? null;
 }

@@ -84,7 +84,10 @@ const replaceSpy = vi.fn();
 
 vi.mock('expo-router', () => {
   return {
-    useRouter: (): { push: (path: string) => void; replace: (path: string) => void } => ({
+    useRouter: (): {
+      push: (path: string) => void;
+      replace: (path: string) => void;
+    } => ({
       push: pushSpy,
       replace: replaceSpy,
     }),
@@ -138,9 +141,7 @@ function findHostByTestId(
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = TestRenderer.create(
-      React.createElement(FunnelStateProvider, null, element),
-    );
+    tree = TestRenderer.create(React.createElement(FunnelStateProvider, null, element));
   });
   if (!tree) throw new Error('render: tree not created');
   return tree;
@@ -240,9 +241,7 @@ describe('payment-model route — Phase 2.5 completion coverage', () => {
     const tree = render(React.createElement(PaymentModelRoute));
     fireCtaOnPress(tree);
     await flushMicrotasks();
-    expect(replaceSpy).toHaveBeenCalledWith(
-      '/(funnel)/result-reveal?premium=true',
-    );
+    expect(replaceSpy).toHaveBeenCalledWith('/(funnel)/result-reveal?premium=true');
     expect(pushSpy).not.toHaveBeenCalled();
   });
 
@@ -256,9 +255,7 @@ describe('payment-model route — Phase 2.5 completion coverage', () => {
     const tree = render(React.createElement(PaymentModelRoute));
     fireCtaOnPress(tree);
     await flushMicrotasks();
-    expect(replaceSpy).toHaveBeenCalledWith(
-      '/(funnel)/result-reveal?premium=true',
-    );
+    expect(replaceSpy).toHaveBeenCalledWith('/(funnel)/result-reveal?premium=true');
   });
 
   it('declined outcome → no navigation, user stays on payment-model', async () => {
@@ -301,8 +298,6 @@ describe('payment-model route — Phase 2.5 completion coverage', () => {
       (onPress as () => void)();
     });
     expect(replaceSpy).toHaveBeenCalledWith('/(funnel)/result-reveal');
-    expect(replaceSpy).not.toHaveBeenCalledWith(
-      '/(funnel)/result-reveal?premium=true',
-    );
+    expect(replaceSpy).not.toHaveBeenCalledWith('/(funnel)/result-reveal?premium=true');
   });
 });

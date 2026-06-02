@@ -40,14 +40,14 @@ describe('FUNNEL_STEPS_ORDERED', () => {
       'value_props',
       'onboarding_priming', // v0.2: replaces social_proof_intro (priming for step 4)
       'rating_gate',
-      'fake_loader',        // v0.2: moved from step 8; price_anchoring 폐기
+      'fake_loader', // v0.2: moved from step 8; price_anchoring 폐기
       'scan_option_select',
-      'diagnosis_input',    // v0.2: 셀카만 단독 (온보딩은 step 3로 분리)
-      'fake_scan_animation',// v0.2: NEW — 24-point 시각 스캔 애니메이션
+      'diagnosis_input', // v0.2: 셀카만 단독 (온보딩은 step 3로 분리)
+      'fake_scan_animation', // v0.2: NEW — 24-point 시각 스캔 애니메이션
       'result_reveal',
-      'referral_gate',      // KR variant: 1명 추천
-      'social_evolution',   // KR variant (v0.2): UGC + 인플루언서 + social_proof 흡수
-      'payment_model',      // KR variant: $12/월 or $59/연, 37일 무료체험
+      'referral_gate', // KR variant: 1명 추천
+      'social_evolution', // KR variant (v0.2): UGC + 인플루언서 + social_proof 흡수
+      'payment_model', // KR variant: $12/월 or $59/연, 37일 무료체험
     ]);
   });
 
@@ -196,7 +196,11 @@ describe('skipStep — only allowed for rating_gate (step 4)', () => {
     const m = fastForwardTo(3);
     const skipped = skipStep(m);
     expect(skipped.completedSteps).not.toContain('rating_gate');
-    expect(skipped.completedSteps).toEqual(['welcome_hook', 'value_props', 'onboarding_priming']);
+    expect(skipped.completedSteps).toEqual([
+      'welcome_hook',
+      'value_props',
+      'onboarding_priming',
+    ]);
   });
 
   it('rejects skipping any step other than rating_gate', () => {

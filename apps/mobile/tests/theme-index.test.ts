@@ -79,11 +79,7 @@ describe('theme index — unified theme aggregator', () => {
 
   describe('THEME aggregate object', () => {
     it('exposes exactly the three documented sub-modules: colors, typography, spacing', () => {
-      expect(Object.keys(THEME).sort()).toEqual([
-        'colors',
-        'spacing',
-        'typography',
-      ]);
+      expect(Object.keys(THEME).sort()).toEqual(['colors', 'spacing', 'typography']);
     });
 
     it('THEME.colors is referentially identical to the COLORS named export', () => {
@@ -105,19 +101,11 @@ describe('theme index — unified theme aggregator', () => {
 
   describe('THEME.colors structure (color palette sub-module)', () => {
     it('exposes the three required palette groups: base, season, grayscale', () => {
-      expect(Object.keys(THEME.colors).sort()).toEqual([
-        'base',
-        'grayscale',
-        'season',
-      ]);
+      expect(Object.keys(THEME.colors).sort()).toEqual(['base', 'grayscale', 'season']);
     });
 
     it('base group exposes the three identity colors (pink, coral, blush)', () => {
-      expect(Object.keys(THEME.colors.base).sort()).toEqual([
-        'blush',
-        'coral',
-        'pink',
-      ]);
+      expect(Object.keys(THEME.colors.base).sort()).toEqual(['blush', 'coral', 'pink']);
     });
 
     it('season group exposes the four canonical seasons (spring, summer, autumn, winter)', () => {
@@ -140,13 +128,7 @@ describe('theme index — unified theme aggregator', () => {
   });
 
   describe('THEME.typography structure (typography scale sub-module)', () => {
-    const EXPECTED_LEVELS = [
-      'body',
-      'button',
-      'caption',
-      'headline',
-      'subhead',
-    ];
+    const EXPECTED_LEVELS = ['body', 'button', 'caption', 'headline', 'subhead'];
     const EXPECTED_WEIGHTS = ['bold', 'medium', 'regular'];
 
     it('exposes exactly the five required levels', () => {
@@ -157,9 +139,7 @@ describe('theme index — unified theme aggregator', () => {
       'level "%s" exposes exactly the three documented weights (bold, medium, regular)',
       (level) => {
         expect(
-          Object.keys(
-            THEME.typography[level as keyof typeof THEME.typography],
-          ).sort(),
+          Object.keys(THEME.typography[level as keyof typeof THEME.typography]).sort(),
         ).toEqual(EXPECTED_WEIGHTS);
       },
     );

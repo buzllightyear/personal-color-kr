@@ -37,10 +37,7 @@ export default function GuideTab(): React.ReactElement {
     <View style={styles.container} testID="post-payment-tab-guide">
       <ToneSwitcher />
       <ScrollView contentContainerStyle={styles.list}>
-        <View
-          style={styles.summaryBlock}
-          testID="post-payment-tab-guide-summary-lines"
-        >
+        <View style={styles.summaryBlock} testID="post-payment-tab-guide-summary-lines">
           {data.guideLines.map((line, index) => (
             <Text
               key={`guide-line-${index}`}

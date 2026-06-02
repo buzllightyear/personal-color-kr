@@ -77,12 +77,7 @@
  * Five semantic typography levels. Names match the FunnelScreen ontology
  * and the existing screens.ts content hierarchy.
  */
-export type TypographyLevel =
-  | 'headline'
-  | 'subhead'
-  | 'body'
-  | 'caption'
-  | 'button';
+export type TypographyLevel = 'headline' | 'subhead' | 'body' | 'caption' | 'button';
 
 /**
  * Three visual-emphasis weights. The names are *visual* (how heavy does it

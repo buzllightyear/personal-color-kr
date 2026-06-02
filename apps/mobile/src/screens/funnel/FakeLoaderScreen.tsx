@@ -52,9 +52,7 @@ const DEFAULT_DURATION_MS = METADATA.durationMs;
 
 const LADDER_TESTID_PREFIX = 'fake-loader-ladder';
 
-export function FakeLoaderScreen(
-  props: FakeLoaderScreenProps,
-): React.ReactElement {
+export function FakeLoaderScreen(props: FakeLoaderScreenProps): React.ReactElement {
   const { onElapsed, durationMs = DEFAULT_DURATION_MS, ladderScheduler } = props;
 
   useAutoAdvanceTimer({
@@ -70,10 +68,7 @@ export function FakeLoaderScreen(
   const ladder = useAnalyzingLoaderLadder(ladderOptions);
 
   return (
-    <FunnelScreenLayout
-      testID="fake-loader-screen"
-      accessibilityLabel="분석 중"
-    >
+    <FunnelScreenLayout testID="fake-loader-screen" accessibilityLabel="분석 중">
       <View style={styles.center}>
         <View style={styles.headerStack}>
           <FunnelHeadline

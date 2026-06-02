@@ -134,9 +134,7 @@ describe('requestStoreReview — isAvailableAsync throws path', () => {
   });
 
   it('swallows the error, skips dispatch, and reports unavailable', async () => {
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error('native probe boom'),
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue(new Error('native probe boom'));
 
     // The helper must NOT reject — it resolves a well-formed outcome.
     const outcome = await requestStoreReview();

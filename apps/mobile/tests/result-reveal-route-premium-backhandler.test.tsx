@@ -70,8 +70,7 @@ vi.mock('react-native', async () => {
     },
     Platform: {
       OS: 'android',
-      select: (m: { android?: unknown; default?: unknown }) =>
-        m.android ?? m.default,
+      select: (m: { android?: unknown; default?: unknown }) => m.android ?? m.default,
     },
     BackHandler: {
       addEventListener: (

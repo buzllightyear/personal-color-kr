@@ -89,8 +89,7 @@
  *   — preventing a silent regression where a numeric variable replaces
  *   the constant.
  */
-export const SUBSCRIPTION_PRODUCT_ID =
-  'com.personalcolorkr.monthly.premium' as const;
+export const SUBSCRIPTION_PRODUCT_ID = 'com.personalcolorkr.monthly.premium' as const;
 
 /**
  * App Store Connect subscription group name — the logical container in

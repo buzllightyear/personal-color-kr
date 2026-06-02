@@ -104,11 +104,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
  * silently reorder the cues for everyone — matching the "no mutation"
  * rule from the project coding-style.
  */
-export const GUIDE_ITEMS: readonly string[] = Object.freeze([
-  '정면',
-  '자연광',
-  '민낯',
-]);
+export const GUIDE_ITEMS: readonly string[] = Object.freeze(['정면', '자연광', '민낯']);
 
 /**
  * The leading ✓ glyph (Unicode `✓`). Pulled out as a named constant so
@@ -150,11 +146,7 @@ export function GuideList(props: GuideListProps = {}): React.ReactElement {
   const testIDPrefix = props.testIDPrefix ?? 'guide-list';
 
   return (
-    <View
-      style={styles.container}
-      testID={testIDPrefix}
-      accessibilityRole="list"
-    >
+    <View style={styles.container} testID={testIDPrefix} accessibilityRole="list">
       {GUIDE_ITEMS.map((cue, index) => {
         const rowTestID = `${testIDPrefix}-item-${index}`;
         const labelTestID = `${rowTestID}-label`;

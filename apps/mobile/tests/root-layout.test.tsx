@@ -248,10 +248,9 @@ describe('RootLayout — PostHog provider wiring', () => {
     render(React.createElement(RootLayout));
 
     expect(postHogConstructor).toHaveBeenCalledTimes(1);
-    expect(postHogConstructor).toHaveBeenCalledWith(
-      'phc_test_layout_wiring',
-      { host: 'https://us.i.posthog.com' },
-    );
+    expect(postHogConstructor).toHaveBeenCalledWith('phc_test_layout_wiring', {
+      host: 'https://us.i.posthog.com',
+    });
   });
 
   it('exposes the singleton PostHog client to children via context (usePostHog returns it)', async () => {

@@ -94,28 +94,22 @@ function expectThrows(fn: () => unknown): ConversionRateError {
 
 describe('calculateConversionRate — happy path', () => {
   it('computes a standard ratio (10 / 100 → 10%)', () => {
-    expect(
-      calculateConversionRate({ startedCount: 100, completedCount: 10 }),
-    ).toBe(10);
+    expect(calculateConversionRate({ startedCount: 100, completedCount: 10 })).toBe(10);
   });
 
   it('returns 100 when every started checkout completes', () => {
-    expect(
-      calculateConversionRate({ startedCount: 5, completedCount: 5 }),
-    ).toBe(100);
+    expect(calculateConversionRate({ startedCount: 5, completedCount: 5 })).toBe(100);
   });
 
   it('returns 0 when no checkouts complete', () => {
-    expect(
-      calculateConversionRate({ startedCount: 10, completedCount: 0 }),
-    ).toBe(0);
+    expect(calculateConversionRate({ startedCount: 10, completedCount: 0 })).toBe(0);
   });
 
   it('preserves decimal precision at the 5.5% north-star target', () => {
     // 55/1000 = 0.055 = 5.5%
-    expect(
-      calculateConversionRate({ startedCount: 1000, completedCount: 55 }),
-    ).toBe(5.5);
+    expect(calculateConversionRate({ startedCount: 1000, completedCount: 55 })).toBe(
+      5.5,
+    );
   });
 
   it('handles large counts without precision loss', () => {
@@ -128,9 +122,7 @@ describe('calculateConversionRate — happy path', () => {
   });
 
   it('handles a single observation (1/1 → 100%)', () => {
-    expect(
-      calculateConversionRate({ startedCount: 1, completedCount: 1 }),
-    ).toBe(100);
+    expect(calculateConversionRate({ startedCount: 1, completedCount: 1 })).toBe(100);
   });
 });
 
@@ -141,15 +133,11 @@ describe('calculateConversionRate — happy path', () => {
 describe('calculateConversionRate — boundary cases', () => {
   it('returns 0 when there are no observations at all ("0건" — both counts zero)', () => {
     // Dashboards rely on this to render "0.00%" without special-casing.
-    expect(
-      calculateConversionRate({ startedCount: 0, completedCount: 0 }),
-    ).toBe(0);
+    expect(calculateConversionRate({ startedCount: 0, completedCount: 0 })).toBe(0);
   });
 
   it('returns 0 when starts exist but no completions yet', () => {
-    expect(
-      calculateConversionRate({ startedCount: 25, completedCount: 0 }),
-    ).toBe(0);
+    expect(calculateConversionRate({ startedCount: 25, completedCount: 0 })).toBe(0);
   });
 
   it('throws when denominator is 0 but a completion was observed ("분모 0" + numerator > 0)', () => {
@@ -194,17 +182,32 @@ describe('calculateConversionRate — schema validation', () => {
 
   it.each([
     ['NaN startedCount', { startedCount: Number.NaN, completedCount: 0 }],
-    ['Infinity startedCount', { startedCount: Number.POSITIVE_INFINITY, completedCount: 0 }],
-    ['-Infinity completedCount', { startedCount: 10, completedCount: Number.NEGATIVE_INFINITY }],
+    [
+      'Infinity startedCount',
+      { startedCount: Number.POSITIVE_INFINITY, completedCount: 0 },
+    ],
+    [
+      '-Infinity completedCount',
+      { startedCount: 10, completedCount: Number.NEGATIVE_INFINITY },
+    ],
   ] as const)('rejects %s', (_label, input) => {
     const err = expectThrows(() => calculateConversionRate(input));
     expect(err.reason).toBe('not_finite');
   });
 
   it.each([
-    ['string startedCount', { startedCount: '10' as unknown as number, completedCount: 1 }],
-    ['undefined completedCount', { startedCount: 10, completedCount: undefined as unknown as number }],
-    ['null startedCount', { startedCount: null as unknown as number, completedCount: 0 }],
+    [
+      'string startedCount',
+      { startedCount: '10' as unknown as number, completedCount: 1 },
+    ],
+    [
+      'undefined completedCount',
+      { startedCount: 10, completedCount: undefined as unknown as number },
+    ],
+    [
+      'null startedCount',
+      { startedCount: null as unknown as number, completedCount: 0 },
+    ],
   ] as const)('rejects %s', (_label, input) => {
     const err = expectThrows(() => calculateConversionRate(input));
     expect(err.reason).toBe('not_a_number');

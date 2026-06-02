@@ -31,10 +31,7 @@
  *     so the caller can hand us raw form-field input.
  */
 
-import {
-  isValidReferralCode,
-  normalizeReferralCode,
-} from './code.js';
+import { isValidReferralCode, normalizeReferralCode } from './code.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -100,7 +97,7 @@ export type ReferralValidationResult =
 // ---------------------------------------------------------------------------
 
 function fail(reason: ReferralValidationFailure): ReferralValidationResult {
-  return Object.freeze({ ok: false, reason }) as ReferralValidationResult;
+  return Object.freeze({ ok: false, reason });
 }
 
 /**
@@ -163,5 +160,5 @@ export function validateReferralRedemption(
     ok: true,
     normalizedCode: normalized,
     record,
-  }) as ReferralValidationResult;
+  });
 }

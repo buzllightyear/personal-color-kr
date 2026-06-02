@@ -71,8 +71,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -133,9 +132,7 @@ describe('DiagnosisInputScreen — render', () => {
     expect(idleLabel).toBeTruthy();
     expect(idleLabel?.props.children).toBe('셀카 등록하기');
     // Captured-state label should NOT appear in the idle render.
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeNull();
   });
 
   it('renders the captured label "셀카 등록됨" when selfieUri is non-null', () => {
@@ -146,15 +143,10 @@ describe('DiagnosisInputScreen — render', () => {
         onNext: NO_OP,
       }),
     );
-    const capturedLabel = findHostByTestId(
-      tree,
-      'selfie-upload-label-captured',
-    );
+    const capturedLabel = findHostByTestId(tree, 'selfie-upload-label-captured');
     expect(capturedLabel).toBeTruthy();
     expect(capturedLabel?.props.children).toBe('셀카 등록됨');
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-idle'),
-    ).toBeNull();
+    expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeNull();
   });
 
   it('mirrors the captured state on the Pressable accessibility label', () => {
@@ -165,10 +157,7 @@ describe('DiagnosisInputScreen — render', () => {
         onNext: NO_OP,
       }),
     );
-    const idleSurface = findHostByTestId(
-      idleTree,
-      'diagnosis-input-capture-surface',
-    );
+    const idleSurface = findHostByTestId(idleTree, 'diagnosis-input-capture-surface');
     expect(idleSurface?.props.accessibilityLabel).toBe('셀카 등록하기');
 
     const capturedTree = render(
@@ -272,9 +261,7 @@ interface ContextCapture {
   latest: FunnelStateValue | null;
 }
 
-function RouteAdapter(props: {
-  readonly capture: ContextCapture;
-}): React.ReactElement {
+function RouteAdapter(props: { readonly capture: ContextCapture }): React.ReactElement {
   const value = useFunnelState();
   props.capture.latest = value;
   return React.createElement(DiagnosisInputScreen, {
@@ -333,9 +320,7 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
     // The screen pins the wrapper Pressable's testID to
     // `diagnosis-input-capture-surface` so route- and screen-level tests can
     // address it without colliding with the component's default sentinel.
-    expect(
-      findHostByTestId(tree, 'diagnosis-input-capture-surface'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'diagnosis-input-capture-surface')).toBeTruthy();
     // The component's own icon testID should be present too — confirming
     // the screen really delegates rendering to SelfieUploadPressable
     // instead of inlining its own emoji + label.
@@ -364,9 +349,7 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
     // the screen renders the SelfieUploadPressable's idle label — proving
     // the read side of the composition wiring.
     expect(capture.latest?.diagnosisInput.selfieUri).toBeNull();
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-idle'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeTruthy();
 
     // Tap the upload control (the embedded SelfieUploadPressable).
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
@@ -385,9 +368,7 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
 
     // And the composed surface re-renders with the captured label — proving
     // the read-after-write flow through the same SelfieUploadPressable.
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeTruthy();
   });
 });
 
@@ -424,9 +405,7 @@ describe('DiagnosisInputScreen — FunnelStateContext write integration', () => 
 
     // And the screen re-renders with the captured label and an enabled CTA.
     // Post Sub-AC 5.3, the label testID is owned by SelfieUploadPressable.
-    expect(
-      findHostByTestId(tree, 'selfie-upload-label-captured'),
-    ).toBeTruthy();
+    expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeTruthy();
     const submit = findHostByTestId(tree, 'diagnosis-input-submit');
     expect((submit?.props.accessibilityState as { disabled: boolean }).disabled).toBe(
       false,

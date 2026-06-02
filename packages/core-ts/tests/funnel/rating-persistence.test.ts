@@ -107,9 +107,7 @@ const SAMPLE_STATE: RatingPersistedState = {
 
 describe('rating-persistence constants', () => {
   it('exposes a stable default storage key', () => {
-    expect(DEFAULT_RATING_PERSISTENCE_KEY).toBe(
-      'personal_color_kr:rating_gate:v1',
-    );
+    expect(DEFAULT_RATING_PERSISTENCE_KEY).toBe('personal_color_kr:rating_gate:v1');
   });
 
   it('has a positive integer schema version', () => {
@@ -118,9 +116,7 @@ describe('rating-persistence constants', () => {
 
   it('EMPTY_RATING_PERSISTED_STATE is a frozen empty record', () => {
     expect(Object.isFrozen(EMPTY_RATING_PERSISTED_STATE)).toBe(true);
-    expect(Object.isFrozen(EMPTY_RATING_PERSISTED_STATE.promptedStages)).toBe(
-      true,
-    );
+    expect(Object.isFrozen(EMPTY_RATING_PERSISTED_STATE.promptedStages)).toBe(true);
     expect(EMPTY_RATING_PERSISTED_STATE).toEqual({
       lastPromptedAt: null,
       lastPromptedVersion: null,
@@ -206,9 +202,7 @@ describe('freezeRatingPersistedState', () => {
   });
 
   it('rejects non-object', () => {
-    const err = expectThrows(() =>
-      freezeRatingPersistedState(null as never),
-    );
+    const err = expectThrows(() => freezeRatingPersistedState(null as never));
     expect(err.reason).toBe('invalid_state');
   });
 });
@@ -242,15 +236,11 @@ describe('serializeRatingPersistedState / deserializeRatingPersistedState', () =
   });
 
   it('deserialize(null) returns the empty state', () => {
-    expect(deserializeRatingPersistedState(null)).toEqual(
-      EMPTY_RATING_PERSISTED_STATE,
-    );
+    expect(deserializeRatingPersistedState(null)).toEqual(EMPTY_RATING_PERSISTED_STATE);
   });
 
   it('deserialize("") returns the empty state', () => {
-    expect(deserializeRatingPersistedState('')).toEqual(
-      EMPTY_RATING_PERSISTED_STATE,
-    );
+    expect(deserializeRatingPersistedState('')).toEqual(EMPTY_RATING_PERSISTED_STATE);
   });
 
   it('fills missing optional fields with neutral defaults', () => {
@@ -272,9 +262,7 @@ describe('serializeRatingPersistedState / deserializeRatingPersistedState', () =
   });
 
   it('rejects malformed JSON', () => {
-    const err = expectThrows(() =>
-      deserializeRatingPersistedState('{not json'),
-    );
+    const err = expectThrows(() => deserializeRatingPersistedState('{not json'));
     expect(err.reason).toBe('invalid_json');
   });
 
@@ -336,9 +324,7 @@ describe('serializeRatingPersistedState / deserializeRatingPersistedState', () =
   });
 
   it('rejects non-string raw', () => {
-    const err = expectThrows(() =>
-      deserializeRatingPersistedState(42 as never),
-    );
+    const err = expectThrows(() => deserializeRatingPersistedState(42 as never));
     expect(err.reason).toBe('invalid_json');
   });
 });
@@ -391,9 +377,7 @@ describe('InMemoryKeyValueStore', () => {
     const store = new InMemoryKeyValueStore();
     const err = await expectThrowsAsync(() => store.getItem(''));
     expect(err.reason).toBe('invalid_key');
-    const err2 = await expectThrowsAsync(() =>
-      store.setItem('', 'x'),
-    );
+    const err2 = await expectThrowsAsync(() => store.setItem('', 'x'));
     expect(err2.reason).toBe('invalid_key');
     const err3 = await expectThrowsAsync(() => store.removeItem(''));
     expect(err3.reason).toBe('invalid_key');
@@ -553,9 +537,7 @@ describe('createRatingPersistence', () => {
 
   it('recordPrompt rejects non-object input', async () => {
     const persistence = createRatingPersistence(new InMemoryKeyValueStore());
-    const err = await expectThrowsAsync(() =>
-      persistence.recordPrompt(null as never),
-    );
+    const err = await expectThrowsAsync(() => persistence.recordPrompt(null as never));
     expect(err.reason).toBe('invalid_state');
   });
 
@@ -576,9 +558,7 @@ describe('createRatingPersistence', () => {
     const loadErr = await expectThrowsAsync(() => persistence.load());
     expect(loadErr.reason).toBe('store_failure');
 
-    const saveErr = await expectThrowsAsync(() =>
-      persistence.save(SAMPLE_STATE),
-    );
+    const saveErr = await expectThrowsAsync(() => persistence.save(SAMPLE_STATE));
     expect(saveErr.reason).toBe('store_failure');
 
     const clearErr = await expectThrowsAsync(() => persistence.clear());
@@ -638,9 +618,7 @@ describe('rating-persistence integration', () => {
 
     // Saving the reloaded state back yields an identical byte stream.
     await persistence2.save(reloaded);
-    expect(await store.getItem(DEFAULT_RATING_PERSISTENCE_KEY)).toBe(
-      blobAfterFirst,
-    );
+    expect(await store.getItem(DEFAULT_RATING_PERSISTENCE_KEY)).toBe(blobAfterFirst);
   });
 
   it('survives a clear() and re-record cycle', async () => {

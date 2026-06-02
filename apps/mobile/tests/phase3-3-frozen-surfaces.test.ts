@@ -51,24 +51,18 @@ describe('Phase 3.3 PostHog event name constants are frozen (Phase 3.4 Seed AC 1
 
 describe('Phase 3.3 ToneStateProvider source file is wording-layer-clean (Seed AC 16)', () => {
   it('ToneStateProvider does not import from the wording catalog', () => {
-    const source = readRepoFile(
-      'apps/mobile/src/providers/ToneStateProvider.tsx',
-    );
+    const source = readRepoFile('apps/mobile/src/providers/ToneStateProvider.tsx');
     expect(source.includes('result-wording-catalog')).toBe(false);
   });
 
   it('ToneStateProvider still exports useToneState and ToneStateProvider', () => {
-    const source = readRepoFile(
-      'apps/mobile/src/providers/ToneStateProvider.tsx',
-    );
+    const source = readRepoFile('apps/mobile/src/providers/ToneStateProvider.tsx');
     expect(source.includes('export function ToneStateProvider')).toBe(true);
     expect(source.includes('export function useToneState')).toBe(true);
   });
 
   it('ToneStateProvider still exposes the { current, source, setTone } shape', () => {
-    const source = readRepoFile(
-      'apps/mobile/src/providers/ToneStateProvider.tsx',
-    );
+    const source = readRepoFile('apps/mobile/src/providers/ToneStateProvider.tsx');
     expect(source.includes('readonly current: Season')).toBe(true);
     expect(source.includes('readonly source: ToneSource')).toBe(true);
     expect(source.includes('readonly setTone: (next: Season) => void')).toBe(true);
@@ -92,20 +86,14 @@ describe('Phase 3.3 ToneSwitcher chip labels are unchanged (Phase 3.4 wording la
 
 describe('Phase 3.3 AsyncStorage boundary file is wording-layer-clean (Seed constraint E — zero writes from wording layer)', () => {
   it('AsyncStorage boundary file does not import the wording catalog', () => {
-    const source = readRepoFile(
-      'apps/mobile/src/storage/post-payment-storage.ts',
-    );
+    const source = readRepoFile('apps/mobile/src/storage/post-payment-storage.ts');
     expect(source.includes('result-wording-catalog')).toBe(false);
   });
 
   it('AsyncStorage boundary file still defines the Phase 3.3 3-key set verbatim', () => {
-    const source = readRepoFile(
-      'apps/mobile/src/storage/post-payment-storage.ts',
-    );
+    const source = readRepoFile('apps/mobile/src/storage/post-payment-storage.ts');
     expect(source.includes('pck.post_payment.last_tone')).toBe(true);
     expect(source.includes('pck.post_payment.last_tab')).toBe(true);
-    expect(source.includes('pck.post_payment.diagnosis_reveal_seen')).toBe(
-      true,
-    );
+    expect(source.includes('pck.post_payment.diagnosis_reveal_seen')).toBe(true);
   });
 });

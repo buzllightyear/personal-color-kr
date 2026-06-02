@@ -30,10 +30,7 @@
  * Discriminator for {@link SuperwallApiKeyError} so callers can branch
  * on `err.reason` rather than parsing the message string.
  */
-export type SuperwallApiKeyErrorReason =
-  | 'empty'
-  | 'not_string'
-  | 'invalid_format';
+export type SuperwallApiKeyErrorReason = 'empty' | 'not_string' | 'invalid_format';
 
 export class SuperwallApiKeyError extends Error {
   public override readonly name = 'SuperwallApiKeyError';
@@ -113,10 +110,7 @@ export function assertValidSuperwallApiKey(value: unknown): SuperwallApiKey {
   }
   const trimmed = value.trim();
   if (trimmed.length === 0) {
-    throw new SuperwallApiKeyError(
-      'empty',
-      'SUPERWALL_API_KEY must not be empty',
-    );
+    throw new SuperwallApiKeyError('empty', 'SUPERWALL_API_KEY must not be empty');
   }
   if (!SUPERWALL_API_KEY_PATTERN.test(trimmed)) {
     throw new SuperwallApiKeyError(

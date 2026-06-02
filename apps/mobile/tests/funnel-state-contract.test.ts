@@ -65,9 +65,7 @@ import {
 // surface during `tsc --noEmit` (typecheck) rather than only at runtime.
 // ---------------------------------------------------------------------------
 type Equal<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-    ? true
-    : false;
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type Expect<T extends true> = T;
 
 // ---------------------------------------------------------------------------
@@ -412,9 +410,7 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
   // free-text widening, no `string` fallback. If anyone adds a third method
   // (e.g. `'naver_pay'`) this assertion stops compiling and forces a
   // deliberate contract update + Sub-AC review.
-  type _PaymentMethod_IsExactUnion = Expect<
-    Equal<PaymentMethod, 'kakao' | 'toss'>
-  >;
+  type _PaymentMethod_IsExactUnion = Expect<Equal<PaymentMethod, 'kakao' | 'toss'>>;
   type _PaymentMethod_NotJustString = Expect<
     Equal<string extends PaymentMethod ? true : false, false>
   >;
@@ -499,13 +495,9 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
   // Type-level: SetSelectedPaymentMethod signature is the narrow
   // single-argument action — explicitly NOT a patch updater.
   type _SetSelectedPaymentMethod_ExactSignature = Expect<
-    Equal<
-      SetSelectedPaymentMethod,
-      (method: PaymentMethod | null) => void
-    >
+    Equal<SetSelectedPaymentMethod, (method: PaymentMethod | null) => void>
   >;
-  const _setSelectedPaymentMethodAssertion: _SetSelectedPaymentMethod_ExactSignature =
-    true;
+  const _setSelectedPaymentMethodAssertion: _SetSelectedPaymentMethod_ExactSignature = true;
   void _setSelectedPaymentMethodAssertion;
 
   // -------------------------------------------------------------------------
@@ -536,8 +528,7 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
   type _SetPaymentProcessing_ExactSignature = Expect<
     Equal<SetPaymentProcessing, (isProcessing: boolean) => void>
   >;
-  const _setPaymentProcessingAssertion: _SetPaymentProcessing_ExactSignature =
-    true;
+  const _setPaymentProcessingAssertion: _SetPaymentProcessing_ExactSignature = true;
   void _setPaymentProcessingAssertion;
 
   // -------------------------------------------------------------------------

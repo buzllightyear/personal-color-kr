@@ -69,15 +69,10 @@ const CARDS: readonly CardConfig[] = [
   },
 ];
 
-export function ValuePropsScreen(
-  props: ValuePropsScreenProps,
-): React.ReactElement {
+export function ValuePropsScreen(props: ValuePropsScreenProps): React.ReactElement {
   const { onNext } = props;
   return (
-    <FunnelScreenLayout
-      testID="value-props-screen"
-      accessibilityLabel="가치 제안"
-    >
+    <FunnelScreenLayout testID="value-props-screen" accessibilityLabel="가치 제안">
       <FunnelHeadline
         headline={SCREEN.headline}
         subhead={SCREEN.subhead}
@@ -91,10 +86,7 @@ export function ValuePropsScreen(
         {CARDS.map((card) => (
           <View
             key={card.key}
-            style={[
-              styles.card,
-              { borderLeftColor: COLORS.season[card.season] },
-            ]}
+            style={[styles.card, { borderLeftColor: COLORS.season[card.season] }]}
             testID={`value-props-card-${card.key.replace(/_/g, '-')}`}
             accessibilityRole="text"
           >

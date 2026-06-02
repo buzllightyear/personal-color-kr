@@ -118,8 +118,7 @@ function findHostByTestId(
   testID: string,
 ): TestInstance | null {
   const matches = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   );
   return (matches[0] as unknown as TestInstance) ?? null;
 }
@@ -147,25 +146,19 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
 
 describe('FakeLoaderScreen — render', () => {
   it('renders Korean headline "AI가 24개 포인트로 분석 중..."', () => {
-    const tree = render(
-      React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }),
-    );
+    const tree = render(React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }));
     const headline = findHostByTestId(tree, 'fake-loader-headline');
     expect(headline?.props.children).toBe('AI가 24개 포인트로 분석 중...');
   });
 
   it('retains the FunnelHeadline subhead', () => {
-    const tree = render(
-      React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }),
-    );
+    const tree = render(React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }));
     const subhead = findHostByTestId(tree, 'fake-loader-subhead');
     expect(subhead).toBeTruthy();
   });
 
   it('renders the 5-stage analyzing-loader ladder (Korean labels) and NO spinner', () => {
-    const tree = render(
-      React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }),
-    );
+    const tree = render(React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }));
 
     // Ladder container present.
     expect(findHostByTestId(tree, 'fake-loader-ladder')).toBeTruthy();
@@ -182,20 +175,15 @@ describe('FakeLoaderScreen — render', () => {
     // Old ActivityIndicator spinner is gone — neither its testID nor the
     // `ActivityIndicator` host element itself renders anywhere in the tree.
     expect(findHostByTestId(tree, 'fake-loader-spinner')).toBeNull();
-    const spinners = tree.root.findAll(
-      (node) => node.type === 'ActivityIndicator',
-    );
+    const spinners = tree.root.findAll((node) => node.type === 'ActivityIndicator');
     expect(spinners).toHaveLength(0);
   });
 
   it('renders zero user-interactive buttons (no cancel/skip)', () => {
-    const tree = render(
-      React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }),
-    );
+    const tree = render(React.createElement(FakeLoaderScreen, { onElapsed: vi.fn() }));
     const buttons = tree.root.findAll(
       (node) =>
-        typeof node.type === 'string' &&
-        node.props?.accessibilityRole === 'button',
+        typeof node.type === 'string' && node.props?.accessibilityRole === 'button',
     );
     expect(buttons).toHaveLength(0);
   });
@@ -208,8 +196,8 @@ describe('FakeLoaderScreen — ladder cycles via injected fake scheduler', () =>
     // the prefix, so filter to the rows that expose accessibilityState.
     const selected = rows.filter(
       (r) =>
-        (r.props.accessibilityState as { selected?: boolean } | undefined)
-          ?.selected === true,
+        (r.props.accessibilityState as { selected?: boolean } | undefined)?.selected ===
+        true,
     );
     if (selected.length === 0) return -1;
     const testID = selected[0]?.props.testID as string;
@@ -277,9 +265,7 @@ describe('FakeLoaderScreen — autoAdvance timer (5000ms)', () => {
 
   it('does not fire onElapsed after unmount (cleanup)', () => {
     const onElapsed = vi.fn();
-    const tree = render(
-      React.createElement(FakeLoaderScreen, { onElapsed }),
-    );
+    const tree = render(React.createElement(FakeLoaderScreen, { onElapsed }));
     act(() => {
       tree.unmount();
     });

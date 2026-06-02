@@ -82,9 +82,7 @@ describe('processReferralRedemption — locked → unlocked', () => {
   });
 
   it('returns a sealed record with redeemedByUserId set', () => {
-    const result = processReferralRedemption(
-      request({ redeemerUserId: 'user-bob' }),
-    );
+    const result = processReferralRedemption(request({ redeemerUserId: 'user-bob' }));
     expectOk(result);
     expect(result.updatedRecord).not.toBeNull();
     expect(result.updatedRecord?.redeemedByUserId).toBe('user-bob');
@@ -124,9 +122,7 @@ describe('processReferralRedemption — locked → unlocked', () => {
   });
 
   it('normalizes whitespace-padded lowercase input', () => {
-    const result = processReferralRedemption(
-      request({ inputCode: '  pckr-abcdef  ' }),
-    );
+    const result = processReferralRedemption(request({ inputCode: '  pckr-abcdef  ' }));
     expectOk(result);
     expect(result.normalizedCode).toBe('PCKR-ABCDEF');
   });
@@ -138,9 +134,7 @@ describe('processReferralRedemption — locked → unlocked', () => {
 
 describe('processReferralRedemption — idempotent re-submission', () => {
   it('returns success without transitioning when gate is already unlocked', () => {
-    const result = processReferralRedemption(
-      request({ priorGateState: 'unlocked' }),
-    );
+    const result = processReferralRedemption(request({ priorGateState: 'unlocked' }));
     expectOk(result);
     expect(result.gateState).toBe('unlocked');
     expect(result.transitioned).toBe(false);

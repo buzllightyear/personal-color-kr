@@ -57,9 +57,7 @@ describe('post-payment-storage wrapper (Phase 3.3 — Sub-AC 14)', () => {
     });
 
     it('pins the last_tab key to its wire format', () => {
-      expect(LAST_POST_PAYMENT_TAB_STORAGE_KEY).toBe(
-        'pck.post_payment.last_tab',
-      );
+      expect(LAST_POST_PAYMENT_TAB_STORAGE_KEY).toBe('pck.post_payment.last_tab');
     });
 
     it('pins the diagnosis_reveal_seen key to its wire format', () => {

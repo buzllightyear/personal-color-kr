@@ -10,7 +10,5 @@ import { WelcomeHookScreen } from '../../src/screens/funnel/WelcomeHookScreen';
 
 export default function WelcomeHookRoute(): JSX.Element {
   const router = useRouter();
-  return (
-    <WelcomeHookScreen onNext={() => router.push('/(funnel)/value-props')} />
-  );
+  return <WelcomeHookScreen onNext={() => router.push('/(funnel)/value-props')} />;
 }

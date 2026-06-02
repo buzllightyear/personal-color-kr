@@ -64,12 +64,7 @@
  *     "theme is one public API" framing.
  */
 
-export {
-  COLORS,
-  type BaseColorKey,
-  type GrayscaleKey,
-  type SeasonKey,
-} from './colors';
+export { COLORS, type BaseColorKey, type GrayscaleKey, type SeasonKey } from './colors';
 export {
   TYPOGRAPHY,
   type FontWeightNumeric,
@@ -77,11 +72,7 @@ export {
   type TypographyToken,
   type TypographyWeight,
 } from './typography';
-export {
-  SPACING,
-  SPACING_KEYS_ORDERED,
-  type SpacingKey,
-} from './spacing';
+export { SPACING, SPACING_KEYS_ORDERED, type SpacingKey } from './spacing';
 
 import { COLORS } from './colors';
 import { TYPOGRAPHY } from './typography';

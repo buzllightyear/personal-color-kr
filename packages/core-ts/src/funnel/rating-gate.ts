@@ -78,9 +78,9 @@ export interface RatingActionCounters {
 export type RatingTriggerStage = 1 | 2 | 3 | 4;
 
 /** All four stages in canonical order. */
-export const RATING_TRIGGER_STAGES: readonly RatingTriggerStage[] = Object.freeze(
-  [1, 2, 3, 4] as const,
-);
+export const RATING_TRIGGER_STAGES: readonly RatingTriggerStage[] = Object.freeze([
+  1, 2, 3, 4,
+] as const);
 
 /**
  * Declarative trigger condition: a stage fires once every entry in
@@ -110,22 +110,22 @@ export interface RatingTriggerCondition {
 export const DEFAULT_RATING_TRIGGER_CONDITIONS: readonly RatingTriggerCondition[] =
   Object.freeze([
     Object.freeze({
-      stage: 1 as RatingTriggerStage,
+      stage: 1,
       label: 'habit_forming',
       minimums: Object.freeze({ app_launched: 5 }),
     }),
     Object.freeze({
-      stage: 2 as RatingTriggerStage,
+      stage: 2,
       label: 'engaged',
       minimums: Object.freeze({ diagnosis_completed: 3 }),
     }),
     Object.freeze({
-      stage: 3 as RatingTriggerStage,
+      stage: 3,
       label: 'advocate',
       minimums: Object.freeze({ share_completed: 1 }),
     }),
     Object.freeze({
-      stage: 4 as RatingTriggerStage,
+      stage: 4,
       label: 'committed',
       minimums: Object.freeze({ payment_completed: 1 }),
     }),
@@ -169,11 +169,7 @@ export class RatingGateError extends Error {
 // ---------------------------------------------------------------------------
 
 function isFiniteInteger(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    Number.isInteger(value)
-  );
+  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
 }
 
 function validateAction(action: unknown): asserts action is RatingActionType {
@@ -220,7 +216,7 @@ function validateCounters(counters: unknown): asserts counters is RatingActionCo
   }
   for (const key of RATING_ACTION_TYPES) {
     const value = (counters as Record<string, unknown>)[key];
-    if (!isFiniteInteger(value) || (value as number) < 0) {
+    if (!isFiniteInteger(value) || value < 0) {
       throw new RatingGateError(
         'invalid_counter',
         `counters.${key} must be a non-negative integer (got ${String(value)})`,
@@ -234,7 +230,9 @@ function isRatingStage(value: unknown): value is RatingTriggerStage {
   return value === 1 || value === 2 || value === 3 || value === 4;
 }
 
-function validateStages(stages: unknown): asserts stages is readonly RatingTriggerStage[] {
+function validateStages(
+  stages: unknown,
+): asserts stages is readonly RatingTriggerStage[] {
   if (!Array.isArray(stages)) {
     throw new RatingGateError(
       'invalid_stage',
@@ -304,7 +302,7 @@ function validateConditions(
           k,
         );
       }
-      if (!isFiniteInteger(v) || (v as number) < 0) {
+      if (!isFiniteInteger(v) || v < 0) {
         throw new RatingGateError(
           'invalid_conditions',
           `condition.minimums.${k} must be a non-negative integer (got ${String(v)})`,
@@ -336,13 +334,11 @@ export function incrementAction(
   return Object.freeze({
     app_launched: counters.app_launched + (action === 'app_launched' ? amount : 0),
     diagnosis_completed:
-      counters.diagnosis_completed +
-      (action === 'diagnosis_completed' ? amount : 0),
+      counters.diagnosis_completed + (action === 'diagnosis_completed' ? amount : 0),
     share_completed:
       counters.share_completed + (action === 'share_completed' ? amount : 0),
     payment_completed:
-      counters.payment_completed +
-      (action === 'payment_completed' ? amount : 0),
+      counters.payment_completed + (action === 'payment_completed' ? amount : 0),
   }) satisfies RatingActionCounters;
 }
 

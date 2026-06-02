@@ -43,19 +43,14 @@ import { FUNNEL_SCREENS } from '../../src/funnel/screens.js';
 // ---------------------------------------------------------------------------
 
 function projectAt(elapsed: number): AnalyzingLoaderState {
-  return tickAnalyzingLoader(
-    startAnalyzingLoader(createAnalyzingLoader(), 0),
-    elapsed,
-  );
+  return tickAnalyzingLoader(startAnalyzingLoader(createAnalyzingLoader(), 0), elapsed);
 }
 
 function labelsOf(vm: AnalyzingLoaderComponentViewModel): readonly string[] {
   return vm.items.map((it) => it.label);
 }
 
-function statusesOf(
-  vm: AnalyzingLoaderComponentViewModel,
-): readonly string[] {
+function statusesOf(vm: AnalyzingLoaderComponentViewModel): readonly string[] {
   return vm.items.map((it) => it.status);
 }
 
@@ -122,13 +117,7 @@ describe('renderAnalyzingLoaderComponent — running stages', () => {
     [4, 4_000, 80, 'done|done|done|done|active', 100],
   ])(
     'stage %i (elapsed=%i ms) — items reflect per-row done/active/pending',
-    (
-      stageIndex,
-      elapsed,
-      progressPercent,
-      _ignoredPattern,
-      _progressAtBoundary,
-    ) => {
+    (stageIndex, elapsed, progressPercent, _ignoredPattern, _progressAtBoundary) => {
       const state = projectAt(elapsed);
       const vm = renderAnalyzingLoaderComponent(state);
 
@@ -243,11 +232,41 @@ describe('mountAnalyzingLoaderComponent — fake-timer driven 5-second contract'
       readonly isComplete: boolean;
       readonly progress: number;
     }> = [
-      { afterMs: 1_000, stageIndex: 1, phase: 'running', isComplete: false, progress: 20 },
-      { afterMs: 2_000, stageIndex: 2, phase: 'running', isComplete: false, progress: 40 },
-      { afterMs: 3_000, stageIndex: 3, phase: 'running', isComplete: false, progress: 60 },
-      { afterMs: 4_000, stageIndex: 4, phase: 'running', isComplete: false, progress: 80 },
-      { afterMs: 5_000, stageIndex: 4, phase: 'complete', isComplete: true, progress: 100 },
+      {
+        afterMs: 1_000,
+        stageIndex: 1,
+        phase: 'running',
+        isComplete: false,
+        progress: 20,
+      },
+      {
+        afterMs: 2_000,
+        stageIndex: 2,
+        phase: 'running',
+        isComplete: false,
+        progress: 40,
+      },
+      {
+        afterMs: 3_000,
+        stageIndex: 3,
+        phase: 'running',
+        isComplete: false,
+        progress: 60,
+      },
+      {
+        afterMs: 4_000,
+        stageIndex: 4,
+        phase: 'running',
+        isComplete: false,
+        progress: 80,
+      },
+      {
+        afterMs: 5_000,
+        stageIndex: 4,
+        phase: 'complete',
+        isComplete: true,
+        progress: 100,
+      },
     ];
 
     let elapsed = 0;
@@ -257,9 +276,7 @@ describe('mountAnalyzingLoaderComponent — fake-timer driven 5-second contract'
 
       const latest = handle.viewModel();
       expect(latest.phase, `at ${step.afterMs}ms`).toBe(step.phase);
-      expect(latest.currentStageIndex, `at ${step.afterMs}ms`).toBe(
-        step.stageIndex,
-      );
+      expect(latest.currentStageIndex, `at ${step.afterMs}ms`).toBe(step.stageIndex);
       expect(latest.isComplete, `at ${step.afterMs}ms`).toBe(step.isComplete);
       expect(latest.progressPercent, `at ${step.afterMs}ms`).toBe(step.progress);
     }

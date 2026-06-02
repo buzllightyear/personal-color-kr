@@ -10,10 +10,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  MAIN_SCAN_ID,
-  SCAN_OPTION_COUNT,
-} from '../../src/scan_option/types.js';
+import { MAIN_SCAN_ID, SCAN_OPTION_COUNT } from '../../src/scan_option/types.js';
 import {
   SCAN_OPTION_CATALOGUE,
   SCAN_OPTION_CATALOGUE_SIZE,
@@ -21,9 +18,7 @@ import {
   getScanOptions,
   getSecondaryScanOptions,
 } from '../../src/scan_option/catalogue.js';
-import {
-  validateScanOptionCatalogue,
-} from '../../src/scan_option/schema.js';
+import { validateScanOptionCatalogue } from '../../src/scan_option/schema.js';
 
 describe('SCAN_OPTION_CATALOGUE — structural invariants', () => {
   it(`contains exactly ${SCAN_OPTION_COUNT} entries`, () => {
@@ -65,9 +60,7 @@ describe('SCAN_OPTION_CATALOGUE — main / secondary semantics', () => {
   });
 
   it('has two secondary placeholders at slots 2 and 3', () => {
-    const secondaries = SCAN_OPTION_CATALOGUE.filter(
-      (o) => o.role === 'secondary',
-    );
+    const secondaries = SCAN_OPTION_CATALOGUE.filter((o) => o.role === 'secondary');
     expect(secondaries).toHaveLength(2);
     expect(secondaries.map((o) => o.slot).sort()).toEqual([2, 3]);
     for (const s of secondaries) {

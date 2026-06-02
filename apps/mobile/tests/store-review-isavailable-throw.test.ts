@@ -108,9 +108,7 @@ describe('requestStoreReview — isAvailableAsync() throw path (error resilience
   });
 
   it('NEVER rejects — the returned promise resolves on the throw path', async () => {
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error('probe exploded'),
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue(new Error('probe exploded'));
 
     // `.resolves` asserts the promise settles fulfilled; if the helper let the
     // rejection propagate this assertion would fail. This is the load-bearing

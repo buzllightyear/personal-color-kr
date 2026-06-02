@@ -200,13 +200,10 @@ function liveRegionFor(vm: {
     }),
   );
   const containers = tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === 'aria-chain',
+    (node) => typeof node.type === 'string' && node.props?.testID === 'aria-chain',
   );
   if (containers.length !== 1) {
-    throw new Error(
-      `expected exactly one container, found ${containers.length}`,
-    );
+    throw new Error(`expected exactly one container, found ${containers.length}`);
   }
   return containers[0]?.props.accessibilityLiveRegion;
 }
@@ -330,11 +327,7 @@ describe('ARIA live forwarding — exhaustive politeness coverage', () => {
 
     // The three RN outputs are exactly the documented mapping of the three
     // view-model politeness values — nothing else can appear.
-    const observed = new Set([
-      liveRegionFor(idleScan.vm()),
-      'polite',
-      'assertive',
-    ]);
+    const observed = new Set([liveRegionFor(idleScan.vm()), 'polite', 'assertive']);
     expect([...observed].sort()).toEqual(['assertive', 'none', 'polite']);
   });
 });

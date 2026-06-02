@@ -36,15 +36,10 @@ function requirePrimaryCta(): { readonly label: string } {
 
 const PRIMARY_CTA = requirePrimaryCta();
 
-export function WelcomeHookScreen(
-  props: WelcomeHookScreenProps,
-): React.ReactElement {
+export function WelcomeHookScreen(props: WelcomeHookScreenProps): React.ReactElement {
   const { onNext } = props;
   return (
-    <FunnelScreenLayout
-      testID="welcome-hook-screen"
-      accessibilityLabel="환영합니다"
-    >
+    <FunnelScreenLayout testID="welcome-hook-screen" accessibilityLabel="환영합니다">
       <View style={styles.headerStack}>
         <FunnelHeadline
           headline={SCREEN.headline}

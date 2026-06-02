@@ -30,8 +30,7 @@ const KOREAN_TONE_LABELS = [
 // Visible prefix shape — opening paren, one of the 4 tone labels,
 // closing paren, single space, kind label (Korean text + optional spaces),
 // space + middle dot + space.
-const VISIBLE_PREFIX_REGEX =
-  /^\((다정한|에디토리얼|유쾌한|시적인)\) [가-힣 ]+ · /;
+const VISIBLE_PREFIX_REGEX = /^\((다정한|에디토리얼|유쾌한|시적인)\) [가-힣 ]+ · /;
 
 describe('result-wording catalog — visible WordingTone prefix on recommendation item lines (Phase 3.4 invariant 5/5)', () => {
   for (const season of SEASONS) {

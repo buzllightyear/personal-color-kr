@@ -109,9 +109,7 @@ export interface RatingBridgeResult {
 }
 
 /** Machine-readable failure reasons for outcome === 'failed'. */
-export type RatingBridgeFailureReason =
-  | 'native_threw'
-  | 'native_rejected';
+export type RatingBridgeFailureReason = 'native_threw' | 'native_rejected';
 
 // ---------------------------------------------------------------------------
 // Dependencies
@@ -270,9 +268,7 @@ function defaultNow(): string {
  * NOT invoke the native binding eagerly; that only happens inside
  * `requestReview(...)`.
  */
-export function createRatingBridge(
-  options: CreateRatingBridgeOptions,
-): RatingBridge {
+export function createRatingBridge(options: CreateRatingBridgeOptions): RatingBridge {
   if (options === null || typeof options !== 'object') {
     throw new RatingBridgeError(
       'invalid_platform',
@@ -364,9 +360,7 @@ export function createRatingBridge(
       return platform === 'ios' && typeof nativeBinding === 'function';
     },
 
-    async requestReview(
-      stage: RatingPromptStage,
-    ): Promise<RatingBridgeResult> {
+    async requestReview(stage: RatingPromptStage): Promise<RatingBridgeResult> {
       if (!isRatingStage(stage)) {
         throw new RatingBridgeError(
           'invalid_stage',

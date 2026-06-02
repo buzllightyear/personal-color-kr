@@ -13,11 +13,7 @@
  *   - Secondary entries are `phase_n_tbd` placeholders.
  *   - All entries (and the array itself) are frozen.
  */
-import {
-  MAIN_SCAN_ID,
-  SCAN_OPTION_COUNT,
-  type ScanOption,
-} from './types.js';
+import { MAIN_SCAN_ID, SCAN_OPTION_COUNT, type ScanOption } from './types.js';
 
 /**
  * The 3 canonical scan options, in CTA-render order (slot 1 → 2 → 3).
@@ -68,9 +64,7 @@ export function getScanOptions(): readonly ScanOption[] {
 export function getMainScanOption(): ScanOption {
   const main = SCAN_OPTION_CATALOGUE.find((opt) => opt.role === 'main');
   if (!main) {
-    throw new Error(
-      'SCAN_OPTION_CATALOGUE is missing a main entry — Seed violation.',
-    );
+    throw new Error('SCAN_OPTION_CATALOGUE is missing a main entry — Seed violation.');
   }
   return main;
 }
@@ -79,14 +73,11 @@ export function getMainScanOption(): ScanOption {
  * Returns the two secondary (placeholder) scan options, in slot order.
  */
 export function getSecondaryScanOptions(): readonly ScanOption[] {
-  return Object.freeze(
-    SCAN_OPTION_CATALOGUE.filter((opt) => opt.role === 'secondary'),
-  );
+  return Object.freeze(SCAN_OPTION_CATALOGUE.filter((opt) => opt.role === 'secondary'));
 }
 
 /**
  * Compile-time check helper: the catalogue length matches the constant.
  * (Mostly a documentation aid — actual enforcement lives in `./schema.ts`.)
  */
-export const SCAN_OPTION_CATALOGUE_SIZE: typeof SCAN_OPTION_COUNT =
-  SCAN_OPTION_COUNT;
+export const SCAN_OPTION_CATALOGUE_SIZE: typeof SCAN_OPTION_COUNT = SCAN_OPTION_COUNT;

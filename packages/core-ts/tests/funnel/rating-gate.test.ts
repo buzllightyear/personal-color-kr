@@ -230,31 +230,30 @@ describe('incrementAction', () => {
   });
 
   it('rejects non-string actions', () => {
-    const err = expectThrows(() =>
-      incrementAction(makeCounters(), 42 as never),
-    );
+    const err = expectThrows(() => incrementAction(makeCounters(), 42 as never));
     expect(err.reason).toBe('unknown_action');
   });
 
   it('rejects amount <= 0', () => {
-    expect(expectThrows(() => incrementAction(makeCounters(), 'app_launched', 0)).reason).toBe(
-      'invalid_amount',
-    );
-    expect(expectThrows(() => incrementAction(makeCounters(), 'app_launched', -1)).reason).toBe(
-      'invalid_amount',
-    );
+    expect(
+      expectThrows(() => incrementAction(makeCounters(), 'app_launched', 0)).reason,
+    ).toBe('invalid_amount');
+    expect(
+      expectThrows(() => incrementAction(makeCounters(), 'app_launched', -1)).reason,
+    ).toBe('invalid_amount');
   });
 
   it('rejects non-integer / NaN / Infinity amount', () => {
-    expect(expectThrows(() => incrementAction(makeCounters(), 'app_launched', 1.5)).reason).toBe(
-      'invalid_amount',
-    );
-    expect(expectThrows(() => incrementAction(makeCounters(), 'app_launched', NaN)).reason).toBe(
-      'invalid_amount',
-    );
-    expect(expectThrows(() => incrementAction(makeCounters(), 'app_launched', Infinity)).reason).toBe(
-      'invalid_amount',
-    );
+    expect(
+      expectThrows(() => incrementAction(makeCounters(), 'app_launched', 1.5)).reason,
+    ).toBe('invalid_amount');
+    expect(
+      expectThrows(() => incrementAction(makeCounters(), 'app_launched', NaN)).reason,
+    ).toBe('invalid_amount');
+    expect(
+      expectThrows(() => incrementAction(makeCounters(), 'app_launched', Infinity))
+        .reason,
+    ).toBe('invalid_amount');
   });
 
   it('rejects malformed counter snapshots', () => {
@@ -274,7 +273,12 @@ describe('incrementAction', () => {
     expect(
       expectThrows(() =>
         incrementAction(
-          { app_launched: 1.5, diagnosis_completed: 0, share_completed: 0, payment_completed: 0 } as RatingActionCounters,
+          {
+            app_launched: 1.5,
+            diagnosis_completed: 0,
+            share_completed: 0,
+            payment_completed: 0,
+          } as RatingActionCounters,
           'app_launched',
         ),
       ).reason,
@@ -308,25 +312,19 @@ describe('evaluateRatingTrigger', () => {
   });
 
   it('Stage 2 satisfied at 3 diagnoses', () => {
-    const decision = evaluateRatingTrigger(
-      makeCounters({ diagnosis_completed: 3 }),
-    );
+    const decision = evaluateRatingTrigger(makeCounters({ diagnosis_completed: 3 }));
     expect(decision.satisfiedStages).toContain(2);
     expect(decision.stage).toBe(2);
   });
 
   it('Stage 3 satisfied at 1 share', () => {
-    const decision = evaluateRatingTrigger(
-      makeCounters({ share_completed: 1 }),
-    );
+    const decision = evaluateRatingTrigger(makeCounters({ share_completed: 1 }));
     expect(decision.satisfiedStages).toContain(3);
     expect(decision.stage).toBe(3);
   });
 
   it('Stage 4 satisfied at 1 payment', () => {
-    const decision = evaluateRatingTrigger(
-      makeCounters({ payment_completed: 1 }),
-    );
+    const decision = evaluateRatingTrigger(makeCounters({ payment_completed: 1 }));
     expect(decision.satisfiedStages).toContain(4);
     expect(decision.stage).toBe(4);
   });
@@ -395,10 +393,9 @@ describe('evaluateRatingTrigger', () => {
         minimums: { app_launched: 2 },
       },
     ];
-    const decision = evaluateRatingTrigger(
-      makeCounters({ app_launched: 1 }),
-      { conditions: customConditions },
-    );
+    const decision = evaluateRatingTrigger(makeCounters({ app_launched: 1 }), {
+      conditions: customConditions,
+    });
     expect(decision.stage).toBe(1);
     expect(decision.satisfiedStages).toEqual([1]);
   });
@@ -420,18 +417,18 @@ describe('evaluateRatingTrigger', () => {
 
   it('rejects non-object counters', () => {
     expect(
-      expectThrows(() =>
-        evaluateRatingTrigger(null as unknown as RatingActionCounters),
-      ).reason,
+      expectThrows(() => evaluateRatingTrigger(null as unknown as RatingActionCounters))
+        .reason,
     ).toBe('invalid_counter');
   });
 
   it('rejects negative counter values', () => {
     expect(
       expectThrows(() =>
-        evaluateRatingTrigger(
-          { ...ZERO_RATING_COUNTERS, app_launched: -1 } as RatingActionCounters,
-        ),
+        evaluateRatingTrigger({
+          ...ZERO_RATING_COUNTERS,
+          app_launched: -1,
+        } as RatingActionCounters),
       ).reason,
     ).toBe('invalid_counter');
   });
@@ -439,9 +436,10 @@ describe('evaluateRatingTrigger', () => {
   it('rejects non-integer counter values', () => {
     expect(
       expectThrows(() =>
-        evaluateRatingTrigger(
-          { ...ZERO_RATING_COUNTERS, app_launched: 1.5 } as RatingActionCounters,
-        ),
+        evaluateRatingTrigger({
+          ...ZERO_RATING_COUNTERS,
+          app_launched: 1.5,
+        } as RatingActionCounters),
       ).reason,
     ).toBe('invalid_counter');
   });
@@ -507,9 +505,7 @@ describe('evaluateRatingTrigger', () => {
     expect(
       expectThrows(() =>
         evaluateRatingTrigger(ZERO_RATING_COUNTERS, {
-          conditions: [
-            { stage: 1, label: 'bad', minimums: { app_launched: 1.5 } },
-          ],
+          conditions: [{ stage: 1, label: 'bad', minimums: { app_launched: 1.5 } }],
         }),
       ).reason,
     ).toBe('invalid_conditions');
@@ -519,9 +515,7 @@ describe('evaluateRatingTrigger', () => {
     expect(
       expectThrows(() =>
         evaluateRatingTrigger(ZERO_RATING_COUNTERS, {
-          conditions: [
-            { stage: 1, label: 'bad', minimums: { app_launched: -1 } },
-          ],
+          conditions: [{ stage: 1, label: 'bad', minimums: { app_launched: -1 } }],
         }),
       ).reason,
     ).toBe('invalid_conditions');
@@ -541,9 +535,7 @@ describe('evaluateRatingTrigger', () => {
     expect(
       expectThrows(() =>
         evaluateRatingTrigger(ZERO_RATING_COUNTERS, {
-          conditions: [
-            { stage: 9 as RatingTriggerStage, label: 'x', minimums: {} },
-          ],
+          conditions: [{ stage: 9 as RatingTriggerStage, label: 'x', minimums: {} }],
         }),
       ).reason,
     ).toBe('invalid_conditions');
@@ -633,9 +625,7 @@ describe('createRatingGateService', () => {
 
   it('honours custom conditions', () => {
     const service = createRatingGateService({
-      conditions: [
-        { stage: 1, label: 'cheap', minimums: { app_launched: 1 } },
-      ],
+      conditions: [{ stage: 1, label: 'cheap', minimums: { app_launched: 1 } }],
     });
     service.track('app_launched');
     expect(service.evaluate().stage).toBe(1);

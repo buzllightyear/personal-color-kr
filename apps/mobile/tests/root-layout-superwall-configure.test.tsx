@@ -110,11 +110,7 @@ vi.mock('posthog-react-native', async () => {
   function MockPostHogProvider(props: {
     readonly children?: React.ReactNode;
   }): React.ReactElement {
-    return reactActual.createElement(
-      reactActual.Fragment,
-      null,
-      props.children,
-    );
+    return reactActual.createElement(reactActual.Fragment, null, props.children);
   }
 
   function mockUsePostHog(): null {
@@ -143,11 +139,7 @@ vi.mock('expo-router', async () => {
   function StackSpy(props: {
     readonly children?: React.ReactNode;
   }): React.ReactElement {
-    return reactActual.createElement(
-      reactActual.Fragment,
-      null,
-      props.children,
-    );
+    return reactActual.createElement(reactActual.Fragment, null, props.children);
   }
   (StackSpy as unknown as { Screen: () => null }).Screen = function MockScreen(): null {
     return null;

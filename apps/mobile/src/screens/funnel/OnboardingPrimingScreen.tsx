@@ -17,11 +17,7 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import {
-  COLORS,
-  SPACING,
-  TYPOGRAPHY,
-} from '../../theme';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
 import type {
   FunnelOnboardingAnswers,
   PriorDiagnosis,
@@ -73,16 +69,10 @@ const PRIOR_DIAGNOSIS_OPTIONS: readonly PriorDiagnosisOption[] = [
 export function OnboardingPrimingScreen(
   props: OnboardingPrimingScreenProps,
 ): React.ReactElement {
-  const {
-    onboarding,
-    onSelectSelfieEditStyle,
-    onSelectPriorDiagnosis,
-    onNext,
-  } = props;
+  const { onboarding, onSelectSelfieEditStyle, onSelectPriorDiagnosis, onNext } = props;
 
   const bothAnswered =
-    onboarding.selfieEditStyle !== null &&
-    onboarding.priorDiagnosis !== null;
+    onboarding.selfieEditStyle !== null && onboarding.priorDiagnosis !== null;
 
   return (
     <FunnelScreenLayout
@@ -111,10 +101,7 @@ export function OnboardingPrimingScreen(
                   accessibilityState={{ selected }}
                 >
                   <Text
-                    style={[
-                      styles.optionLabel,
-                      selected && styles.optionLabelSelected,
-                    ]}
+                    style={[styles.optionLabel, selected && styles.optionLabelSelected]}
                   >
                     {option.label}
                   </Text>
@@ -141,10 +128,7 @@ export function OnboardingPrimingScreen(
                   accessibilityState={{ selected }}
                 >
                   <Text
-                    style={[
-                      styles.optionLabel,
-                      selected && styles.optionLabelSelected,
-                    ]}
+                    style={[styles.optionLabel, selected && styles.optionLabelSelected]}
                   >
                     {option.label}
                   </Text>

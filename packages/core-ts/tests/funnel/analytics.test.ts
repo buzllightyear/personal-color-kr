@@ -43,10 +43,7 @@ import {
   TOTAL_FUNNEL_STEPS,
   type FunnelStepId,
 } from '../../src/funnel/types.js';
-import {
-  FUNNEL_SCREENS,
-  type FunnelCta,
-} from '../../src/funnel/screens.js';
+import { FUNNEL_SCREENS, type FunnelCta } from '../../src/funnel/screens.js';
 import {
   FUNNEL_ANALYTICS_EVENT_TYPES,
   createFunnelAnalytics,
@@ -221,10 +218,7 @@ describe('emitStepCtaClick — payload assertion', () => {
       (c) => c.action === 'select_annual',
     );
     expect(annualCta).toBeDefined();
-    const event = analytics.emitStepCtaClick(
-      'payment_model',
-      annualCta as FunnelCta,
-    );
+    const event = analytics.emitStepCtaClick('payment_model', annualCta as FunnelCta);
     expect(event.ctaAction).toBe('select_annual');
     expect(event.stepNumber).toBe(12);
     expect(event.variantTag).toBe('kr_variant');
@@ -250,9 +244,9 @@ describe('emitStepCtaClick — payload assertion', () => {
     const annualCta = FUNNEL_SCREENS.payment_model.ctas.find(
       (c) => c.action === 'select_annual',
     ) as FunnelCta;
-    expect(() =>
-      analytics.emitStepCtaClick('welcome_hook', annualCta),
-    ).toThrow(/cta .* not registered on step welcome_hook/i);
+    expect(() => analytics.emitStepCtaClick('welcome_hook', annualCta)).toThrow(
+      /cta .* not registered on step welcome_hook/i,
+    );
   });
 
   it('returns frozen events', () => {
@@ -361,12 +355,12 @@ describe('sink contract', () => {
 
   it('rejects an unknown step id (loud failure — no ghost analytics)', () => {
     const { analytics } = makeAnalytics();
-    expect(() =>
-      analytics.emitStepView('not_a_real_step' as FunnelStepId),
-    ).toThrow(/unknown funnel step id/i);
-    expect(() =>
-      analytics.emitStepDrop('also_fake' as FunnelStepId),
-    ).toThrow(/unknown funnel step id/i);
+    expect(() => analytics.emitStepView('not_a_real_step' as FunnelStepId)).toThrow(
+      /unknown funnel step id/i,
+    );
+    expect(() => analytics.emitStepDrop('also_fake' as FunnelStepId)).toThrow(
+      /unknown funnel step id/i,
+    );
   });
 });
 
@@ -392,10 +386,7 @@ describe('every step × every event type — full 12 × 3 matrix', () => {
     const { analytics, sink } = makeAnalytics();
     for (const stepId of FUNNEL_STEPS_ORDERED) {
       analytics.emitStepView(stepId);
-      analytics.emitStepCtaClick(
-        stepId,
-        FUNNEL_SCREENS[stepId].ctas[0] as FunnelCta,
-      );
+      analytics.emitStepCtaClick(stepId, FUNNEL_SCREENS[stepId].ctas[0] as FunnelCta);
       analytics.emitStepDrop(stepId);
     }
     expect(sink.captured).toHaveLength(TOTAL_FUNNEL_STEPS * 3);

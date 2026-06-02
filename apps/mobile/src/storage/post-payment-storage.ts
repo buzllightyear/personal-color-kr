@@ -58,11 +58,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * analytics surface; a future shared `Season` alias is a 1-line import
  * swap.
  */
-export type Season =
-  | 'spring-warm'
-  | 'summer-cool'
-  | 'autumn-warm'
-  | 'winter-cool';
+export type Season = 'spring-warm' | 'summer-cool' | 'autumn-warm' | 'winter-cool';
 
 /**
  * Closed enum of the 4 post-payment tab identifiers.
@@ -82,8 +78,7 @@ export const LAST_TONE_STORAGE_KEY = 'pck.post_payment.last_tone' as const;
  * Persisted on every tab switch and read on app launch to restore the
  * user to the tab they last viewed.
  */
-export const LAST_POST_PAYMENT_TAB_STORAGE_KEY =
-  'pck.post_payment.last_tab' as const;
+export const LAST_POST_PAYMENT_TAB_STORAGE_KEY = 'pck.post_payment.last_tab' as const;
 
 /**
  * AsyncStorage namespaced key — first-entry reveal gate. Written `true`
@@ -119,18 +114,14 @@ function narrowSeason(raw: string | null): Season | null {
   if (raw === null) {
     return null;
   }
-  return (SEASON_VALUES as readonly string[]).includes(raw)
-    ? (raw as Season)
-    : null;
+  return (SEASON_VALUES as readonly string[]).includes(raw) ? (raw as Season) : null;
 }
 
 function narrowTab(raw: string | null): TabKey | null {
   if (raw === null) {
     return null;
   }
-  return (TAB_VALUES as readonly string[]).includes(raw)
-    ? (raw as TabKey)
-    : null;
+  return (TAB_VALUES as readonly string[]).includes(raw) ? (raw as TabKey) : null;
 }
 
 /**

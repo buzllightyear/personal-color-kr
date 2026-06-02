@@ -34,13 +34,15 @@ function record(overrides: Partial<ReferralRecord> = {}): ReferralRecord {
     code: 'PCKR-ABCDEF',
     issuerUserId: 'user-alice',
     issuedAtMs: NOW - ONE_DAY_MS, // 1 day ago
-    ttlMs: 7 * ONE_DAY_MS,        // 7-day TTL
+    ttlMs: 7 * ONE_DAY_MS, // 7-day TTL
     redeemedByUserId: null,
     ...overrides,
   };
 }
 
-function request(overrides: Partial<ReferralValidationRequest> = {}): ReferralValidationRequest {
+function request(
+  overrides: Partial<ReferralValidationRequest> = {},
+): ReferralValidationRequest {
   return {
     inputCode: 'PCKR-ABCDEF',
     redeemerUserId: 'user-bob',
@@ -50,10 +52,9 @@ function request(overrides: Partial<ReferralValidationRequest> = {}): ReferralVa
   };
 }
 
-function expectOk(result: ReferralValidationResult): asserts result is Extract<
-  ReferralValidationResult,
-  { ok: true }
-> {
+function expectOk(
+  result: ReferralValidationResult,
+): asserts result is Extract<ReferralValidationResult, { ok: true }> {
   if (!result.ok) {
     throw new Error(`expected ok result, got failure: ${result.reason}`);
   }
@@ -98,17 +99,13 @@ describe('validateReferralRedemption — malformed', () => {
   });
 
   it('rejects wrong prefix', () => {
-    const result = validateReferralRedemption(
-      request({ inputCode: 'XXXX-ABCDEF' }),
-    );
+    const result = validateReferralRedemption(request({ inputCode: 'XXXX-ABCDEF' }));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('malformed');
   });
 
   it('rejects ambiguous characters', () => {
-    const result = validateReferralRedemption(
-      request({ inputCode: 'PCKR-0ABCDE' }),
-    );
+    const result = validateReferralRedemption(request({ inputCode: 'PCKR-0ABCDE' }));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('malformed');
   });
@@ -233,14 +230,10 @@ describe('validateReferralRedemption — expired', () => {
 
   it('treats ttlMs <= 0 as expired (dead on arrival)', () => {
     expect(
-      validateReferralRedemption(
-        request({ record: record({ ttlMs: 0 }) }),
-      ).ok,
+      validateReferralRedemption(request({ record: record({ ttlMs: 0 }) })).ok,
     ).toBe(false);
     expect(
-      validateReferralRedemption(
-        request({ record: record({ ttlMs: -1 }) }),
-      ).ok,
+      validateReferralRedemption(request({ record: record({ ttlMs: -1 }) })).ok,
     ).toBe(false);
   });
 });
@@ -298,7 +291,12 @@ describe('validateReferralRedemption — failure precedence', () => {
   const cases: ReadonlyArray<{
     name: string;
     req: ReferralValidationRequest;
-    expected: 'malformed' | 'not_found' | 'already_redeemed' | 'expired' | 'self_referral';
+    expected:
+      | 'malformed'
+      | 'not_found'
+      | 'already_redeemed'
+      | 'expired'
+      | 'self_referral';
   }> = [
     {
       name: 'malformed beats every other check',

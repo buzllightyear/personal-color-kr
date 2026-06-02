@@ -34,10 +34,7 @@
  * choice).  Renaming a placeholder slot is a SAFE refactor; reassigning
  * `personal_color` to a non-main role is a Seed-violation.
  */
-export type ScanOptionId =
-  | 'personal_color'
-  | 'scan_slot_2'
-  | 'scan_slot_3';
+export type ScanOptionId = 'personal_color' | 'scan_slot_2' | 'scan_slot_3';
 
 /**
  * Role of a scan option inside the catalogue.

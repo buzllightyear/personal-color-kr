@@ -91,8 +91,7 @@ function findAllByTestId(
   // component, so `findAll` would otherwise return two matches per testID
   // (the wrapper FC + the rendered host); we want the host node only.
   return tree.root.findAll(
-    (node) =>
-      typeof node.type === 'string' && node.props?.testID === testID,
+    (node) => typeof node.type === 'string' && node.props?.testID === testID,
   ) as unknown as readonly TestInstance[];
 }
 
@@ -105,9 +104,7 @@ function getByTestId(
     throw new Error(`getByTestId('${testID}'): no match`);
   }
   if (matches.length > 1) {
-    throw new Error(
-      `getByTestId('${testID}'): ${matches.length} matches (expected 1)`,
-    );
+    throw new Error(`getByTestId('${testID}'): ${matches.length} matches (expected 1)`);
   }
   // matches[0] is guaranteed defined by the length checks above; the cast
   // narrows away the `noUncheckedIndexedAccess` `| undefined`.
@@ -236,10 +233,12 @@ describe('FunnelHeadline — typography tokens applied (no drift from design tok
         testIDPrefix: 'welcome-hook',
       }),
     );
-    const headlineStyle = getByTestId(tree, 'welcome-hook-headline').props
-      .style as { color?: string };
-    const subheadStyle = getByTestId(tree, 'welcome-hook-subhead').props
-      .style as { color?: string };
+    const headlineStyle = getByTestId(tree, 'welcome-hook-headline').props.style as {
+      color?: string;
+    };
+    const subheadStyle = getByTestId(tree, 'welcome-hook-subhead').props.style as {
+      color?: string;
+    };
     expect(headlineStyle.color).toBe(COLORS.grayscale.text);
     expect(subheadStyle.color).toBe(COLORS.grayscale.text);
   });
@@ -267,7 +266,9 @@ describe('FunnelHeadline — accessibility surface (Seed: accessibility_minimum_
         testIDPrefix: 'welcome-hook',
       }),
     );
-    expect(getByTestId(tree, 'welcome-hook-headline').props.accessibilityRole).toBe('header');
+    expect(getByTestId(tree, 'welcome-hook-headline').props.accessibilityRole).toBe(
+      'header',
+    );
   });
 
   it('marks the subhead row as accessibilityRole="header"', () => {
@@ -278,7 +279,9 @@ describe('FunnelHeadline — accessibility surface (Seed: accessibility_minimum_
         testIDPrefix: 'welcome-hook',
       }),
     );
-    expect(getByTestId(tree, 'welcome-hook-subhead').props.accessibilityRole).toBe('header');
+    expect(getByTestId(tree, 'welcome-hook-subhead').props.accessibilityRole).toBe(
+      'header',
+    );
   });
 
   it('does NOT synthesise an accessibilityLabel — the visible Korean text IS the announcement', () => {
@@ -291,8 +294,12 @@ describe('FunnelHeadline — accessibility surface (Seed: accessibility_minimum_
     );
     // Passing accessibilityLabel would duplicate the visible copy and risk
     // drift; the contract is: only role, no synthesised label.
-    expect(getByTestId(tree, 'welcome-hook-headline').props.accessibilityLabel).toBeUndefined();
-    expect(getByTestId(tree, 'welcome-hook-subhead').props.accessibilityLabel).toBeUndefined();
+    expect(
+      getByTestId(tree, 'welcome-hook-headline').props.accessibilityLabel,
+    ).toBeUndefined();
+    expect(
+      getByTestId(tree, 'welcome-hook-subhead').props.accessibilityLabel,
+    ).toBeUndefined();
   });
 });
 
@@ -328,7 +335,9 @@ describe('FunnelHeadline — DOM shape & visible order', () => {
         testIDPrefix: 'welcome-hook',
       }),
     );
-    const textNodes = tree.root.findAllByType('Text' as unknown as React.ComponentType<unknown>);
+    const textNodes = tree.root.findAllByType(
+      'Text' as unknown as React.ComponentType<unknown>,
+    );
     expect(textNodes.length).toBe(2);
   });
 });

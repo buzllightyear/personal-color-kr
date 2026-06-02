@@ -126,6 +126,33 @@ jobs:
         # Seed AC 8 "skipped_test_count: 6" expectation).
         run: pnpm --filter mobile run test
 
+      - name: Format check (core-ts + mobile, prettier --check)
+        # Phase 6.4: hard-blocking TS/TSX format gate, the JS-side analogue of
+        # the apps/api `black --check` gate. Prettier owns formatting
+        # EXCLUSIVELY (ESLint defers all stylistic rules to it via
+        # `eslint-config-prettier`). Configuration is a single root
+        # `.prettierrc.json` (printWidth 88 to match `[tool.black] line-length`)
+        # shared by both TS workspaces. `pnpm -r run format:check` fans out to
+        # each workspace's `format:check` script (`prettier --check ...`),
+        # which exits non-zero (failing this step AND the job — no
+        # `continue-on-error`) the moment any file would be reformatted.
+        # Runs before ESLint so a pure formatting drift surfaces on its own
+        # signal rather than as lint noise.
+        run: pnpm -r run format:check
+
+      - name: Lint (core-ts + mobile, eslint)
+        # Phase 6.4: hard-blocking TS/TSX lint gate, the JS-side analogue of
+        # the apps/api `ruff check` + `mypy --strict` gates. ESLint owns
+        # bug-catching EXCLUSIVELY: typescript-eslint's syntax-only
+        # `recommended` base across src + tests, plus four cherry-picked
+        # type-aware rules (no-floating-promises, no-misused-promises,
+        # await-thenable, no-unnecessary-type-assertion) scoped to production
+        # `src`/`app` only — mirroring how `mypy --strict` targets `src` alone.
+        # `pnpm -r run lint` fans out to each workspace's `lint` script; a
+        # non-zero exit fails this step AND the job (no `continue-on-error`),
+        # giving the lint a discrete pass/fail signal in the Actions UI.
+        run: pnpm -r run lint
+
       - name: Run pytest (core-python)
         working-directory: packages/core-python
         run: python -m pytest -q

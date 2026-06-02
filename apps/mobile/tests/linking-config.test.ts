@@ -200,9 +200,7 @@ describe('LINKING_CONFIG.screens["magazine/[month]"]', () => {
     expect(LINKING_CONFIG.screens['(funnel)'].screens).not.toHaveProperty(
       'magazine/[month]',
     );
-    expect(LINKING_CONFIG.screens['(funnel)'].screens).not.toHaveProperty(
-      'magazine',
-    );
+    expect(LINKING_CONFIG.screens['(funnel)'].screens).not.toHaveProperty('magazine');
   });
 
   it('the magazine path is not mistaken for a funnel kebab slug', () => {
