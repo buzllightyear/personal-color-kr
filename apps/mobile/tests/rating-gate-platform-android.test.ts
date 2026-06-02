@@ -87,6 +87,17 @@ vi.mock('expo-router', () => ({
   useRouter: () => ({ push: () => undefined, replace: () => undefined }),
 }));
 
+// Phase 3 store-review wiring: rating-gate.tsx now imports the cross-platform
+// `requestStoreReview` helper, which transitively imports the native
+// `expo-store-review` SDK. Per the Seed isolation boundary ("route-level tests
+// mock the helper module, NOT expo-store-review directly"), we stub the helper
+// so loading the route module never resolves the native package. This test
+// only inspects `selectRatingGateVariant()`, so a no-op stub suffices.
+vi.mock('../src/store-review/request-store-review', () => ({
+  requestStoreReview: () =>
+    Promise.resolve({ attempted: false, available: false, platform: 'android' }),
+}));
+
 vi.mock('react-native', () => {
   type PlatformSelectSpec<T> = {
     ios?: T;
