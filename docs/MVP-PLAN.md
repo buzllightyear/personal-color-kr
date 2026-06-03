@@ -127,7 +127,8 @@
 | 6.2 | 2026-06-02 | 2026-06-02 | `orch_bc933521eebc` + 0-LOC hybrid | `f8ac886` | CI PASS · **18/18 orch (full)** + in-place harvest (0 LOC manual code; **0 CI rounds**) — ambiguity **0.0845** 최저 |
 | 6.3 | 2026-06-02 | 2026-06-02 | `orch_1bf9c122f569` + 1-LOC hybrid | `46efb11` | CI PASS · 10/17 orch (rate-limit halt) + in-place harvest (**1 LOC** manual: `datetime.utcnow` deprecation; **0 CI rounds**) — ambiguity 0.08 |
 | 6.4 | 2026-06-03 | 2026-06-03 | `orch_10cab809a53a` + 0-LOC hybrid | `38a2e17` | CI PASS · **16/16 orch (full)** + branch-isolate harvest (**0 LOC** manual; **0 CI rounds**) — ambiguity **0.07** 신규 최저, CI +20s only |
-| 7.x | — | — | | | |
+| 7.2 | 2026-06-04 | 2026-06-04 | `orch_4feba78d1389` + 8-LOC hybrid | `23ca277` | CI PASS · **18/18 orch (full)** + worktree-harvest (**8 LOC** manual: 1 type-ignore + 7 black-reformat; **0 CI rounds**) — ambiguity 0.08, api-only Sentry SDK errors-only scope |
+| 7.x (rest) | — | — | | | |
 
 ### Phase 1.1 결과 요약 (2026-05-17)
 
@@ -1622,6 +1623,78 @@ Tests (Phase 6.3 baseline 보존):
 - Shared internal eslint-config package — 2 workspaces로 abstraction 불필요 (60 LOC 중복 수용)
 
 **Seed**: `~/.ouroboros/seeds/seed_4e83f5ad418a_unit_6_4.yaml` (v1.0.0, ambiguity 0.07)
+
+### Phase 7.2 결과 요약 (2026-06-04)
+
+**산출물 (Sentry SDK error capture + PII scrubbing — apps/api launch readiness gate)**:
+
+`sentry-sdk[fastapi]` ~2.x를 apps/api에 통합. 외부 모니터링 backend로의 첫 production 송출. Phase 6.3 in-process latency monitoring (P50/P95/P99 + alert)과 보완 관계 — Phase 6.3은 자기 호스트 latency 데이터, Phase 7.2는 외부 Sentry로 에러 송출. Mobile Sentry (@sentry/react-native)는 7.2b 또는 7.3 TestFlight로 명시적 분리.
+
+Backend Source (apps/api/src/api/):
+- `observability/sentry.py` (NEW): `init_sentry_for_environment()` — production 만 fail-fast, 그 외 환경 missing DSN → no-op + `sentry_init_skipped { reason }` JSON 로그. `before_send` hook → 6개 scrub 모듈 합성 후 returns dict (never None, 코드 레벨 drop 안 함).
+- `observability/scrub_email_keys.py` + `scrub_email_strings.py` (NEW): 키 기반 (`email`/`user_email`/`userEmail` case-insensitive) + 값 regex (`\b[A-Za-z0-9._%+-]+@...\b`) → `"[redacted]"`. defense-in-depth 양면.
+- `observability/scrub_jwt_strings.py` (NEW): `eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` regex → `"[redacted-jwt]"`. exception message에 embedded JWT까지 캐치.
+- `observability/scrub_auth_keys.py` (NEW): keys 포함 `token/jwt/bearer/authorization/secret/password/api_key` (case-insensitive) → `"[redacted]"`.
+- `observability/scrub_referral_keys.py` (NEW): `referral_code`/`referralCode` → `"[redacted]"`. value-pattern regex 없음 (8-char base64 false positives 회피).
+- `observability/scrub_auth_paths.py` (NEW): `event["request"]["url"]` 가 `r'/v1/auth/'` 매치 시 `event["request"]["data"] = None` (Apple identity_token 보호).
+- `config/env.py` (+118/-): `get_environment() -> Literal["development","preview","production","ci"]` (default `"development"`, ValueError on unknown) + `get_sentry_dsn_api() -> str | None` (production만 fail-fast LookupError, 그 외 None + warning).
+- `main.py` (+1): `init_sentry_for_environment()` FIRST line in `create_app()` BEFORE `FastAPI(...)` constructor — startup 시점 error capture 최대화.
+- `middleware/request_id.py` (+1): `sentry_sdk.set_tag("request_id", request_id_str)` per-request — Sentry error ↔ JSON log cross-reference 보장.
+- `pyproject.toml` + `uv.lock`: `sentry-sdk[fastapi]` ~2.x runtime dep 추가.
+
+Diff-guard 업데이트:
+- `tests/test_diff_no_forbidden_modules.py`: `sentry` from `FORBIDDEN_BASENAME_PREFIXES` 제거 + `observability/sentry.py` 존재 regression-guard 추가.
+- `tests/test_diff_no_new_runtime_deps.py`: `sentry-sdk` from deferred-Phase ≥7 block list 제거.
+
+Tests (Phase 6.3 baseline 334 → Phase 7.2 **724** pytest, +390 신규):
+- 16개 신규 unit test 파일 (scrub 6 모듈 × 평균 25 tests + sentry 7 init/lifecycle 파일 + env 3 파일 + request_id tag 1): `test_scrub_{email_keys, email_strings, jwt_strings, auth_keys, auth_paths, referral_keys}.py` + `test_sentry_{before_send, before_send_never_none_http_events, dsn_env, init_before_app_constructor, init_fail_open, init_params, init_production_fail_fast, startup_log}.py` + `test_{environment_env, release_env, request_id_sentry_tag}.py`.
+
+**4중 정합 (local pre-push, manual fixes 후)**:
+- `python -m pytest -q apps/api` → **724 passed, 32 skipped**
+- `python -m mypy --strict apps/api/src` → **no issues found in 62 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **151 files unchanged** (manual: 7 black-reformat 적용 후)
+- CI (Test Node 20 / Python 3.12) → **PASS**, 2m28s + 2m27s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/orch_4feba78d1389_manual` (auto-deleted post-merge)
+- 핵심 commit: 32 files (+5,055 / -9 LOC)
+- PR #41 squash merge commit: `23ca277`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 6차 검증, 첫 Phase 7 sub-unit)**:
+
+- Interview: `interview_20260602_175620` — 5 round Socratic (surface scope api-only / DSN fail-fast 전략 / scrub rules 5종 / AC 13개 / 최종 6개 보조 결정). **Ambiguity 0.083** (Phase 6.4 0.07 / 6.3 0.08 → 7.2 안정 유지).
+- Seed: `~/.ouroboros/seeds/seed_3702914d9a2e_unit_7_2.yaml` (18 ACs / 16 constraints / 14 ontology fields / 6 evaluation principles / 4 exit conditions).
+- Run #1 (`orch_4feba78d1389`): **18/18 ACs (full)** — Phase 4.5 → 6.1 → 6.2 → 6.4 → **7.2 = 5회 연속 full orchestrator 성공** (6.3만 rate-limit halt 예외).
+- **Q00#1202 UPSTREAM FIXED 6차 검증**: archive `NJXasZxUhG2vBDimZ65bN` line 589 동일 패턴 보존.
+- Harvest 패턴: worktree → main repo branch copy (Phase 6.1 와 동일 패턴). 27 files (source 8 + test 16 + lockfile + 2 diff-guard + pyproject).
+- **Manual fix: 8 LOC** (1 LOC unused `type: ignore` 제거 + 7 black-reformat files, no behavioral changes). Phase 6.3 (1 LOC deprecation) + Phase 7.2 (8 LOC formatting) = 5회 phase 중 2회만 manual touch.
+- **CI 회복: 0 round** — Phase 6.1/6.2/6.4 zero-recovery → **Phase 7.2 4회 누적**.
+
+**Phase 6.4 비교 (cross-package → api-only 회귀, scope discipline 유지)**:
+| 측면 | Phase 6.4 | Phase 7.2 |
+|---|---|---|
+| Orchestrator 결과 | 16/16 (full) | **18/18 (full)** |
+| Manual completion | 0 LOC | **8 LOC** (formatting only) |
+| Ambiguity | 0.07 | 0.083 (외부 시스템 SDK 포함으로 약간 상승) |
+| Surface | TS (mobile + core-ts) tooling tier | **Python (apps/api) infra tier** |
+| Q00#1202 상태 | upstream fixed (5차) | **upstream fixed (6차)** |
+| CI round | 0 | **0** (재현) |
+| 산출 합계 | 207 files (config 9 + auto-fix 198) | 32 files (source 8 + test 16 + diff-guards 2 + pyproject + lockfile) |
+| 테스트 증가 | 0 (tooling) | **+390 pytest** (16 신규 파일) |
+| 실행 구조 | 6-level | 4-level (18 AC × Sub-AC 3) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- 모바일 Sentry (`@sentry/react-native`) — **Phase 7.2b** 또는 7.3 TestFlight 흡수
+- Transaction / performance tracing (`traces_sample_rate`) — **Phase 7.2c** 또는 post-launch
+- `user_id` correlation via `sentry_sdk.set_user` — Phase 7.2c
+- Distributed tracing (`sentry-trace` header) — mobile 측 존재 후 활성화
+- Datadog / New Relic / Prometheus / OpenTelemetry — 대안 backend, 선택 안 함
+- Source map upload — Phase 7.3 TestFlight 또는 7.4 Production
+- Custom dashboards / alert routing in Sentry org — 코드 외 org-config
+- Code-level event drop (health-check noise 필터링 등) — Sentry UI inbound filter 권장
+
+**Seed**: `~/.ouroboros/seeds/seed_3702914d9a2e_unit_7_2.yaml` (v1.0.0, ambiguity 0.083)
 
 ## 참고
 
