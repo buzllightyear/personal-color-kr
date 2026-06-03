@@ -4,7 +4,8 @@ Generates a fresh ``uuid4()`` per request, attaches it to
 ``request.state.request_id``, and adds an ``X-Request-ID`` response header.
 The middleware is the *single* source of request_id — handlers never
 generate their own. The JSON logger consumes the same value to correlate
-per-request log records.
+per-request log records, and (Phase 7.2 — AC16) the same value is pushed to
+Sentry as a ``request_id`` tag so issues cross-reference the JSON logs.
 
 Invariants honored:
     - The middleware emits a UUID4 that matches the regex
@@ -22,6 +23,7 @@ import time
 from typing import Awaitable, Callable
 from uuid import uuid4
 
+import sentry_sdk
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -96,6 +98,15 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
             f"-{request_id[16:20]}-{request_id[20:32]}"
         )
         request.state.request_id = request_id_str
+
+        # Phase 7.2 (AC-16): push the *same* per-request UUID4 to Sentry as a
+        # ``request_id`` tag so an operator triaging a Sentry issue can pivot
+        # straight to the correlated JSON-log records (which carry the identical
+        # value in ``request_completed`` / ``request_failed`` and the
+        # ``X-Request-ID`` header). ``set_tag`` operates on the SDK's current
+        # scope and is a safe no-op when Sentry was never initialized
+        # (fail-open environments), so this requires no init guard.
+        sentry_sdk.set_tag("request_id", request_id_str)
 
         start_ns = time.perf_counter_ns()
         try:

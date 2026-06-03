@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Final
+from typing import Final, Literal
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -363,3 +363,184 @@ def require_posthog_project_id() -> str:
             "environment."
         )
     return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.2 — Sentry release identifier (GIT_SHA)
+# ---------------------------------------------------------------------------
+# The Sentry SDK tags every captured event with a ``release`` so errors can be
+# correlated back to the exact deployed commit. We source it from the
+# ``GIT_SHA`` env var (the CI/CD pipeline injects the deployed commit SHA) and
+# fall back to the literal ``"unknown"`` when it is unset or empty.
+#
+# Unlike the fail-fast ``require_*`` secrets above, the release tag is a
+# *sensible-default* knob: a missing ``GIT_SHA`` (local dev, a bare checkout)
+# must NEVER crash app startup — observability metadata is an aid, not a hard
+# dependency. The getter therefore always returns a non-empty ``str``.
+
+#: Fallback release identifier when ``GIT_SHA`` is unset or empty. Sentry
+#: shows this verbatim, so it is intentionally human-legible.
+DEFAULT_RELEASE: Final[str] = "unknown"
+
+
+def get_release() -> str:
+    """Return the Sentry release identifier (``GIT_SHA`` or ``"unknown"``).
+
+    Reads ``GIT_SHA`` from the environment (after loading the root ``.env``
+    once). A value that is unset or empty falls back to
+    :data:`DEFAULT_RELEASE` (``"unknown"``) so the Sentry ``release`` tag is
+    always a non-empty string and app startup never fails on missing release
+    metadata. This mirrors the ``os.environ.get("GIT_SHA", "unknown")``
+    contract pinned by the Phase 7.2 Seed.
+
+    Returns
+    -------
+    str
+        The deployed commit SHA from ``GIT_SHA``, or ``"unknown"`` when the
+        variable is unset or empty.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("GIT_SHA")
+    if value is None or value == "":
+        return DEFAULT_RELEASE
+    return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.2 — runtime environment selector (ENVIRONMENT)
+# ---------------------------------------------------------------------------
+# The Sentry observability layer (``api.observability.sentry``) keys its
+# initialization behavior off a single, enumerated runtime environment:
+#
+#   * ``production`` — Sentry init is *fail-fast*: a missing ``SENTRY_DSN_API``
+#     raises ``LookupError`` at startup (no silent no-op in prod).
+#   * ``development`` / ``preview`` / ``ci`` — Sentry init is *fail-open*: a
+#     missing DSN is a no-op plus a warning log, never a crash.
+#
+# Unlike the secret accessors above (``None`` on unset) and the latency knob
+# (numeric default), this getter returns a *closed enum*. Two design choices
+# pin the contract the Phase 7.2 Seed requires:
+#
+#   1. Unset/empty ``ENVIRONMENT`` defaults to ``"development"`` — the safest
+#      local default, matching the fail-open developer experience.
+#   2. An *unknown, non-empty* value raises ``ValueError`` (naming the var and
+#      the offending value, plus the allowed set). A typo'd ``ENVIRONMENT``
+#      must fail loudly rather than silently degrading to a default and
+#      mis-routing Sentry init behavior.
+
+Environment = Literal["development", "preview", "production", "ci"]
+
+#: The closed set of valid runtime environments. Public so callers and tests
+#: can reference the canonical tuple rather than re-typing string literals.
+ENVIRONMENTS: Final[tuple[Environment, ...]] = (
+    "development",
+    "preview",
+    "production",
+    "ci",
+)
+
+#: Default runtime environment when ``ENVIRONMENT`` is unset or empty.
+DEFAULT_ENVIRONMENT: Final[Environment] = "development"
+
+
+def get_environment() -> Environment:
+    """Return the runtime environment enum (default ``"development"``).
+
+    Reads ``ENVIRONMENT`` from the environment (after loading the root
+    ``.env`` once). The contract is a *closed enum*, not a free-form string.
+
+    Returns
+    -------
+    Environment
+        One of ``"development"``, ``"preview"``, ``"production"``, ``"ci"``.
+        An unset or empty ``ENVIRONMENT`` falls back to
+        :data:`DEFAULT_ENVIRONMENT` (``"development"``).
+
+    Raises
+    ------
+    ValueError
+        If ``ENVIRONMENT`` is set to a non-empty value outside
+        :data:`ENVIRONMENTS`. The message names the var, the offending
+        value, and the allowed set so a typo fails loudly at startup
+        rather than silently mis-routing Sentry init behavior.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("ENVIRONMENT")
+    if value is None or value == "":
+        return DEFAULT_ENVIRONMENT
+    if value not in ENVIRONMENTS:
+        raise ValueError(
+            f"ENVIRONMENT={value!r} is not a valid runtime environment. "
+            f"Expected one of {ENVIRONMENTS}."
+        )
+    return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.2 — Sentry API project DSN (SENTRY_DSN_API)
+# ---------------------------------------------------------------------------
+# ``SENTRY_DSN_API`` is the connection string the Sentry SDK uses to ship
+# captured events to the API project. Its access policy is *environment-keyed*
+# and intentionally asymmetric — neither a pure ``get_*`` (always ``None`` on
+# unset) nor a pure ``require_*`` (always raises on unset):
+#
+#   * ``production`` — **fail-fast**. A missing/empty DSN raises
+#     :class:`LookupError` at startup. Shipping prod with error reporting
+#     silently disabled is a launch-readiness regression, so the absence is a
+#     hard error rather than a no-op.
+#   * ``development`` / ``preview`` / ``ci`` — **fail-open**. A missing/empty
+#     DSN returns ``None``. The init layer (``api.observability.sentry``) turns
+#     that ``None`` into a no-op plus a single warning log; local dev, preview
+#     builds, and the test suite must never crash for lacking a DSN.
+#
+# The fail-fast decision is delegated to :func:`get_environment` (the single
+# source of truth for the runtime environment) rather than re-reading
+# ``ENVIRONMENT`` here, so the two getters can never disagree. A DSN is not a
+# secret in the JWT/credential sense (it is a write-only ingestion key), but to
+# stay consistent with the established secret-hygiene contract the
+# ``LookupError`` text names the env var and NOT any value.
+
+
+def get_sentry_dsn_api() -> str | None:
+    """Return ``SENTRY_DSN_API``, applying production-only fail-fast.
+
+    Reads ``SENTRY_DSN_API`` from the environment (after loading the root
+    ``.env`` once) and applies an environment-keyed access policy driven by
+    :func:`get_environment`:
+
+        * A non-empty DSN is returned verbatim in every environment.
+        * An unset/empty DSN **in production** raises :class:`LookupError` so
+          the app fails fast at startup rather than running prod with error
+          reporting silently disabled.
+        * An unset/empty DSN in ``development`` / ``preview`` / ``ci`` returns
+          ``None`` (fail-open). The Sentry init layer turns that ``None`` into
+          a no-op plus a warning log — it never crashes a non-prod process.
+
+    Returns
+    -------
+    str | None
+        The ``SENTRY_DSN_API`` value, or ``None`` when it is unset/empty and
+        the runtime environment is not ``production``.
+
+    Raises
+    ------
+    LookupError
+        When ``SENTRY_DSN_API`` is unset/empty **and**
+        :func:`get_environment` is ``"production"``. The message names the env
+        var but never leaks a value.
+    ValueError
+        Propagated from :func:`get_environment` when ``ENVIRONMENT`` is set to
+        a non-empty value outside :data:`ENVIRONMENTS`.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("SENTRY_DSN_API")
+    if value is not None and value != "":
+        return value
+    # Unset/empty: the environment decides between fail-fast and fail-open.
+    if get_environment() == "production":
+        raise LookupError(
+            "SENTRY_DSN_API is required when ENVIRONMENT=production. "
+            "Sentry error reporting must not be silently disabled in "
+            "production; set the env var in the deployment environment."
+        )
+    return None

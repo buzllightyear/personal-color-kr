@@ -49,7 +49,6 @@ The Phase 4.1 Seed explicitly lists the following as **out-of-scope**
 runtime dependencies, every one of which is deferred to a later Phase
 4.x / 5 / 6 / 7 sub-unit:
 
-    * **Sentry / sentry-sdk** — observability backend → Phase ≥7.
     * **PostHog / posthog-python** — analytics → Phase ≥4.4.
     * **Supabase Auth client / Apple Sign In libs** → Phase 4.3.
     * **CORS middleware deps** — none needed in 4.1 (no browser client).
@@ -65,9 +64,10 @@ into the API before its owning Seed is opened.
 This boundary is enforced by a parsed-pyproject allowlist test (not a
 lint rule) because:
 
-    1. A new runtime dep like ``sentry-sdk`` or ``slowapi`` would pass
-       every ruff / mypy / pytest gate while still violating AC19's
-       out-of-scope boundary — Python's import system has no way to know
+    1. A new runtime dep like ``slowapi`` (rate limiting) or
+       ``posthog-python`` (analytics) would pass every ruff / mypy /
+       pytest gate while still violating AC19's out-of-scope boundary —
+       Python's import system has no way to know
        a package is forbidden in 4.1 from imports or type signatures
        alone.
     2. The Seed's AC1 fixes the runtime-dep set verbatim; mirroring that
@@ -178,6 +178,27 @@ AC1_RUNTIME_DEP_ALLOWLIST: frozenset[str] = frozenset(
         # Apple-side RS256 verification and the backend-side HS256
         # mint/verify operations on a single dependency line.
         "PyJWT[crypto]",
+        # sentry-sdk[fastapi] (Phase 7.2 launch-readiness gate) is the ONLY
+        # new runtime dep introduced for full-stack API error observability.
+        # Per AC-15, ``sentry-sdk`` is REMOVED from the deferred-Phase 7
+        # out-of-scope block list (see the updated module docstring above) and
+        # is now an explicitly allowed runtime dependency. Justification:
+        #   * Captures unhandled exceptions on the FastAPI surface via the
+        #     ``[fastapi]`` extra's Starlette/ASGI integration hooks.
+        #   * Environment-aware ``sentry_sdk.init(...)`` keyed on
+        #     ``get_environment()`` with production-only DSN fail-fast.
+        #   * ``before_send`` PII scrubbing (emails, auth tokens, referral
+        #     codes, /v1/auth request bodies) with ``send_default_pii=False``.
+        #   * request_id correlation tag bridging Sentry events and the JSON
+        #     access logs emitted by ``RequestIdMiddleware``.
+        # Scope guard (Phase 7.2): error capture ONLY — no transaction/
+        # performance tracing (``traces_sample_rate`` stays 0, no
+        # ``SentryAsgiMiddleware``), no ``set_user`` correlation, and the
+        # mobile ``@sentry/react-native`` SDK is deferred to Phase 7.2b/7.3.
+        # Pinned to the 2.x major (latest stable as of 2026-06) so the
+        # ``sentry_sdk.init`` / ``before_send`` contract stays stable. The
+        # exact PEP 508 string mirrors the pyproject entry verbatim.
+        "sentry-sdk[fastapi]>=2,<3",
         # NOTE: ``core-python`` is intentionally NOT listed here. The
         # original AC1 seed declared it as a PEP 508 editable path
         # dependency (``core-python @ file://../../packages/core-python``),
@@ -268,8 +289,8 @@ def test_apps_api_runtime_dependencies_match_ac1_allowlist() -> None:
     passing every other AC's check.
 
     If this test fails, a contributor has reached past the Phase 4.1
-    boundary by adding a deferred-Phase runtime dep (Sentry, PostHog,
-    Apple-auth client, Fal.ai SDK, rate-limit library, etc.) or has
+    boundary by adding a deferred-Phase runtime dep (PostHog, Fal.ai
+    SDK, rate-limit library, etc.) or has
     silently removed a Phase 4.1-required dep. The fix is to revert the
     pyproject change and route any new dep through the appropriate
     later-phase Seed.

@@ -20,6 +20,7 @@ from fastapi import FastAPI
 from api.config.env import get_latency_alert_p95_threshold_ms
 from api.config.logging import configure_json_logging
 from api.middleware.request_id import RequestIdMiddleware
+from api.observability.sentry import init_sentry_for_environment
 from api.services.latency_aggregator import LatencyAggregator
 from api.routers import auth as auth_router
 from api.routers import diagnose as diagnose_router
@@ -52,6 +53,22 @@ def create_app() -> FastAPI:
     # the 8-key JSON schema (timestamp, level, message, request_id, method,
     # path, status, latency_ms).
     configure_json_logging()
+
+    # Phase 7.2 (AC-3) — arm Sentry error capture BEFORE constructing the app.
+    # ``configure_json_logging`` runs first (above) so the init lifecycle logs
+    # (``sentry_init_completed`` / ``sentry_init_skipped``) emit through the
+    # structured JSON stream; Sentry is then initialized before the ``FastAPI``
+    # constructor and before any router/middleware is built, so the SDK's global
+    # error hooks are armed for the whole app surface.
+    #
+    # This is the boot-readiness gate: in ``ENVIRONMENT=production`` a missing or
+    # empty ``SENTRY_DSN_API`` raises ``LookupError`` here (delegated to
+    # :func:`api.config.env.get_sentry_dsn_api`). The error is intentionally not
+    # caught — the factory aborts and the application *refuses to boot* rather
+    # than shipping production with error reporting silently disabled. In
+    # development / preview / ci a missing DSN is a fail-open no-op plus a single
+    # warning log, so local dev, preview builds, and the test suite never crash.
+    init_sentry_for_environment()
 
     app = FastAPI(
         title="personal-color-kr API",
