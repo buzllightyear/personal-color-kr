@@ -150,6 +150,11 @@ FORBIDDEN_BASENAME_PREFIXES: tuple[str, ...] = (
     # `referrals/` package (attribution_event, share_url, etc.) plus
     # `schemas/referrals.py` legitimately, so the "users" and "referral"
     # prefixes are removed too.
+    # Phase 7.2 lands the Sentry SDK integration layer
+    # (`apps/api/src/api/observability/sentry.py`) legitimately as the API
+    # error-observability launch-readiness gate, so the "sentry" prefix is
+    # removed from this gate (see test_observability_sentry_module_exists
+    # below, which positively asserts the module now exists).
     "magazine",  # Magazine surface (Phase 5)
     "edit",  # /v1/edit Fal.ai vendor route (Phase ≥6)
     "guide",  # /v1/guide route (Phase 4.x)
@@ -157,7 +162,6 @@ FORBIDDEN_BASENAME_PREFIXES: tuple[str, ...] = (
     "wording",  # /v1/wording route (Phase 4.x)
     "cors",  # CORS middleware (Phase ≥6)
     "rate_limit",  # Rate limiting (Phase ≥6)
-    "sentry",  # Sentry runtime dep (Phase ≥7)
 )
 
 # Compiled forbidden-basename regex. Anchored on both ends:
@@ -324,4 +328,50 @@ def test_no_added_apps_api_files_match_forbidden_basename() -> None:
         f"and must not land inside apps/api during Phase 4.1. Revert the "
         f"added file(s) below and route the work through the appropriate "
         f"later-phase Seed.\n" + "\n".join(f"  - {path}" for path in forbidden_matches)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.2 positive regression guard — the Sentry integration module MUST
+# exist now that the "sentry" prefix has been removed from the forbidden
+# basename gate above.
+# ---------------------------------------------------------------------------
+
+# Repo-root-relative path of the Phase 7.2 Sentry integration module. Encoded
+# as a constant so the assertion text and the resolved filesystem path
+# reference the same string (no drift between message and check).
+SENTRY_MODULE_RELATIVE_PATH = "apps/api/src/api/observability/sentry.py"
+
+
+@pytest.mark.unit
+def test_observability_sentry_module_exists() -> None:
+    """The Phase 7.2 Sentry integration module must exist.
+
+    Counterpart to the forbidden-basename gate above: once the "sentry"
+    prefix is removed from :data:`FORBIDDEN_BASENAME_PREFIXES` (because Phase
+    7.2 lands the Sentry SDK integration legitimately), this positive guard
+    asserts the module actually exists at
+    ``apps/api/src/api/observability/sentry.py``.
+
+    Without this guard, removing the forbidden prefix would silently re-open
+    the door to *any* ``sentry*.py`` file (or to none at all) with no signal.
+    Pairing the removal with a presence assertion keeps the boundary
+    intentional: the prefix is allowed precisely because this specific module
+    is expected to be present.
+
+    The check uses :class:`pathlib.Path` against the repo root (resolved the
+    same way as the diff test, via :func:`_repo_root`) so it is robust to the
+    directory from which ``pytest`` is invoked, and asserts the path is a
+    regular file (not merely an existing directory entry).
+    """
+    repo_root = _repo_root()
+    sentry_module = repo_root / SENTRY_MODULE_RELATIVE_PATH
+
+    assert sentry_module.is_file(), (
+        f"Expected the Phase 7.2 Sentry integration module to exist at "
+        f"{SENTRY_MODULE_RELATIVE_PATH!r} (resolved: {sentry_module!s}), but "
+        f"it was not found as a regular file. The 'sentry' prefix was removed "
+        f"from FORBIDDEN_BASENAME_PREFIXES on the basis that this module "
+        f"lands legitimately in Phase 7.2 — if the module is missing, either "
+        f"restore the forbidden-prefix gate or add the integration module."
     )
