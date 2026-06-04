@@ -67,8 +67,8 @@
 ### Phase 7 — Launch
 | ID | 작업 | 비고 |
 |----|------|------|
-| 7.1 | App Store metadata + screenshots + reviews 카피 | 마케팅 |
-| 7.2 | Sentry or 유사 모니터링 | infra |
+| 7.1 | App Store metadata + screenshots + reviews 카피 | 마케팅 — ✅ 완료 (2026-06-05, PR #43) |
+| 7.2 | Sentry or 유사 모니터링 | infra — ✅ 완료 (2026-06-04, PR #41) |
 | 7.3 | TestFlight beta | iOS |
 | 7.4 | Production 배포 | iOS |
 
@@ -1695,6 +1695,94 @@ Tests (Phase 6.3 baseline 334 → Phase 7.2 **724** pytest, +390 신규):
 - Code-level event drop (health-check noise 필터링 등) — Sentry UI inbound filter 권장
 
 **Seed**: `~/.ouroboros/seeds/seed_3702914d9a2e_unit_7_2.yaml` (v1.0.0, ambiguity 0.083)
+
+### Phase 7.1 결과 요약 (2026-06-05)
+
+**산출물 (Korean iOS App Store metadata + screenshot specs + reviewer notes + app.json enrichment — App Store Connect 제출 unblocking)**:
+
+ko-KR 단일 로케일, iOS App Store Connect 제출 준비 완료. 모든 카피는 기존 `FUNNEL_SCREENS` 카탈로그에서 유도(welcome_hook, diagnosis_input, Phase 6.2 scan_animation 8단계 라벨, value_props, rating_gate) — 임의 창작 없음. 해요체 semi-formal 레지스터로 기존 펀널 UI 톤(괜찮아요, 정확해요, 공개돼요)과 통일. 타깃: 20–30대 한국 여성 셀카 사용자, 친근 큐레이션 보이스. **Apple 캐릭터 한도 엄수**: title 18/30자, subtitle 19/30자.
+
+Markdown 산출 (14 files, `docs/app-store/ko-KR/`):
+- `title.md` (NEW, 18자, "퍼스널 컬러 진단, 셀카가 빛나요" + 3개 대체안)
+- `subtitle.md` (NEW, 19자, "셀카 1장으로 퍼스널 컬러 진단해요" + 5개 A/B 후보)
+- `description.md` (NEW, ≤4000자, intro+features+value props+privacy+signature)
+- `keywords.md` (NEW, ≤100자 + ASO 보강 권장 TODO)
+- `promotional-text.md` (NEW, ≤170자)
+- `whats-new.md` (NEW, ≤4000자, 0.1.0 release notes)
+- `categories.md` (NEW, primary=Lifestyle + secondary)
+- `age-rating.md` (NEW, 17+ questionnaire answers + rationale)
+- `urls.md` (NEW, privacy/support/marketing — all TODO)
+- `app-review-info.md` (NEW, Apple reviewer notes, demo Apple Sign In TODO)
+- `README.md` (NEW, `## 검수 체크리스트` 9-line sign-off)
+- `screenshots/iphone-6-7.md` (NEW, 6-row table 1290×2796)
+- `screenshots/iphone-6-5.md` (NEW, 6-row table 1284×2778)
+- `screenshots/specs.md` (NEW, 공통 narrative arc)
+- `reviews/response-templates.md` (NEW, 4 templates: positive / negative-bug / negative-feature / neutral)
+
+`apps/mobile/app.json` 강화 (+15 LOC, iOS 제출-blocking 필드):
+- `expo.ios.bundleIdentifier` = `"com.personalcolorkr.app"`
+- `expo.ios.buildNumber` = `"1"`
+- `expo.ios.appleTeamId` = `"TODO_APPLE_TEAM_ID"` (Apple Developer 등록 시 채움)
+- `expo.ios.config.usesNonExemptEncryption` = `false`
+- `expo.ios.infoPlist`:
+  - `CFBundleDisplayName` = `"퍼스널 컬러"`
+  - `NSCameraUsageDescription` (해요체 한국어 권한 사용 사유)
+  - `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`
+  - `LSApplicationCategoryType` = `"public.app-category.lifestyle"`
+
+Screenshot narrative arc (funnel-derived, 6 per size class × 2 sizes):
+1. welcome_hook (가치 제안 진입) → 2. selfie_capture (셀카 1장 입력) → 3. fake_scan_animation (1차 가짜 스캔) → 4. scan_animation 8-stage (Phase 6.2 라벨 재사용) → 5. result_reveal (4계절 결과) → 6. social_evolution (친구 추천 코드)
+
+**4중 정합 (local pre-push)**:
+- mobile typecheck ✅ | core-ts typecheck ✅ | api mypy --strict ✅ (62 files, no issues)
+- ESLint workspaces ✅ | Prettier --check ✅ | ruff ✅ | black --check ✅ (151 files)
+- vitest mobile → **1242 passed, 2 skipped** (128 files, 3.01s)
+- pytest api → **724 passed, 32 skipped** (DB-only integration)
+- CI (Test Node 20 / Python 3.12) → **PASS**, 2m38s + 2m35s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/phase-7-1-ko-kr-app-store-metadata` (auto-deleted post-merge)
+- 핵심 commit: 15 files (+~2,500 / -1 LOC, markdown + json only)
+- PR #43 squash merge commit: `ab77106`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 7차 검증, 두 번째 Phase 7 sub-unit)**:
+
+- Interview: `interview_20260604_054849` — 5 round Socratic (publish-ready vs scaffold / 산출 트리 / 화면 캡쳐 narrative + 사이즈 클래스 / app.json + review 분리 / 검수 체크리스트). **Ambiguity 0.073** (Phase 6.4 0.07 / 7.2 0.083 → 7.1 = 최저급 동률). 첫 시도 `interview_20260604_054754` 는 initial_context too long 으로 거부, 1-paragraph context 로 재시작.
+- Seed: `~/.ouroboros/seeds/seed_e710f2766f35_unit_7_1.yaml` (18 ACs / 13 constraints / 17 ontology fields / 6 evaluation principles / 5 exit conditions).
+- Run #1 (`orch_87cbbd407e4e`, job `job_6c7ede4bde55`): **19/19 ACs (full, +1 internal)** — Phase 4.5 → 6.1 → 6.2 → 6.4 → 7.2 → **7.1 = 6회 연속 full orchestrator 성공** (6.3만 rate-limit halt 예외).
+- **Q00#1202 UPSTREAM FIXED 7차 검증**: 패치 형태가 `execution_mode != "legacy"` 로 진화했으나 동등 행위 보존 (`/Users/opty/.claude/plugins/cache/ouroboros/ouroboros/0.39.1/.../execution_handlers.py:507`).
+- Harvest 패턴: worktree → main repo branch copy (Phase 6.1 / 7.2 와 동일).
+- **Manual fix: 0 LOC** — Phase 6.1/6.2/6.4 zero-recovery, Phase 7.2 (8 LOC formatting) → **Phase 7.1 zero-recovery 복귀**.
+- **CI 회복: 0 round** — **누적 5회** (6.1/6.2/6.4/7.2/7.1).
+- 실행 시간: **~25분** (Step 3 → completion), Deliver L1 13/19 → L2 18/19 → L5 19/19 가속.
+
+**Phase 7.2 비교 (Python infra → Marketing content, 톤·도메인 분리)**:
+| 측면 | Phase 7.2 | Phase 7.1 |
+|---|---|---|
+| Orchestrator 결과 | 18/18 (full) | **19/19 (full)** |
+| Manual completion | 8 LOC (formatting) | **0 LOC** |
+| Ambiguity | 0.083 | **0.073** (최저급 동률, Phase 6.4 0.07 다음) |
+| Surface | Python (apps/api) infra | **Marketing markdown + app.json json** |
+| Q00#1202 상태 | upstream fixed (6차) | **upstream fixed (7차, 패치 진화 동등성 검증)** |
+| CI round | 0 | **0** (재현) |
+| 산출 합계 | 32 files (Python + tests + lock) | **15 files** (14 markdown + 1 json) |
+| 테스트 증가 | +390 pytest | **0** (zero-test phase, marketing tier) |
+| 실행 시간 | ~50분 | **~25분** (text generation 가속) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- 실제 screenshot 이미지 캡쳐/렌더링 — spec markdown only, Phase 7.3 TestFlight 직전 수행
+- 5.5" 사이즈 클래스 screenshots — 6.7" + 6.5" 만 mandatory
+- en-US / ja-JP / 기타 locale — ko-KR only, 향후 i18n phase
+- Android Play Store metadata — iOS only
+- ASO 경쟁 키워드 리서치 — TODO 마커, 외부 도구 필요
+- Privacy policy / support / marketing URL 호스팅 — TODO 마커, 별도 호스팅 task
+- Apple Team ID — TODO 마커, Apple Developer 계정 등록 시 채움
+- Demo Apple Sign In 계정 provisioning — Phase 7.3 TestFlight 통합
+- 원어민 카피 검수 사인오프 — README 검수 체크리스트, human-only gate
+- 법무/컴플라이언스 사인오프 (age rating IARC 등) — human-only gate
+- 아이콘 / 스플래시 / `PrivacyInfo.xcprivacy` / `expo.privacy` — 별도 asset phase
+
+**Seed**: `~/.ouroboros/seeds/seed_e710f2766f35_unit_7_1.yaml` (v1.0.0, ambiguity 0.073)
 
 ## 참고
 
