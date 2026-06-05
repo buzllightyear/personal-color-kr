@@ -39,11 +39,22 @@ between cases should use ``monkeypatch.setenv`` (which mutates
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Final, Literal
 
 from dotenv import find_dotenv, load_dotenv
+
+from api.config.logging import LOGGER_NAME
+
+#: Module logger — the shared ``apps.api`` JSON logger (see
+#: :mod:`api.config.logging`). Used only for the fail-open
+#: ``sentry_traces_sample_rate_invalid`` warning emitted when a non-production
+#: ``SENTRY_TRACES_SAMPLE_RATE`` override is malformed/out-of-bounds and we fall
+#: back to the per-environment default. ``api.config.logging`` does not import
+#: this module, so the import is acyclic.
+_logger: Final[logging.Logger] = logging.getLogger(LOGGER_NAME)
 
 # Anchor the search at this module's path so the upward walk for ``.env``
 # is identical regardless of where pytest / uvicorn was invoked from.
@@ -544,3 +555,161 @@ def get_sentry_dsn_api() -> str | None:
             "production; set the env var in the deployment environment."
         )
     return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.3 — environment-aware Sentry transaction sampling
+# (traces_sample_rate + SENTRY_TRACES_SAMPLE_RATE override)
+# ---------------------------------------------------------------------------
+# Phase 7.2 shipped error capture only (tracing disabled). Phase 7.3 turns on
+# *top-level HTTP transaction* tracing and keys the sample rate off the runtime
+# environment so cost/volume stays bounded:
+#
+#   * development / ci — 0.0 (tracing off): local runs and the test suite must
+#     ship zero transactions, keeping CI deterministic and free of ingest.
+#   * preview / production — 0.1 (10%): a representative sample that surfaces
+#     latency trends without paying to ingest every request.
+#
+# An optional ``SENTRY_TRACES_SAMPLE_RATE`` env var overrides the default for
+# ad-hoc tuning (e.g. temporarily sampling 100% in preview to chase a latency
+# regression). The override is validated against the Sentry SDK's inclusive
+# ``[0.0, 1.0]`` contract with an *environment-keyed* failure policy that mirrors
+# :func:`get_sentry_dsn_api`:
+#
+#   * production — **fail-fast**: a malformed (non-float) or out-of-bounds
+#     override raises :class:`ValueError` at startup rather than silently
+#     mis-sampling prod traffic with a bad config value.
+#   * development / preview / ci — **fail-open**: a bad override is ignored with
+#     a single ``sentry_traces_sample_rate_invalid`` warning and the
+#     per-environment default is used, so a fat-fingered local value never
+#     crashes the dev/test process.
+
+#: Per-environment default transaction sample rates. Dev/CI keep tracing fully
+#: off (``0.0``); preview/production sample 10% (``0.1``). Public so callers and
+#: tests reference the canonical mapping rather than re-typing literals.
+DEFAULT_TRACES_SAMPLE_RATES: Final[dict[Environment, float]] = {
+    "development": 0.0,
+    "ci": 0.0,
+    "preview": 0.1,
+    "production": 0.1,
+}
+
+#: Inclusive lower/upper bounds for a valid ``traces_sample_rate`` (the Sentry
+#: SDK rejects values outside ``[0.0, 1.0]``).
+TRACES_SAMPLE_RATE_MIN: Final[float] = 0.0
+TRACES_SAMPLE_RATE_MAX: Final[float] = 1.0
+
+
+def get_sentry_traces_sample_rate() -> float:
+    """Return the Sentry ``traces_sample_rate`` for the runtime environment.
+
+    Resolves the per-environment default from :data:`DEFAULT_TRACES_SAMPLE_RATES`
+    (``development`` → ``0.0``, ``ci`` → ``0.0``, ``preview`` → ``0.1``,
+    ``production`` → ``0.1``), then applies the optional
+    ``SENTRY_TRACES_SAMPLE_RATE`` override:
+
+        * **unset/empty** — the per-environment default is returned.
+        * **valid** (a float within ``[0.0, 1.0]``) — the override is returned.
+        * **malformed or out-of-bounds** — the failure policy is keyed off
+          :func:`get_environment`:
+
+              - ``production`` raises :class:`ValueError` (fail-fast): a bad
+                sampling config must not silently mis-sample prod traffic.
+              - ``development`` / ``preview`` / ``ci`` log a single
+                ``sentry_traces_sample_rate_invalid`` warning and fall back to
+                the per-environment default (fail-open).
+
+    Returns
+    -------
+    float
+        A sample rate within ``[0.0, 1.0]`` — the override when valid, otherwise
+        the per-environment default.
+
+    Raises
+    ------
+    ValueError
+        When ``SENTRY_TRACES_SAMPLE_RATE`` is malformed or out of ``[0.0, 1.0]``
+        **and** :func:`get_environment` is ``"production"``. Also propagated
+        from :func:`get_environment` when ``ENVIRONMENT`` is an unknown,
+        non-empty value.
+    """
+    _load_root_dotenv_once()
+    environment = get_environment()
+    default = DEFAULT_TRACES_SAMPLE_RATES[environment]
+
+    raw = os.environ.get("SENTRY_TRACES_SAMPLE_RATE")
+    if raw is None or raw == "":
+        return default
+
+    try:
+        parsed = float(raw)
+    except ValueError:
+        return _reject_or_default_traces_rate(
+            environment=environment,
+            default=default,
+            raw=raw,
+            reason="not_a_float",
+        )
+
+    # Reject NaN/inf and anything outside the SDK's inclusive [0.0, 1.0] range.
+    if not (TRACES_SAMPLE_RATE_MIN <= parsed <= TRACES_SAMPLE_RATE_MAX):
+        return _reject_or_default_traces_rate(
+            environment=environment,
+            default=default,
+            raw=raw,
+            reason="out_of_bounds",
+        )
+
+    return parsed
+
+
+def _reject_or_default_traces_rate(
+    *,
+    environment: Environment,
+    default: float,
+    raw: str,
+    reason: str,
+) -> float:
+    """Apply the environment-keyed policy for an invalid traces-rate override.
+
+    Production fails fast (:class:`ValueError`); every other environment logs a
+    single ``sentry_traces_sample_rate_invalid`` warning and returns the
+    per-environment ``default`` (fail-open). The ``raw`` value is included in the
+    message/log because ``SENTRY_TRACES_SAMPLE_RATE`` is a sampling knob, not a
+    secret — no credential ever flows through it.
+
+    Parameters
+    ----------
+    environment:
+        The resolved runtime environment (decides fail-fast vs fail-open).
+    default:
+        The per-environment default returned on the fail-open path.
+    raw:
+        The offending ``SENTRY_TRACES_SAMPLE_RATE`` string.
+    reason:
+        A stable machine code (``"not_a_float"`` / ``"out_of_bounds"``) attached
+        to the warning log and the exception text.
+
+    Raises
+    ------
+    ValueError
+        When ``environment`` is ``"production"``.
+    """
+    if environment == "production":
+        raise ValueError(
+            f"SENTRY_TRACES_SAMPLE_RATE={raw!r} is invalid ({reason}). "
+            f"Expected a float within "
+            f"[{TRACES_SAMPLE_RATE_MIN}, {TRACES_SAMPLE_RATE_MAX}]. "
+            "A malformed sampling rate must not silently mis-sample "
+            "production traffic."
+        )
+    _logger.warning(
+        "sentry_traces_sample_rate_invalid",
+        extra={
+            "invalid_reason": reason,
+            "invalid_value": raw,
+            "environment": environment,
+            "fallback_rate": default,
+        },
+    )
+    return default

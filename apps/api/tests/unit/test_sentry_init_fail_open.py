@@ -37,6 +37,7 @@ from collections.abc import Iterator
 
 import pytest
 
+from api.config.env import DEFAULT_TRACES_SAMPLE_RATES
 from api.config.logging import LOGGER_NAME
 import api.observability.sentry as sentry_mod
 from api.observability.sentry import (
@@ -46,6 +47,7 @@ from api.observability.sentry import (
 
 _ENV_VAR = "ENVIRONMENT"
 _DSN_VAR = "SENTRY_DSN_API"
+_TRACES_RATE_VAR = "SENTRY_TRACES_SAMPLE_RATE"
 
 # Synthetic DSN — shaped like a real Sentry DSN but points nowhere. Only used
 # in the DSN-present control case, where ``sentry_sdk.init`` is a stub, so it
@@ -283,6 +285,8 @@ def test_present_dsn_initializes_and_does_not_warn(
 ) -> None:
     monkeypatch.setenv(_ENV_VAR, environment)
     monkeypatch.setenv(_DSN_VAR, _FAKE_DSN)
+    # No override → the per-environment default rate is used.
+    monkeypatch.delenv(_TRACES_RATE_VAR, raising=False)
 
     result = init_sentry_for_environment()
 
@@ -294,8 +298,11 @@ def test_present_dsn_initializes_and_does_not_warn(
     # Privacy flag is forced off and the scrubbing hook is wired in.
     assert init_stub[0]["send_default_pii"] is False
     assert init_stub[0]["before_send"] is sentry_mod.before_send
-    # Error capture only — no transaction tracing kwarg is passed.
-    assert "traces_sample_rate" not in init_stub[0]
+    # Phase 7.3 — transaction tracing is now wired with the environment-aware
+    # sample rate (development/ci → 0.0, preview → 0.1).
+    assert (
+        init_stub[0]["traces_sample_rate"] == DEFAULT_TRACES_SAMPLE_RATES[environment]
+    )
     # No fail-open skip warning when a DSN is present.
     assert _skip_records(log_records) == []
 

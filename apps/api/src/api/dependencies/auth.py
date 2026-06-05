@@ -24,6 +24,7 @@ from api.auth.backend_jwt import BackendJwtError, verify_backend_jwt
 from api.config.env import require_jwt_secret
 from api.db.models.user import User
 from api.db.session import AsyncSession, get_session, select
+from api.observability.sentry import set_request_user
 
 #: HTTPBearer extracts the ``Authorization: Bearer <token>`` header and
 #: rejects mismatched schemes (returning the credentials object so the
@@ -92,6 +93,14 @@ async def require_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="user_not_found",
         )
+
+    # Phase 7.3 — correlate this authenticated request with its user on the
+    # active Sentry scope. Attached at exactly this one seam (no per-router
+    # boilerplate) and limited to the stable internal id ({"id": str(user.id)})
+    # — no email/username/ip_address. ``set_request_user`` is fail-open: a
+    # Sentry failure is swallowed and logged, never raised, so observability
+    # can never break the auth path.
+    set_request_user(str(user.id))
     return user
 
 
