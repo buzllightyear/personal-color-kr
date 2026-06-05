@@ -45,6 +45,13 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascApiKeyPath": "./credentials/asc-api-key.p8",
+        "ascApiKeyId": "TODO_ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "TODO_ASC_API_KEY_ISSUER_ID",
+        "appleTeamId": "TODO_APPLE_TEAM_ID"
+      }
+    }
   }
 }

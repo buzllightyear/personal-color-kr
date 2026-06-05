@@ -8,6 +8,7 @@ import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
 import { getVendorKeys } from '../src/config/vendor-keys';
 import { configureSuperwall } from '../src/superwall/client';
 import { useStashReferralCodeOnDeepLink } from '../src/hooks/use-stash-referral-code';
+import { initSentry } from '../src/sentry';
 
 /**
  * Root layout for the personal-color-kr Expo Router app shell.
@@ -167,7 +168,47 @@ function useConfigureSuperwallOnce(): void {
   }, []);
 }
 
+/**
+ * Phase 7.3 Sub-AC — one-shot Sentry React Native init at app mount.
+ *
+ * `initSentry()` (from `src/sentry.ts`) is the ONE seam that calls
+ * `Sentry.init(...)`; this hook is the root layout's responsibility to *fire*
+ * that call exactly once per JS runtime, as the FIRST line of the mount effect.
+ *
+ * Why initSentry is the first line of the FIRST mount effect in `RootLayout`:
+ *   - Sentry's global error / unhandled-rejection hooks must be armed before
+ *     any other subsystem boots so that a crash inside PostHog bootstrap,
+ *     Superwall configure, or the first screen render is still captured.
+ *   - `RootLayout` mounts `<PostHogProvider>` (whose `PostHog` constructor runs
+ *     during the provider's render) below this effect, and this hook is invoked
+ *     ahead of `useConfigureSuperwallOnce()` and ahead of returning the
+ *     provider tree — so Sentry is wired before PostHog and Superwall in the
+ *     root layout's mount sequence. This matches the api Phase 7.2 ordering
+ *     where `init_sentry_for_environment` runs first in the app bootstrap.
+ *
+ * Fail-open:
+ *   `initSentry()` never throws (it owns its own try/catch and a
+ *   `console.warn('sentry_init_skipped' | 'sentry_init_failed', …)` fail-open
+ *   path), so the effect needs no guard of its own — a disabled or
+ *   misconfigured Sentry must never break app mount. The boolean result is
+ *   intentionally ignored here; the runtime no-op is the contract.
+ *
+ * Why an empty dependency array:
+ *   The SDK is process-global state. Re-initialising on every re-render would
+ *   churn that state, so the effect runs at mount only — the same one-shot
+ *   contract as `useConfigureSuperwallOnce`.
+ */
+function useInitSentryOnce(): void {
+  useEffect(() => {
+    initSentry();
+  }, []);
+}
+
 export default function RootLayout(): JSX.Element {
+  // Sentry FIRST — its global error hooks must be armed before PostHog's
+  // constructor (runs during `<PostHogProvider>` render) and before the
+  // Superwall configure effect, so any crash in those bootstraps is captured.
+  useInitSentryOnce();
   useConfigureSuperwallOnce();
   return (
     <PostHogProvider>

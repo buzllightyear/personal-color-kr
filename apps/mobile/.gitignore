@@ -1,0 +1,19 @@
+# Expo / React Native
+.expo/
+dist/
+web-build/
+
+# Native build artifacts
+ios/
+android/
+
+# Apple / App Store Connect 자격 증명 (절대 커밋 금지)
+credentials/*
+!credentials/.gitkeep
+!credentials/README.md
+*.p8
+
+# Env
+.env
+.env.local
+.env.*.local

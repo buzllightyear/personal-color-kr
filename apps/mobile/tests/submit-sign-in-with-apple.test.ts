@@ -24,6 +24,15 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+// `submit-sign-in-with-apple.ts` now transitively imports
+// `src/set-sentry-user.ts`, which statically imports the native
+// `@sentry/react-native` SDK (whose Objective-C-backed shim Node cannot
+// resolve under vitest). Replace it with an inert spy so these Phase 4.5
+// cleanup tests load the module without touching the native bridge — the
+// Sentry-on-success behaviour itself is asserted in
+// `submit-sign-in-with-apple-sets-sentry-user.test.ts`.
+vi.mock('@sentry/react-native', () => ({ setUser: vi.fn() }));
+
 import {
   submitSignInWithApple,
   type SignInWithAppleTransport,

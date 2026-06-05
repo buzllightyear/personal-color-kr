@@ -49,15 +49,25 @@ import {
   clearStashedReferralCode,
   readStashedReferralCode,
 } from './storage/referral-storage';
+import { setSentryUser, type SentryUserPayload } from './set-sentry-user';
 
 /**
  * The HTTP-status-bearing result of the sign-in POST. Deliberately minimal —
  * this module only needs the status code to decide whether the sign-in
  * succeeded (HTTP 200) and the stash may be cleared. The caller's transport
  * adapter maps its real HTTP response down to this shape.
+ *
+ * On a successful sign-in (HTTP 200) the server returns the inline
+ * `response.user` projection; the transport adapter surfaces that user's id
+ * here as `userId` so the success path can attach it to the Sentry scope
+ * (Phase 7.3, ontology `userId` — the sole PII field correlated to Sentry).
+ * It is optional because the *only* thing the clear-on-200 contract requires
+ * is the status code; a transport that omits `userId` (or a non-200 response)
+ * simply skips the Sentry correlation without breaking sign-in.
  */
 export interface SignInHttpResponse {
   readonly status: number;
+  readonly userId?: string | number;
 }
 
 /**
@@ -84,6 +94,13 @@ const HTTP_OK = 200 as const;
 export interface SubmitSignInWithAppleDeps {
   readonly readStash?: StashedReferralCodeReader;
   readonly clearStash?: () => Promise<void>;
+  /**
+   * Override for the Sentry user-correlation seam. Defaults to the real
+   * {@link setSentryUser} (id-only, fail-open). Injected so tests can assert
+   * the success path attaches the user id without resolving the native
+   * `@sentry/react-native` SDK.
+   */
+  readonly setUser?: (user: SentryUserPayload) => void;
 }
 
 /**
@@ -94,15 +111,20 @@ export interface SubmitSignInWithAppleDeps {
  *      (delegated to `buildSignInWithAppleRequestBody`);
  *   2. hand the body to the injected `transport` (the real HTTP POST);
  *   3. ONLY when the response status is exactly 200, clear the stash so the
- *      same referral code is never re-attributed on a subsequent sign-in.
+ *      same referral code is never re-attributed on a subsequent sign-in, and
+ *      — when the transport surfaced the authenticated user's id — attach that
+ *      id (stringified) to the Sentry scope via {@link setSentryUser} so every
+ *      error captured while signed in is correlated to the user by id alone
+ *      (Phase 7.3, ontology `userId`). The Sentry call is fail-open inside
+ *      `setSentryUser`, so observability never breaks sign-in.
  *
  * The transport's response is returned verbatim so the caller can drive
  * navigation / error UI off the same status this function inspected.
  *
  * @param credential - the Apple Sign In credential fields (camelCase).
  * @param transport - injectable HTTP seam performing the actual POST.
- * @param deps - optional stash read / clear overrides (default to the real
- *   AsyncStorage wrappers).
+ * @param deps - optional stash read / clear / setUser overrides (default to
+ *   the real AsyncStorage wrappers and the real id-only Sentry seam).
  * @returns the transport's HTTP response.
  */
 export async function submitSignInWithApple(
@@ -112,11 +134,19 @@ export async function submitSignInWithApple(
 ): Promise<SignInHttpResponse> {
   const readStash = deps.readStash ?? readStashedReferralCode;
   const clearStash = deps.clearStash ?? clearStashedReferralCode;
+  const setUser = deps.setUser ?? setSentryUser;
 
   const body = await buildSignInWithAppleRequestBody(credential, readStash);
   const response = await transport(body);
   if (response.status === HTTP_OK) {
     await clearStash();
+    // Auth success: correlate the authenticated user with Sentry by id alone
+    // (`String(userId)`). Guarded on presence so a transport that omits the id
+    // never sends a bogus `"undefined"` user; `setSentryUser` is itself
+    // fail-open and id-only, so no PII leaks and sign-in is never blocked.
+    if (response.userId != null) {
+      setUser({ id: String(response.userId) });
+    }
   }
   return response;
 }
