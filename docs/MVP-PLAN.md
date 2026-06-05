@@ -70,8 +70,8 @@
 | 7.1 | App Store metadata + screenshots + reviews 카피 | 마케팅 — ✅ 완료 (2026-06-05, PR #43) |
 | 7.2 | Sentry or 유사 모니터링 | infra — ✅ 완료 (2026-06-04, PR #41) |
 | 7.2c | Sentry tracing + user_id correlation (api) | infra — ✅ 완료 (2026-06-06, PR #45) |
-| 7.3 | TestFlight beta + 모바일 Sentry (@sentry/react-native 흡수) | iOS |
-| 7.4 | Production 배포 | iOS |
+| 7.3 | TestFlight beta + 모바일 Sentry (@sentry/react-native 흡수) | iOS — ✅ 완료 (2026-06-06, PR #47) |
+| 7.4 | Production 배포 (실 EAS build + submit + 베타 → 정식 출시) | iOS |
 
 ## 의존 그래프
 
@@ -1852,6 +1852,89 @@ Tests (Phase 7.2 baseline 724 → Phase 7.2c **844** pytest, +120 신규):
 - **Datadog / New Relic / Prometheus / OpenTelemetry** — backend 대안 선택 안 함
 
 **Seed**: `~/.ouroboros/seeds/seed_9e85fa30f43b_unit_7_2c.yaml` (v1.0.0, ambiguity 0.0405)
+
+### Phase 7.3 결과 요약 (2026-06-06)
+
+**산출물 (모바일 Sentry 통합 + EAS TestFlight upload readiness — 7.2b 흡수, 사람 자격 증명 외 모든 코드 완성)**:
+
+API Phase 7.2 (error capture) + 7.2c (tracing + user correlation) 패턴을 모바일에 미러링. 두 트랙 (Sentry SDK + EAS submit) 을 **single atomic build gate** 로 의도적으로 결합 — partial readiness 회피. **TestFlight upload readiness** (실 업로드는 Phase 7.4) 기조 유지: Apple Developer 등록 + Sentry org 프로비저닝은 human-only 블로커, 자격 증명 외 모든 코드/config 작성 완료. 사람이 `.p8` + 3 ASC IDs + Apple Team ID + Sentry org slug 채우면 **코드 수정 없이** `eas build` → `eas submit` 가능.
+
+Mobile Source (apps/mobile/src/):
+- `sentry.ts` (NEW): `initSentry()` — env-aware DSN (`Constants.expoConfig.extra.sentryDsnMobile`), env-aware tracesSampleRate (dev/dev-sim=0.0, preview/prod=0.1), error sampleRate 항상 1.0, environment tag = EAS build profile 이름. 3-layer fail-open (native inherent + JS init try/catch + setUser try/catch). `console.warn("sentry_init_skipped")` mirroring api `sentry_init_skipped` JSON log.
+- `set-sentry-user.ts` (NEW): `setSentryUser({id})` — id-only payload (no email/username/ip_address, defense-in-depth with api Phase 7.2 6 scrub 모듈).
+- `clear-sentry-user.ts` (NEW): `clearSentryUser()` — future sign-out 스캐폴딩 (sign-out UX는 미구현, ~5 LOC).
+- `submit-sign-in-with-apple.ts` (MOD): auth 성공 직후 `setSentryUser(String(userId))` 단일 hook (Phase 4.3 Apple Sign In 흐름의 success path).
+
+App config (apps/mobile/):
+- `app.config.ts` (MOD): `@sentry/react-native/expo` plugin 등록, `extra.easBuildProfile` (`process.env.EAS_BUILD_PROFILE` fallback `"development"`), `extra.sentryDsnMobile` forwarded from EAS Secret. 2개 build-time assertion: (1) production + missing `SENTRY_DSN_MOBILE` → throw, (2) `SENTRY_AUTH_TOKEN` present + `TODO_SENTRY_*` placeholder → throw (credential drift 방지).
+- `app/_layout.tsx` (MOD): `initSentry()` mounted effect 의 FIRST line (PostHogProvider 전).
+
+EAS submit (apps/mobile/):
+- `eas.json` (MOD): `submit.production.ios` block populated with `ascApiKeyPath`, `ascApiKeyId`, `ascApiKeyIssuerId`, `appleTeamId` 4개 TODO placeholders. ASC API Key 방식 채택 (CI-friendly, Apple ID + app-specific password 대신).
+- `.gitignore` (NEW): `credentials/`, `*.p8` (Apple credentials 절대 커밋 금지).
+- `credentials/.gitkeep` + `credentials/README.md` (NEW): 한국어 해요체 reviewer guide — `.p8` 다운로드 방법 (App Store Connect Users & Access → Keys), 3 ASC IDs 위치, EAS Secret 명령어.
+
+Docs:
+- `docs/testflight-dry-run.md` (NEW): 한국어 reviewer + dev runbook — `eas secret:create --scope project --name SENTRY_AUTH_TOKEN`, `eas build --profile production`, `eas submit --profile production --latest` 전체 명령 순서 + 예상 출력.
+- `docs/app-store/ko-KR/README.md` (MOD): `검수 체크리스트` 에 ASC API Key ID / Issuer ID TODO 2 lines 추가.
+
+Tests (Phase 6.2 baseline 1242 → Phase 7.3 **1331** vitest, +89 신규):
+- **12개 신규 vitest test 파일** (계획 7개에서 fine-grained coverage로 확장):
+  - Sentry runtime: `sentry-init.test.ts`, `sentry-environment-tag.test.ts`, `sentry-error-sample-rate.test.ts`, `sentry-set-user.test.ts`, `sentry-clear-user.test.ts`
+  - Integration: `submit-sign-in-with-apple-sets-sentry-user.test.ts`, `root-layout-sentry-init.test.tsx`
+  - app.config assertions: `app-config-sentry-plugin.test.ts`, `app-config-eas-build-profile.test.ts`, `app-config-production-dsn-gate.test.ts`, `app-config-sentry-token-slug-drift.test.ts`, `app-config-prebuild-dry-run.test.ts`
+- 4개 기존 test 보강: `funnel-step-entered-capture`, `root-layout-superwall-configure`, `root-layout`, `submit-sign-in-with-apple`.
+
+**4중 정합 (local pre-push, manual fixes 후)**:
+- `pnpm -r typecheck` → mobile + core-ts ✅ (manual: 2 LOC nullish chaining in 2 test files)
+- `pnpm -r lint` → ESLint ✅ (manual: `eslint --fix` on `sentry.ts`, 2 unused-directive 경고 auto-removed)
+- `pnpm -r format:check` → Prettier ✅ (manual: 7 files reformat via `--write`)
+- `pnpm -r test` → vitest mobile **1331 passed / 2 skipped / 140 files** (+89 tests from 1242 baseline)
+- `apps/api` pytest → **844 passed / 32 skipped** (zero api regression — mobile-only changes)
+- CI (Test Node 20 / Python 3.12) → **PASS**, 2m47s + 2m55s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/phase-7-3-testflight-sentry-mobile` (auto-deleted post-merge)
+- 핵심 commit: 30 files (+3,276 / -5 LOC, mobile 8 src + 12 new tests + 4 modified tests + 2 config + 2 docs + 2 credentials + lockfile)
+- PR #47 squash merge commit: `e20467a`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 9차 검증, 네 번째 Phase 7 sub-unit)**:
+
+- Interview: `interview_20260605_160917` — 5 round Socratic (Sentry scope JS-only vs full native / EAS submit credentials TODO 처리 / 모바일 env-awareness + fail-open 3-layer 매트릭스 + Sentry topology / org+project TODO 처리 + app.config.ts 상태 + 파일 매니페스트). **Ambiguity 0.0605** (역대 2위, Phase 7.2c 0.0405 다음).
+- Seed: `~/.ouroboros/seeds/seed_4f7d4da19022_unit_7_3.yaml` (22 ACs — 역대 최대 / 21 constraints / 15 ontology fields / 7 evaluation principles / 6 exit conditions).
+- Run #1 (`orch_c6f679bcf694`, job `job_120ddd4318dd`): **20/22 ACs (job failed, rate-limit halt)** — Phase 6.3 패턴 재현 (rate-limit halt 두 번째 사례). Worktree harvest + 4-gate 검증으로 **모든 22 ACs 코드 완성 확인**, 누락 없음.
+- **Q00#1202 UPSTREAM FIXED 9차 검증**: `execution_mode != "legacy"` 패턴 보존 (`/Users/opty/.claude/plugins/cache/ouroboros/ouroboros/0.39.1/.../execution_handlers.py:507`).
+- Harvest 패턴: in-place (worktree 자동 정리됨 — Phase 6.2/6.3/6.4 와 동일).
+- **Manual fix: ~10 LOC** (2 LOC TS nullish chaining + ESLint --fix 2 directive removals + Prettier 7 files reformat, 모두 cosmetic/safety, behavioral change 없음).
+- **CI 회복: 0 round** — **누적 7회** (6.1/6.2/6.4/7.2/7.1/7.2c/7.3).
+- 실행 시간: **~30분** (Step 3 → halt at 20/22), Deliver L1 → L4/5 진행 후 rate-limit.
+
+**Phase 7.2c 비교 (api infra → mobile infra, 동일 Sentry 패턴 cross-platform)**:
+| 측면 | Phase 7.2c (api) | Phase 7.3 (mobile) |
+|---|---|---|
+| Orchestrator 결과 | 14/14 (full) | **20/22 (halt) → 22/22 (harvest verified)** |
+| Interview rounds | 3 (역대 최소) | 5 |
+| Manual completion | 2 files black formatting | **~10 LOC** (TS + ESLint + Prettier, 모두 cosmetic) |
+| Ambiguity | **0.0405** 🏆 | 0.0605 (역대 2위) |
+| Surface | Python (apps/api) extension | **TypeScript (apps/mobile) full integration** |
+| Q00#1202 상태 | upstream fixed (8차) | **upstream fixed (9차)** |
+| CI round | 0 | **0** (재현 7회 연속) |
+| 산출 합계 | 17 files | **30 files** (mobile src 8 + tests 16 + config 2 + docs 2 + credentials 2) |
+| 테스트 증가 | +120 pytest | **+89 vitest** (12 신규 파일, fine-grained 7→12) |
+| 실행 구조 | 7-level (fine-grained) | **5-level** (broader ACs) |
+| 사용자 가시성 | 내부 observability | **TestFlight 베타 직전 readiness gate** |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- **Phase 7.4 (Production 배포)**: 실 `eas build --profile production` 실행, 실 `eas submit --profile production --latest` 업로드, TestFlight 베타 테스터 초청, App Store Connect 리뷰 제출, 정식 출시
+- **Distributed sentry-trace header propagation**: api↔mobile 양쪽 배포 후 자동 활성화
+- **HTTP / React Query auto-instrumentation on mobile**: post-launch performance hotspot 시그널 보이면 검토
+- **Sign-out UX 구축**: 제품 결정 필요, 스캐폴딩만 (`clearSentryUser` 5 LOC) 제공
+- **실 screenshot 캡쳐**: Phase 7.1 markdown spec 기반, Phase 7.4 전 사람이 수동 수행
+- **Apple Developer 등록 + Apple Team ID 해소**: human-only 블로커, README 검수 체크리스트
+- **Sentry org `pck-mobile` project 프로비저닝**: human-only, build-time assertion 으로 token+placeholder drift 방어
+- **Demo Apple Sign In 계정 provisioning**: Apple reviewer notes 용, App Store Connect 리뷰 시점 필요
+
+**Seed**: `~/.ouroboros/seeds/seed_4f7d4da19022_unit_7_3.yaml` (v1.0.0, ambiguity 0.0605)
 
 ## 참고
 
