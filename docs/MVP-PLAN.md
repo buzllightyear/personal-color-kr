@@ -69,7 +69,8 @@
 |----|------|------|
 | 7.1 | App Store metadata + screenshots + reviews 카피 | 마케팅 — ✅ 완료 (2026-06-05, PR #43) |
 | 7.2 | Sentry or 유사 모니터링 | infra — ✅ 완료 (2026-06-04, PR #41) |
-| 7.3 | TestFlight beta | iOS |
+| 7.2c | Sentry tracing + user_id correlation (api) | infra — ✅ 완료 (2026-06-06, PR #45) |
+| 7.3 | TestFlight beta + 모바일 Sentry (@sentry/react-native 흡수) | iOS |
 | 7.4 | Production 배포 | iOS |
 
 ## 의존 그래프
@@ -1783,6 +1784,74 @@ Screenshot narrative arc (funnel-derived, 6 per size class × 2 sizes):
 - 아이콘 / 스플래시 / `PrivacyInfo.xcprivacy` / `expo.privacy` — 별도 asset phase
 
 **Seed**: `~/.ouroboros/seeds/seed_e710f2766f35_unit_7_1.yaml` (v1.0.0, ambiguity 0.073)
+
+### Phase 7.2c 결과 요약 (2026-06-06)
+
+**산출물 (Sentry transaction tracing + authenticated user_id correlation — Phase 7.2 후속 api-only 확장)**:
+
+Phase 7.2의 error-only capture 위에 (1) environment-aware `traces_sample_rate` (2) `sentry_sdk.set_user({"id": str(user.id)})` per-request correlation 두 가지를 추가. **API-only scope** 엄수 — mobile `@sentry/react-native` 는 Phase 7.3 TestFlight 에 흡수. 모든 신규 동작이 Phase 7.2 fail-open 패턴과 정렬 (instrumentation never breaks auth/availability).
+
+Backend Source (apps/api/src/api/):
+- `config/env.py` (+169 LOC): `get_sentry_traces_sample_rate() -> float` — dev/ci=0.0, preview/prod=0.1, `SENTRY_TRACES_SAMPLE_RATE` env override [0.0, 1.0] bounds 검증, production fail-fast on malformed value.
+- `observability/sentry.py` (+159/-49 LOC net): `sentry_sdk.init(traces_sample_rate=..., integrations=[FastApiIntegration()])`. **Top-level HTTP transactions only** — SqlalchemyIntegration / HttpxIntegration / AsyncioIntegration 미등록 (sub-span scope creep 방지, Phase 6.3 in-process P50/P95/P99 와 redundant 회피).
+- `dependencies/auth.py` (+9 LOC): `require_current_user` 의 `verify_backend_jwt` 성공 직후 단일 hook — `try: sentry_sdk.set_user({"id": str(user.id)}) except Exception as exc: logger.warning("sentry_set_user_failed", ...)`. **id-only payload** (no email/username/ip_address) — Phase 7.2 의 6개 scrub 모듈 defense-in-depth 일관성 유지.
+
+Tests (Phase 7.2 baseline 724 → Phase 7.2c **844** pytest, +120 신규):
+- **12개 신규 unit test 파일** (계획 5개에서 fine-grained coverage로 확장):
+  - Sample rate: `test_sentry_traces_sample_rate.py`, `test_sentry_traces_sample_rate_env.py`
+  - Init verification: `test_sentry_init_traces_sample_rate.py`, `test_sentry_init_fastapi_integration.py`
+  - set_user 동작: `test_sentry_set_user_correlation.py`, `test_sentry_set_user_fail_open.py`, `test_sentry_unauthenticated_routes_no_user.py`
+  - Auth dependency 통합: `test_require_current_user_sets_sentry_user.py`, `test_require_current_user_set_user_failure_silent.py`, `test_require_current_user_returns_user_when_set_user_raises.py`, `test_require_current_user_no_set_user_on_auth_failure.py`, `test_require_current_user_skips_sentry_on_auth_failure.py`
+- 2개 기존 test 보강: `test_sentry_init_fail_open.py`, `test_sentry_init_params.py`
+
+**4중 정합 (local pre-push, manual fixes 후)**:
+- `python -m pytest -q apps/api` → **844 passed, 32 skipped**
+- `python -m mypy --strict apps/api/src` → **no issues found in 62 source files**
+- `python -m ruff check apps/api/src apps/api/tests` → **all checks passed**
+- `python -m black --check apps/api/src apps/api/tests` → **163 files unchanged** (manual: 2 files black-reformat 적용, formatting only)
+- TS workspaces: mobile typecheck ✅ · core-ts typecheck ✅ · ESLint ✅
+- CI (Test Node 20 / Python 3.12) → **PASS**, 2m32s + 2m35s, **0 round CI fix needed**
+
+**Git**:
+- Feature branch: `ooo/phase-7-2c-sentry-tracing-user-correlation` (auto-deleted post-merge)
+- 핵심 commit: 17 files (+2,339 / -49 LOC, source 3 + new tests 12 + modified tests 2)
+- PR #45 squash merge commit: `ed601e7`
+
+**Ouroboros workflow (Q00#1202 upstream fixed 8차 검증, 세 번째 Phase 7 sub-unit)**:
+
+- Interview: `interview_20260604_181648` — **3 round** Socratic (역대 최소 라운드). traces_sample_rate env-aware 전략 → set_user attachment + fields + unauthenticated 처리 → 실패 resilience + tracing depth + testing strategy. **Ambiguity 0.0405** (역대 최저, Phase 6.4 0.07 갱신).
+- Seed: `~/.ouroboros/seeds/seed_9e85fa30f43b_unit_7_2c.yaml` (14 ACs / 11 constraints / 9 ontology fields / 7 evaluation principles / 5 exit conditions).
+- Run #1 (`orch_5238bd141678`, job `job_6e1d988d01c9`): **14/14 ACs (full)** — Phase 4.5 → 6.1 → 6.2 → 6.4 → 7.2 → 7.1 → **7.2c = 7회 연속 full orchestrator 성공** (6.3만 rate-limit halt 예외).
+- **Q00#1202 UPSTREAM FIXED 8차 검증**: `execution_mode != "legacy"` 패턴 보존 (`/Users/opty/.claude/plugins/cache/ouroboros/ouroboros/0.39.1/.../execution_handlers.py:507`).
+- Harvest 패턴: worktree → main repo branch copy (Phase 6.1 / 7.1 / 7.2 와 동일).
+- **Manual fix: 2 files black formatting** (Phase 7.2 의 7 files 보다 적음, behavioral change 없음).
+- **CI 회복: 0 round** — **누적 6회** (6.1/6.2/6.4/7.2/7.1/7.2c).
+- 실행 시간: **~30분** (Step 3 → completion), 7-level Deliver structure (fine-grained 14 ACs across 7 levels).
+
+**Phase 7.2 비교 (api infra 동일 surface, scope 정제)**:
+| 측면 | Phase 7.2 | Phase 7.2c |
+|---|---|---|
+| Orchestrator 결과 | 18/18 (full) | **14/14 (full)** |
+| Interview rounds | 5 | **3** (역대 최소) |
+| Manual completion | 8 LOC (formatting) | **2 files formatting** (~8 LOC, formatting only) |
+| Ambiguity | 0.083 | **0.0405** 🏆 (역대 최저) |
+| Surface | Sentry init + 6 scrub modules | **Sentry tracing + user correlation** (Phase 7.2 init 위에 확장) |
+| Q00#1202 상태 | upstream fixed (6차) | **upstream fixed (8차)** |
+| CI round | 0 | **0** (재현 6회 연속) |
+| 산출 합계 | 32 files | **17 files** (source 3 + new tests 12 + modified tests 2) |
+| 테스트 증가 | +390 pytest | **+120 pytest** (12 신규 파일, fine-grained 5→12) |
+| 실행 구조 | 4-level | **7-level** (14 AC × Sub-AC 세분화) |
+
+**Out of scope (Seed constraint, 후속 phase 위임)**:
+- **모바일 Sentry (`@sentry/react-native`)** — **Phase 7.3 TestFlight** 에 흡수 결정됨
+- **Distributed tracing (`sentry-trace` header propagation)** — 모바일 측 활성화 후 자연 활성화 (Phase 7.3 이후)
+- **SQLAlchemy / HTTPX / Asyncio sub-span auto-instrumentation** — post-launch, production data 가 DB/outbound hotspot 시그널 보이면 검토
+- **Custom dashboards / alert routing** — Sentry org config (code 외부)
+- **PII 확장 (email/username/ip_address)** — Phase 7.2 scrub 모듈 defense-in-depth 와 충돌, 영구 out of scope
+- **Anonymous user sentinel** — Sentry hub isolation 이 unauthenticated 요청 자동 처리, 불필요
+- **Datadog / New Relic / Prometheus / OpenTelemetry** — backend 대안 선택 안 함
+
+**Seed**: `~/.ouroboros/seeds/seed_9e85fa30f43b_unit_7_2c.yaml` (v1.0.0, ambiguity 0.0405)
 
 ## 참고
 
