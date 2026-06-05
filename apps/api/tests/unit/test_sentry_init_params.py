@@ -1,10 +1,12 @@
-"""Unit tests for the Sentry SDK init call parameters (AC-2, Phase 7.2).
+"""Unit tests for the Sentry SDK init call parameters (AC-2 + Phase 7.3).
 
-AC-2 contract: ``sentry_sdk.init`` is invoked with ``dsn``, ``environment``,
-``release``, and ``before_send`` — and **never** with ``traces_sample_rate``
-(Phase 7.2 is error capture only; the SDK defaults tracing to ``0`` when the
-kwarg is absent). ``send_default_pii=False`` is also enforced as the first
-privacy layer.
+Contract: ``sentry_sdk.init`` is invoked with ``dsn``, ``environment``,
+``release``, ``before_send``, ``send_default_pii=False`` and — since Phase 7.3 —
+``traces_sample_rate`` plus ``integrations=[FastApiIntegration()]`` with
+``auto_enabling_integrations=False`` (FastAPI is the ONLY integration; no
+sub-span instrumentation). ``traces_sampler`` / ``profiles_sample_rate`` /
+``enable_tracing`` are still **never** passed — the environment-aware
+``traces_sample_rate`` float is the single sampling knob.
 
 These tests **never contact Sentry.io**: ``sentry_sdk.init`` is replaced with a
 recording stub via ``monkeypatch`` so we assert on the captured kwargs only.
@@ -15,6 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 import api.observability.sentry as sentry_module
 from api.observability.sentry import (
@@ -69,6 +72,7 @@ def test_init_passes_dsn_environment_release(recorder: _InitRecorder) -> None:
         dsn="https://public@o0.ingest.sentry.io/1",
         environment="production",
         release="abc123",
+        traces_sample_rate=0.1,
     )
     kwargs = recorder.last_kwargs
     assert kwargs["dsn"] == "https://public@o0.ingest.sentry.io/1"
@@ -77,29 +81,45 @@ def test_init_passes_dsn_environment_release(recorder: _InitRecorder) -> None:
 
 
 def test_init_passes_module_before_send_hook(recorder: _InitRecorder) -> None:
-    _init_sentry(dsn="dsn", environment="ci", release="r")
+    _init_sentry(dsn="dsn", environment="ci", release="r", traces_sample_rate=0.0)
     # The before_send param must be the module's composed scrubbing hook.
     assert recorder.last_kwargs["before_send"] is before_send
 
 
 def test_init_enforces_send_default_pii_false(recorder: _InitRecorder) -> None:
-    _init_sentry(dsn="dsn", environment="ci", release="r")
+    _init_sentry(dsn="dsn", environment="ci", release="r", traces_sample_rate=0.0)
     assert recorder.last_kwargs["send_default_pii"] is False
 
 
-def test_init_never_passes_traces_sample_rate(recorder: _InitRecorder) -> None:
-    # Phase 7.2 is error capture only — no transaction/performance tracing.
-    _init_sentry(dsn="dsn", environment="production", release="r")
-    assert "traces_sample_rate" not in recorder.last_kwargs
+def test_init_passes_the_given_traces_sample_rate(recorder: _InitRecorder) -> None:
+    # Phase 7.3 — the resolved transaction sample rate is forwarded verbatim.
+    _init_sentry(
+        dsn="dsn", environment="production", release="r", traces_sample_rate=0.1
+    )
+    assert recorder.last_kwargs["traces_sample_rate"] == 0.1
 
 
-def test_init_never_passes_tracing_or_profiling_kwargs(
+def test_init_registers_only_fastapi_integration(recorder: _InitRecorder) -> None:
+    # Phase 7.3 — FastApiIntegration is the only integration and auto-enabling
+    # (SQLAlchemy/HTTPX/asyncio sub-spans) is OFF.
+    _init_sentry(
+        dsn="dsn", environment="production", release="r", traces_sample_rate=0.1
+    )
+    integrations = recorder.last_kwargs["integrations"]
+    assert len(integrations) == 1
+    assert isinstance(integrations[0], FastApiIntegration)
+    assert recorder.last_kwargs["auto_enabling_integrations"] is False
+
+
+def test_init_never_passes_other_tracing_or_profiling_kwargs(
     recorder: _InitRecorder,
 ) -> None:
-    # Defense-in-depth: none of the tracing/profiling/integration knobs leak in.
-    _init_sentry(dsn="dsn", environment="production", release="r")
+    # Defense-in-depth: the single sampling knob is ``traces_sample_rate``; no
+    # ``traces_sampler`` / ``profiles_sample_rate`` / ``enable_tracing`` leaks in.
+    _init_sentry(
+        dsn="dsn", environment="production", release="r", traces_sample_rate=0.1
+    )
     forbidden = {
-        "traces_sample_rate",
         "traces_sampler",
         "profiles_sample_rate",
         "enable_tracing",
@@ -108,13 +128,16 @@ def test_init_never_passes_tracing_or_profiling_kwargs(
 
 
 def test_init_passes_exactly_the_expected_kwargs(recorder: _InitRecorder) -> None:
-    _init_sentry(dsn="dsn", environment="preview", release="r")
+    _init_sentry(dsn="dsn", environment="preview", release="r", traces_sample_rate=0.1)
     assert set(recorder.last_kwargs) == {
         "dsn",
         "environment",
         "release",
         "before_send",
         "send_default_pii",
+        "traces_sample_rate",
+        "integrations",
+        "auto_enabling_integrations",
     }
 
 
@@ -129,6 +152,7 @@ def test_for_environment_inits_when_dsn_present(
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SENTRY_DSN_API", "https://public@o0.ingest.sentry.io/1")
     monkeypatch.setenv("GIT_SHA", "deadbeef")
+    monkeypatch.delenv("SENTRY_TRACES_SAMPLE_RATE", raising=False)
 
     result = init_sentry_for_environment()
 
@@ -139,7 +163,9 @@ def test_for_environment_inits_when_dsn_present(
     assert kwargs["release"] == "deadbeef"
     assert kwargs["before_send"] is before_send
     assert kwargs["send_default_pii"] is False
-    assert "traces_sample_rate" not in kwargs
+    # Phase 7.3 — production samples 10% of transactions by default.
+    assert kwargs["traces_sample_rate"] == 0.1
+    assert isinstance(kwargs["integrations"][0], FastApiIntegration)
 
 
 def test_for_environment_uses_unknown_release_when_git_sha_unset(
