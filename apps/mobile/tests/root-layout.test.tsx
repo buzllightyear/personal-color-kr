@@ -196,6 +196,25 @@ vi.mock('../src/superwall/client', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Mock — sentry wrapper
+//
+// `app/_layout.tsx` calls `initSentry()` (from `../src/sentry`) as the first
+// line of its mount effect. The wrapper is the single auditable seam that
+// imports the native `@sentry/react-native` package, whose Objective-C-backed
+// shim vitest's node runtime cannot resolve. Mocking the wrapper here keeps
+// the native module out of the test graph — the same native-isolation pattern
+// this file already applies to `../src/superwall/client`. The PostHog wiring
+// under test is independent of Sentry, so an inert `initSentry` no-op suffices.
+// ---------------------------------------------------------------------------
+vi.mock('../src/sentry', () => {
+  return {
+    initSentry: vi.fn().mockReturnValue(true),
+    setSentryUser: vi.fn(),
+    clearSentryUser: vi.fn(),
+  };
+});
+
+// ---------------------------------------------------------------------------
 // Lazy module loader.
 //
 // Re-imports the layout (and transitively the PostHogProvider source) after

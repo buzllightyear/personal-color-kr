@@ -93,6 +93,18 @@ vi.mock('../src/superwall/client', () => ({
   triggerPaywall: vi.fn().mockResolvedValue({ outcome: 'declined' }),
 }));
 
+// `app/_layout.tsx` calls `initSentry()` (from `../src/sentry`) as the first
+// line of its mount effect. That wrapper transitively imports the native
+// `@sentry/react-native` package, which vitest's node runtime cannot resolve.
+// Mock the wrapper to keep the native shim out of the test graph — the same
+// native-isolation seam already applied to `../src/superwall/client`. Sentry is
+// orthogonal to the funnel_step_entered capture under test.
+vi.mock('../src/sentry', () => ({
+  initSentry: vi.fn().mockReturnValue(true),
+  setSentryUser: vi.fn(),
+  clearSentryUser: vi.fn(),
+}));
+
 async function loadRootLayout() {
   const mod: any = await import('../app/_layout');
   return mod.default;
