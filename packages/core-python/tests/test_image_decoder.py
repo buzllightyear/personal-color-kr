@@ -258,13 +258,30 @@ class TestHappyPath:
 
 
 class TestPillowBoundaryIsolated:
-    """Phase 0.x invariant: Pillow imports live in exactly one source file."""
+    """Phase 0.x invariant: Pillow imports live only in audited boundary files.
+
+    Two production modules are permitted to import Pillow directly, each an
+    explicit, audited PIL surface:
+
+    - ``personal_color/image_decoder.py`` — selfie decode boundary.
+    - ``image_edit/enhancer.py`` — server-side de-slop enhancement boundary
+      (moat v0.3.0 generation funnel).
+
+    No other production module may import Pillow.
+    """
 
     def test_only_image_decoder_imports_pillow(self) -> None:
         src_root = Path(__file__).resolve().parents[1] / "src"
+        # Audited PIL boundary modules (paths relative to ``src``). Pillow
+        # imports are permitted ONLY here; every other production module must
+        # stay Pillow-free.
+        allowed = {
+            Path("personal_color/image_decoder.py"),
+            Path("image_edit/enhancer.py"),
+        }
         offenders: list[Path] = []
         for path in src_root.rglob("*.py"):
-            if path.name == "image_decoder.py":
+            if path.relative_to(src_root) in allowed:
                 continue
             text = path.read_text(encoding="utf-8")
             # Match production imports of PIL / Pillow. Comments and strings
@@ -285,6 +302,8 @@ class TestPillowBoundaryIsolated:
                     offenders.append(path)
                     break
         assert offenders == [], (
-            "PIL/Pillow must be imported only from image_decoder.py; "
-            f"found in: {[str(p) for p in offenders]}"
+            "PIL/Pillow must be imported only from the audited boundary "
+            "modules (personal_color/image_decoder.py, "
+            "image_edit/enhancer.py); found in: "
+            f"{[str(p) for p in offenders]}"
         )

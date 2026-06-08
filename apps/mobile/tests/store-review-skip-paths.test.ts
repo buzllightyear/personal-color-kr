@@ -407,11 +407,13 @@ describe('gatedReviewRequest — 타입 판별자 (discriminated union)', () => 
 // ===========================================================================
 
 describe('gatedReviewRequest — 통합 시나리오: 순서대로 3 스킵 + 1 진행', () => {
-  let requestReview: ReturnType<typeof vi.fn>;
+  let requestReview: ReturnType<
+    typeof vi.fn<[], ReturnType<typeof makeAvailableOutcome>>
+  >;
 
   beforeEach(() => {
     requestReview = vi
-      .fn()
+      .fn<[], ReturnType<typeof makeAvailableOutcome>>()
       .mockImplementationOnce(() => makeUnavailableOutcome()) // 3번째: apple_annual_limit
       .mockImplementationOnce(() => makeAvailableOutcome());  // 4번째: proceed
   });

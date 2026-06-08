@@ -98,8 +98,8 @@ describe('planFeatureMapper — matrix shape', () => {
   it('each row has featureKey and label from the matching featureDef', () => {
     const matrix = runMapper();
     FEATURE_DEFS.forEach((def, i) => {
-      expect(matrix.rows[i].featureKey).toBe(def.featureKey);
-      expect(matrix.rows[i].label).toBe(def.label);
+      expect(matrix.rows[i]!.featureKey).toBe(def.featureKey);
+      expect(matrix.rows[i]!.label).toBe(def.label);
     });
   });
 
@@ -120,8 +120,8 @@ describe('planFeatureMapper — matrix shape', () => {
     const matrix = runMapper();
     // The generationsPerDay row: monthly=5, annual='무제한'
     const row = matrix.rows.find((r) => r.featureKey === 'generationsPerDay')!;
-    expect(row.cells[0].value).toBe(5);
-    expect(row.cells[1].value).toBe('무제한');
+    expect(row.cells[0]!.value).toBe(5);
+    expect(row.cells[1]!.value).toBe('무제한');
   });
 
   it('matrix.plans is the same reference as the input plans array', () => {
@@ -139,32 +139,32 @@ describe('planFeatureMapper — cell.value', () => {
   it('echoes a numeric value directly (trialDays=0 for monthly)', () => {
     const matrix = runMapper();
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[0].value).toBe(0); // monthly
+    expect(trialRow.cells[0]!.value).toBe(0); // monthly
   });
 
   it('echoes a numeric value directly (trialDays=37 for annual)', () => {
     const matrix = runMapper();
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[1].value).toBe(37); // annual
+    expect(trialRow.cells[1]!.value).toBe(37); // annual
   });
 
   it('echoes a boolean true value', () => {
     const matrix = runMapper();
     const dropRow = matrix.rows.find((r) => r.featureKey === 'trendDrops')!;
-    expect(dropRow.cells[0].value).toBe(true); // monthly
-    expect(dropRow.cells[1].value).toBe(true); // annual
+    expect(dropRow.cells[0]!.value).toBe(true); // monthly
+    expect(dropRow.cells[1]!.value).toBe(true); // annual
   });
 
   it('echoes a boolean false value', () => {
     const matrix = runMapper();
     const supportRow = matrix.rows.find((r) => r.featureKey === 'prioritySupport')!;
-    expect(supportRow.cells[0].value).toBe(false); // monthly
+    expect(supportRow.cells[0]!.value).toBe(false); // monthly
   });
 
   it('echoes a string value', () => {
     const matrix = runMapper();
     const genRow = matrix.rows.find((r) => r.featureKey === 'generationsPerDay')!;
-    expect(genRow.cells[1].value).toBe('무제한'); // annual
+    expect(genRow.cells[1]!.value).toBe('무제한'); // annual
   });
 
   it('returns null when featureKey is absent from plan.features', () => {
@@ -175,7 +175,7 @@ describe('planFeatureMapper — cell.value', () => {
       { featureKey: 'missingFeature', label: '없는 기능' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].value).toBeNull();
+    expect(matrix.rows[0]!.cells[0]!.value).toBeNull();
   });
 
   it('returns null when stored value is undefined', () => {
@@ -186,7 +186,7 @@ describe('planFeatureMapper — cell.value', () => {
       { featureKey: 'explicit', label: '명시적 undefined' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].value).toBeNull();
+    expect(matrix.rows[0]!.cells[0]!.value).toBeNull();
   });
 });
 
@@ -198,31 +198,31 @@ describe('planFeatureMapper — cell.available', () => {
   it('available=false when value is 0', () => {
     const matrix = runMapper();
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[0].available).toBe(false); // monthly, trialDays=0
+    expect(trialRow.cells[0]!.available).toBe(false); // monthly, trialDays=0
   });
 
   it('available=true when value is positive number', () => {
     const matrix = runMapper();
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[1].available).toBe(true); // annual, trialDays=37
+    expect(trialRow.cells[1]!.available).toBe(true); // annual, trialDays=37
   });
 
   it('available=true when value is a non-empty string', () => {
     const matrix = runMapper();
     const genRow = matrix.rows.find((r) => r.featureKey === 'generationsPerDay')!;
-    expect(genRow.cells[1].available).toBe(true); // annual, '무제한'
+    expect(genRow.cells[1]!.available).toBe(true); // annual, '무제한'
   });
 
   it('available=false when value is boolean false', () => {
     const matrix = runMapper();
     const supportRow = matrix.rows.find((r) => r.featureKey === 'prioritySupport')!;
-    expect(supportRow.cells[0].available).toBe(false); // monthly, false
+    expect(supportRow.cells[0]!.available).toBe(false); // monthly, false
   });
 
   it('available=true when value is boolean true', () => {
     const matrix = runMapper();
     const dropRow = matrix.rows.find((r) => r.featureKey === 'trendDrops')!;
-    expect(dropRow.cells[0].available).toBe(true); // monthly, true
+    expect(dropRow.cells[0]!.available).toBe(true); // monthly, true
   });
 
   it('available=false when value is null (key absent)', () => {
@@ -233,7 +233,7 @@ describe('planFeatureMapper — cell.available', () => {
       { featureKey: 'missing', label: '없음' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].available).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.available).toBe(false);
   });
 
   it('available=false when value is an empty string', () => {
@@ -244,7 +244,7 @@ describe('planFeatureMapper — cell.available', () => {
       { featureKey: 'emptyStr', label: '빈 문자열' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].available).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.available).toBe(false);
   });
 
   it('available=false when value is explicit null', () => {
@@ -255,13 +255,13 @@ describe('planFeatureMapper — cell.available', () => {
       { featureKey: 'nullVal', label: '널 값' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].available).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.available).toBe(false);
   });
 
   it('available=true for numeric value 5 (generationsPerDay monthly)', () => {
     const matrix = runMapper();
     const genRow = matrix.rows.find((r) => r.featureKey === 'generationsPerDay')!;
-    expect(genRow.cells[0].available).toBe(true); // monthly, 5
+    expect(genRow.cells[0]!.available).toBe(true); // monthly, 5
   });
 });
 
@@ -274,14 +274,14 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
     // monthly: isRecommended=false, trendDrops=true → not highlighted
     const matrix = runMapper();
     const dropRow = matrix.rows.find((r) => r.featureKey === 'trendDrops')!;
-    expect(dropRow.cells[0].highlighted).toBe(false);
+    expect(dropRow.cells[0]!.highlighted).toBe(false);
   });
 
   it('highlighted=true when plan.isRecommended=true and available=true', () => {
     // annual: isRecommended=true, trendDrops=true → highlighted
     const matrix = runMapper();
     const dropRow = matrix.rows.find((r) => r.featureKey === 'trendDrops')!;
-    expect(dropRow.cells[1].highlighted).toBe(true);
+    expect(dropRow.cells[1]!.highlighted).toBe(true);
   });
 
   it('highlighted=false when available=false even if plan.isRecommended=true', () => {
@@ -298,7 +298,7 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
       { featureKey: 'someFeature', label: '어떤 기능' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 
   it('highlighted=false when value=0 even if plan.isRecommended=true', () => {
@@ -314,7 +314,7 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
       { featureKey: 'trialDays', label: '무료 체험일' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 
   it('highlighted=false when key is absent even if plan.isRecommended=true', () => {
@@ -325,7 +325,7 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
       { featureKey: 'ghost', label: '없는 기능' },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 
   it('highlighted=false when plan.isRecommended is absent (defaults to false)', () => {
@@ -334,7 +334,7 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
     ];
     const defs: readonly FeatureDef[] = [{ featureKey: 'f', label: '기능 F' }];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 });
 
@@ -349,9 +349,9 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
     ];
     const matrix = planFeatureMapper(plans, defs);
     // monthly highlighted despite isRecommended=false
-    expect(matrix.rows[0].cells[0].highlighted).toBe(true);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(true);
     // annual NOT highlighted despite isRecommended=true (override in effect)
-    expect(matrix.rows[0].cells[1].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[1]!.highlighted).toBe(false);
   });
 
   it('does NOT highlight a plan listed in highlightedPlanIds when its cell is unavailable', () => {
@@ -362,7 +362,7 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
       { featureKey: 'f', label: '기능', highlightedPlanIds: ['annual'] },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 
   it('highlights multiple plans when highlightedPlanIds lists several ids', () => {
@@ -374,8 +374,8 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
       { featureKey: 'f', label: '기능', highlightedPlanIds: ['monthly', 'annual'] },
     ];
     const matrix = planFeatureMapper(plans, defs);
-    expect(matrix.rows[0].cells[0].highlighted).toBe(true);
-    expect(matrix.rows[0].cells[1].highlighted).toBe(true);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(true);
+    expect(matrix.rows[0]!.cells[1]!.highlighted).toBe(true);
   });
 
   it('highlights zero plans when highlightedPlanIds is empty array', () => {
@@ -387,7 +387,7 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
     ];
     const matrix = planFeatureMapper(plans, defs);
     // Even though plan.isRecommended=true, the override forces no highlights
-    expect(matrix.rows[0].cells[0].highlighted).toBe(false);
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
 
   it('per-featureDef override applies independently to each row', () => {
@@ -404,12 +404,12 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
     const matrix = planFeatureMapper(plans, defs);
 
     // f1 row
-    expect(matrix.rows[0].cells[0].highlighted).toBe(true);  // monthly, override
-    expect(matrix.rows[0].cells[1].highlighted).toBe(false); // annual, not in override list
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(true);  // monthly, override
+    expect(matrix.rows[0]!.cells[1]!.highlighted).toBe(false); // annual, not in override list
 
     // f2 row
-    expect(matrix.rows[1].cells[0].highlighted).toBe(false); // monthly, isRecommended=false
-    expect(matrix.rows[1].cells[1].highlighted).toBe(true);  // annual, isRecommended=true
+    expect(matrix.rows[1]!.cells[0]!.highlighted).toBe(false); // monthly, isRecommended=false
+    expect(matrix.rows[1]!.cells[1]!.highlighted).toBe(true);  // annual, isRecommended=true
   });
 });
 
@@ -444,8 +444,8 @@ describe('planFeatureMapper — edge cases', () => {
     const defs: readonly FeatureDef[] = [{ featureKey: 'x', label: 'X' }];
     const matrix = planFeatureMapper(plans, defs);
     expect(matrix.rows).toHaveLength(1);
-    expect(matrix.rows[0].cells).toHaveLength(1);
-    const cell: FeatureCell = matrix.rows[0].cells[0];
+    expect(matrix.rows[0]!.cells).toHaveLength(1);
+    const cell: FeatureCell = matrix.rows[0]!.cells[0]!;
     expect(cell.available).toBe(true);
     expect(cell.value).toBe('yes');
     expect(cell.highlighted).toBe(true);
@@ -470,14 +470,14 @@ describe('planFeatureMapper — pure function', () => {
     const originalLength = plans.length;
     planFeatureMapper(plans, [{ featureKey: 'f', label: 'F' }]);
     expect(plans).toHaveLength(originalLength);
-    expect(plans[0].planId).toBe('monthly');
+    expect(plans[0]!.planId).toBe('monthly');
   });
 
   it('does not mutate the input featureDefs array', () => {
     const defs: FeatureDef[] = [{ featureKey: 'f', label: 'F' }];
     planFeatureMapper([MONTHLY_PLAN], defs);
-    expect(defs[0].featureKey).toBe('f');
-    expect(defs[0].label).toBe('F');
+    expect(defs[0]!.featureKey).toBe('f');
+    expect(defs[0]!.label).toBe('F');
   });
 });
 
@@ -563,73 +563,73 @@ describe('planFeatureMapper — Seed pricing scenario', () => {
   it('monthly plan: priceUsd=12 → available, not highlighted (not recommended)', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const priceRow = matrix.rows.find((r) => r.featureKey === 'priceUsd')!;
-    expect(priceRow.cells[0].available).toBe(true);
-    expect(priceRow.cells[0].value).toBe(12);
-    expect(priceRow.cells[0].highlighted).toBe(false);
+    expect(priceRow.cells[0]!.available).toBe(true);
+    expect(priceRow.cells[0]!.value).toBe(12);
+    expect(priceRow.cells[0]!.highlighted).toBe(false);
   });
 
   it('annual plan: priceUsd=59 → available, highlighted (isRecommended)', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const priceRow = matrix.rows.find((r) => r.featureKey === 'priceUsd')!;
-    expect(priceRow.cells[1].available).toBe(true);
-    expect(priceRow.cells[1].value).toBe(59);
-    expect(priceRow.cells[1].highlighted).toBe(true);
+    expect(priceRow.cells[1]!.available).toBe(true);
+    expect(priceRow.cells[1]!.value).toBe(59);
+    expect(priceRow.cells[1]!.highlighted).toBe(true);
   });
 
   it('monthly plan: trialDays=0 → not available, not highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[0].available).toBe(false);
-    expect(trialRow.cells[0].value).toBe(0);
-    expect(trialRow.cells[0].highlighted).toBe(false);
+    expect(trialRow.cells[0]!.available).toBe(false);
+    expect(trialRow.cells[0]!.value).toBe(0);
+    expect(trialRow.cells[0]!.highlighted).toBe(false);
   });
 
   it('annual plan: trialDays=37 → available, highlighted (isRecommended)', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const trialRow = matrix.rows.find((r) => r.featureKey === 'trialDays')!;
-    expect(trialRow.cells[1].available).toBe(true);
-    expect(trialRow.cells[1].value).toBe(37);
-    expect(trialRow.cells[1].highlighted).toBe(true);
+    expect(trialRow.cells[1]!.available).toBe(true);
+    expect(trialRow.cells[1]!.value).toBe(37);
+    expect(trialRow.cells[1]!.highlighted).toBe(true);
   });
 
   it('both plans: trendDropAccess=true → both available; only annual highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const dropRow = matrix.rows.find((r) => r.featureKey === 'trendDropAccess')!;
-    expect(dropRow.cells[0].available).toBe(true);
-    expect(dropRow.cells[0].highlighted).toBe(false); // monthly, not recommended
-    expect(dropRow.cells[1].available).toBe(true);
-    expect(dropRow.cells[1].highlighted).toBe(true);  // annual, recommended
+    expect(dropRow.cells[0]!.available).toBe(true);
+    expect(dropRow.cells[0]!.highlighted).toBe(false); // monthly, not recommended
+    expect(dropRow.cells[1]!.available).toBe(true);
+    expect(dropRow.cells[1]!.highlighted).toBe(true);  // annual, recommended
   });
 
   it('monthly plan: generationCandidates=5 → available, not highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const genRow = matrix.rows.find((r) => r.featureKey === 'generationCandidates')!;
-    expect(genRow.cells[0].available).toBe(true);
-    expect(genRow.cells[0].value).toBe(5);
-    expect(genRow.cells[0].highlighted).toBe(false);
+    expect(genRow.cells[0]!.available).toBe(true);
+    expect(genRow.cells[0]!.value).toBe(5);
+    expect(genRow.cells[0]!.highlighted).toBe(false);
   });
 
   it('annual plan: generationCandidates="무제한" → available, highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const genRow = matrix.rows.find((r) => r.featureKey === 'generationCandidates')!;
-    expect(genRow.cells[1].available).toBe(true);
-    expect(genRow.cells[1].value).toBe('무제한');
-    expect(genRow.cells[1].highlighted).toBe(true);
+    expect(genRow.cells[1]!.available).toBe(true);
+    expect(genRow.cells[1]!.value).toBe('무제한');
+    expect(genRow.cells[1]!.highlighted).toBe(true);
   });
 
   it('monthly plan: prioritySupport=false → not available, not highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const suppRow = matrix.rows.find((r) => r.featureKey === 'prioritySupport')!;
-    expect(suppRow.cells[0].available).toBe(false);
-    expect(suppRow.cells[0].highlighted).toBe(false);
+    expect(suppRow.cells[0]!.available).toBe(false);
+    expect(suppRow.cells[0]!.highlighted).toBe(false);
   });
 
   it('annual plan: prioritySupport=true → available, highlighted', () => {
     const matrix = planFeatureMapper(SEED_PLANS, SEED_DEFS);
     const suppRow = matrix.rows.find((r) => r.featureKey === 'prioritySupport')!;
-    expect(suppRow.cells[1].available).toBe(true);
-    expect(suppRow.cells[1].value).toBe(true);
-    expect(suppRow.cells[1].highlighted).toBe(true);
+    expect(suppRow.cells[1]!.available).toBe(true);
+    expect(suppRow.cells[1]!.value).toBe(true);
+    expect(suppRow.cells[1]!.highlighted).toBe(true);
   });
 
   it('matrix has exactly 5 rows for 5 feature defs', () => {

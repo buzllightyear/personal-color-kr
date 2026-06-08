@@ -67,7 +67,7 @@ const ANNUAL_PRICE_USD = 59 as const;
 
 const ANNUAL_BASE_TRIAL_DAYS = 7 as const;
 const ANNUAL_BONUS_TRIAL_DAYS = 30 as const;
-const ANNUAL_TOTAL_TRIAL_DAYS = (ANNUAL_BASE_TRIAL_DAYS + ANNUAL_BONUS_TRIAL_DAYS) as const; // 37
+const ANNUAL_TOTAL_TRIAL_DAYS = ANNUAL_BASE_TRIAL_DAYS + ANNUAL_BONUS_TRIAL_DAYS; // 37
 
 // ---------------------------------------------------------------------------
 // Catalogue (module-level frozen singletons)

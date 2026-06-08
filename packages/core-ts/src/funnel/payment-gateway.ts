@@ -275,7 +275,9 @@ export class MockGateway implements PaymentGateway {
       ok: true,
       transactionId,
       providerRef: stored.providerRef,
-      status: stored.status,
+      // A freshly created charge is always 'pending'; ChargeSuccess narrows
+      // status to the creation-time subset of TransactionStatus.
+      status: 'pending',
       createdAt: stored.createdAt,
     } satisfies ChargeSuccess);
   }

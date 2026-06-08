@@ -90,10 +90,10 @@ export interface ShouldRequestReviewInput {
 
   /**
    * 리뷰 요청을 허용하기 위한 최소 사용 횟수 임계값.
-   * 미지정 시 DEFAULT_MINIMUM_USAGE_COUNT(1) 사용.
+   * 미지정(또는 명시적 undefined) 시 DEFAULT_MINIMUM_USAGE_COUNT(1) 사용.
    * 0 이상의 정수여야 함.
    */
-  readonly minimumUsageCount?: number;
+  readonly minimumUsageCount?: number | undefined;
 }
 
 /**
