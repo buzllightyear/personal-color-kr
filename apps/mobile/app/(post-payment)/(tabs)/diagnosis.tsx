@@ -1,8 +1,8 @@
 /**
- * (post-payment)/(tabs)/diagnosis — Phase 3.3 diagnosis tab.
+ * (post-payment)/(tabs)/diagnosis — diagnosis tab.
  *
  * The relocated stub from `(post-payment)/diagnosis.tsx`. Body fully
- * implemented per Sub-AC 10 — exhaustive DataHook states + ToneSwitcher.
+ * implemented per Sub-AC 10 — exhaustive DataHook states.
  */
 import { usePostHog } from 'posthog-react-native';
 import * as React from 'react';
@@ -13,14 +13,12 @@ import { trackPostPaymentContentEngaged } from '../../../src/analytics/track-pos
 import { trackPostPaymentTabViewed } from '../../../src/analytics/track-post-payment-tab-viewed';
 import { ErrorRetry } from '../../../src/components/ErrorRetry';
 import { Skeleton } from '../../../src/components/Skeleton';
-import { ToneSwitcher } from '../../../src/components/ToneSwitcher';
+import { DEFAULT_DIAGNOSIS } from '../../../src/fixtures/post-payment-default-diagnosis';
 import { useDiagnosisContent } from '../../../src/hooks/use-diagnosis-content';
-import { useToneState } from '../../../src/providers/ToneStateProvider';
 
 export default function DiagnosisTab(): React.ReactElement {
   const posthog = usePostHog();
-  const { current } = useToneState();
-  const { state, data } = useDiagnosisContent(current);
+  const { state, data } = useDiagnosisContent(DEFAULT_DIAGNOSIS.season);
 
   useEffect(() => {
     trackPostPaymentTabViewed(posthog, { tab: 'diagnosis' });
@@ -35,7 +33,6 @@ export default function DiagnosisTab(): React.ReactElement {
 
   return (
     <View style={styles.container} testID="post-payment-tab-diagnosis">
-      <ToneSwitcher />
       <Text
         style={styles.categoryLine}
         testID="post-payment-tab-diagnosis-category-line"

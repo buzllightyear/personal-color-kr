@@ -1,7 +1,7 @@
 /**
- * (post-payment)/(tabs)/guide — Phase 3.3 guide tab.
+ * (post-payment)/(tabs)/guide — guide tab.
  *
- * Renders the GuideView tile grid for the current ToneState season.
+ * Renders the GuideView tile grid for the user's diagnosed season.
  * Exhaustive DataHook state handling per Sub-AC 10.
  */
 import { usePostHog } from 'posthog-react-native';
@@ -13,14 +13,12 @@ import { trackPostPaymentContentEngaged } from '../../../src/analytics/track-pos
 import { trackPostPaymentTabViewed } from '../../../src/analytics/track-post-payment-tab-viewed';
 import { ErrorRetry } from '../../../src/components/ErrorRetry';
 import { Skeleton } from '../../../src/components/Skeleton';
-import { ToneSwitcher } from '../../../src/components/ToneSwitcher';
+import { DEFAULT_DIAGNOSIS } from '../../../src/fixtures/post-payment-default-diagnosis';
 import { useGuideContent } from '../../../src/hooks/use-guide-content';
-import { useToneState } from '../../../src/providers/ToneStateProvider';
 
 export default function GuideTab(): React.ReactElement {
   const posthog = usePostHog();
-  const { current } = useToneState();
-  const { state, data } = useGuideContent(current);
+  const { state, data } = useGuideContent(DEFAULT_DIAGNOSIS.season);
 
   useEffect(() => {
     trackPostPaymentTabViewed(posthog, { tab: 'guide' });
@@ -35,7 +33,6 @@ export default function GuideTab(): React.ReactElement {
 
   return (
     <View style={styles.container} testID="post-payment-tab-guide">
-      <ToneSwitcher />
       <ScrollView contentContainerStyle={styles.list}>
         <View style={styles.summaryBlock} testID="post-payment-tab-guide-summary-lines">
           {data.guideLines.map((line, index) => (

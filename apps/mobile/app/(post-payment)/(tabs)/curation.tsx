@@ -1,7 +1,7 @@
 /**
- * (post-payment)/(tabs)/curation — Phase 3.3 curation tab.
+ * (post-payment)/(tabs)/curation — curation tab.
  *
- * Renders the 4 CurationView items for the current ToneState season.
+ * Renders the 4 CurationView items for the user's diagnosed season.
  * Exhaustive DataHook state handling per Sub-AC 10.
  */
 import { usePostHog } from 'posthog-react-native';
@@ -13,14 +13,12 @@ import { trackPostPaymentContentEngaged } from '../../../src/analytics/track-pos
 import { trackPostPaymentTabViewed } from '../../../src/analytics/track-post-payment-tab-viewed';
 import { ErrorRetry } from '../../../src/components/ErrorRetry';
 import { Skeleton } from '../../../src/components/Skeleton';
-import { ToneSwitcher } from '../../../src/components/ToneSwitcher';
+import { DEFAULT_DIAGNOSIS } from '../../../src/fixtures/post-payment-default-diagnosis';
 import { useCurationContent } from '../../../src/hooks/use-curation-content';
-import { useToneState } from '../../../src/providers/ToneStateProvider';
 
 export default function CurationTab(): React.ReactElement {
   const posthog = usePostHog();
-  const { current } = useToneState();
-  const { state, data } = useCurationContent(current);
+  const { state, data } = useCurationContent(DEFAULT_DIAGNOSIS.season);
 
   useEffect(() => {
     trackPostPaymentTabViewed(posthog, { tab: 'curation' });
@@ -35,7 +33,6 @@ export default function CurationTab(): React.ReactElement {
 
   return (
     <View style={styles.container} testID="post-payment-tab-curation">
-      <ToneSwitcher />
       <ScrollView contentContainerStyle={styles.list}>
         <View
           style={styles.recommendationBlock}

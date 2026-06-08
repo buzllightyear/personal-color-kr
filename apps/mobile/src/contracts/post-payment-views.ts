@@ -12,8 +12,8 @@
  * `DataHook<T>` async boundary defined in `./data-hook.ts`. Each slice
  * type is `T` in `DataHook<T>` for exactly one hook; the hooks remain
  * independent (no shared `T`) so a change to one screen's shape never
- * cascades into another (Seed constraint: "4 hooks ... fully independent
- * — one hook's change must not affect the others; no shared state or
+ * cascades into another (constraint: "4 hooks fully independent —
+ * one hook's change must not affect the others; no shared state or
  * shared fixture object").
  *
  * --------------------------------------------------------------------------
@@ -41,30 +41,20 @@
  * or `curations.season` differs from `diagnosis.season`).
  *
  * The **client**, by contrast, has a completely different responsibility:
- * it powers a persistent 4-tab surface with a global Tone Switcher that
- * lets the user freely re-select any of the four seasons after the initial
- * reveal (Seed goal: "global+persisted Tone Switcher across 4 seasonal
- * tones"). The moment the user taps "겨울쿨" while their diagnosis was
- * "여름쿨" the four tab payloads stop sharing a single season — they each
- * carry whatever season is currently in `ToneState.current`. Mirroring
- * the Python shape on the client would mean either:
+ * it powers a persistent 4-tab surface. Each per-tab payload carries the
+ * user's diagnosed season. Mirroring the Python shape on the client would
+ * mean carrying a redundant `season` field at the bundle level on top of
+ * the per-slice `season` field — two sources of truth that invite drift
+ * bugs.
  *
- *   (a) re-enforcing `__post_init__`-style cross-field coherence on every
- *       tone switch and rejecting the user's selection, which defeats the
- *       Tone Switcher's purpose, or
- *
- *   (b) carrying a redundant `season` field at the bundle level on top of
- *       the per-slice `season` field, which creates two sources of truth
- *       for "the currently displayed season" and invites drift bugs.
- *
- * Both are wrong. The correct boundary is:
+ * The correct boundary is:
  *
  *   - **Server (Python).** Coherence-enforced bundle. One `ContentPackage`
  *     per `(user, diagnosis)` pair. Built once at payment completion;
  *     never re-derived.
  *   - **Client (TypeScript).** Four independent per-tab slice payloads,
- *     each keyed by `season`. The currently displayed season comes from
- *     `ToneState.current` (the user's most recent Tone Switcher pick).
+ *     each keyed by `season`. The currently displayed season is the
+ *     user's diagnosed season.
  *     Each per-screen hook returns only the fields its tab renders — no
  *     cross-tab data, no bundle-level wrapper, no `__post_init__`-style
  *     coherence checks (the server already guaranteed they exist for
@@ -72,9 +62,7 @@
  *
  * This is why every slice type below carries its own `season` field
  * rather than referencing a shared parent season — each hook returns
- * the season *its own data is for*, and the Tone Switcher reads
- * `ToneState.current` to keep the four hooks pointed at the same
- * season when the user changes tones. The reverse coupling — a single
+ * the season *its own data is for*. The reverse coupling — a single
  * parent `season` cascading into four typed children — would be the
  * Python shape, and is exactly what AC 12 forbids.
  *
@@ -173,12 +161,11 @@
 //
 // The bijection with the Python `Season` enum (봄 / 여름 / 가을 / 겨울) is
 // expressed as a string-literal union of stable slugs. The slug shape
-// (`<season>-<tone>`) lets the client both:
+// (`<season>-<tone>`) lets the client:
 //
 //   1. Key the four per-tab payloads (one Season per slice instance), and
-//   2. Drive the Tone Switcher UI without a parallel mapping table — the
-//      slug carries both the season and the warm/cool tone in a single
-//      token so analytics events can ship a single normalised string.
+//   2. Ship a single normalised string in analytics events — the slug carries
+//      both the season and the warm/cool tone in one token.
 //
 // Adding a fifth value (e.g. a "neutral" branch) is a deliberate contract
 // change that requires updating the Phase 3.1 _PRESET_TO_PROMPT bijection

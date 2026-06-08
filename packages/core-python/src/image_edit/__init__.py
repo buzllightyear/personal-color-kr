@@ -31,10 +31,24 @@ Public surface (Sub-AC 9.3):
                                   target, surfaced as a module-level
                                   constant so callers, tests, and
                                   dashboards reference the same number
+
+Public surface (Sub-AC 1 — moat rework):
+    - `apply_enhancer`          : server-side hidden de-slop enhancer.
+                                  Transforms raw generative-AI output
+                                  (Fal.ai / Replicate) into
+                                  publishable personal-color selfies via
+                                  deterministic rule-based Pillow
+                                  post-processing. NOT a trained ML model.
+    - `EnhancedImage`           : frozen output DTO carrying processed
+                                  image bytes + artifact flags
 """
 
 from __future__ import annotations
 
+from .enhancer import (
+    EnhancedImage,
+    apply_enhancer,
+)
 from .latency_tracker import (
     LatencyStats,
     LatencyTracker,
@@ -62,6 +76,7 @@ from .vendor_client import (
 __all__ = [
     "DEFAULT_MAX_RETRIES",
     "DEFAULT_TIMEOUT_SECONDS",
+    "EnhancedImage",
     "FAL_API_KEY_ENV_VAR",
     "FalAiVendorCaller",
     "LatencyStats",
@@ -73,6 +88,7 @@ __all__ = [
     "VendorRequest",
     "VendorResponse",
     "VendorTimeoutError",
+    "apply_enhancer",
     "edit_image",
     "load_fal_api_key",
     "measure_latency",

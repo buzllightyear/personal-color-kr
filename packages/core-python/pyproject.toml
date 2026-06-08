@@ -28,6 +28,11 @@ dependencies = [
     # selfie payload — the same exact-pin pattern used for httpx>=0.27
     # in the Phase 3.1 vendor caller's contract.
     "mediapipe==0.10.18",
+    "pydantic>=2.13.4",
+    # `pyyaml` is the YAML parser used by ``generation.recipe_loader``
+    # (Sub-AC 6.2) to deserialise operator-authored recipe files that use
+    # the YAML format. Runtime dependency — imported by production source.
+    "pyyaml>=6.0",
 ]
 
 [build-system]

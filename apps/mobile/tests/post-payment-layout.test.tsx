@@ -12,8 +12,8 @@
  *     gestureEnabled false) + (tabs).
  *   - Stack screenOptions.headerShown === false.
  *
- * The ToneStateProvider wrap and AsyncStorage read are mocked so the
- * test stays pure to the layout's routing/Stack contract.
+ * The AsyncStorage read is mocked so the test stays pure to the
+ * layout's routing/Stack contract.
  */
 import * as React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
@@ -57,20 +57,6 @@ vi.mock('expo-router', async () => {
     Stack: StackSpy,
     Redirect: MockRedirect,
     usePathname: mockUsePathname,
-  };
-});
-
-// ToneStateProvider is mocked to a pass-through Fragment so the layout's
-// Stack contract is the unit under test (the provider's own contract is
-// covered by tone-state-provider.test.tsx).
-vi.mock('../src/providers/ToneStateProvider', async () => {
-  const reactActual: any = await vi.importActual('react');
-  return {
-    ToneStateProvider: function ToneStateProviderMock(props: {
-      children?: React.ReactNode;
-    }) {
-      return reactActual.createElement(reactActual.Fragment, null, props.children);
-    },
   };
 });
 

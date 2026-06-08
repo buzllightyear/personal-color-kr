@@ -309,8 +309,8 @@ type _CurationView_IsNotBundleMirror = Expect<
 >;
 
 // Each TS slice carries its own `season` field — a cardinal AC 12
-// invariant ("each hook returns its own season; the Tone Switcher keeps
-// them aligned via ToneState.current, not via a shared parent field").
+// invariant ("each hook returns its own season; the diagnosed season keeps
+// them aligned via the user's diagnosed season, not via a shared parent field").
 type _DiagnosisView_HasOwnSeason = Expect<Equal<DiagnosisView['season'], Season>>;
 type _EditView_HasOwnSeason = Expect<Equal<EditView['season'], Season>>;
 type _GuideView_HasOwnSeason = Expect<Equal<GuideView['season'], Season>>;
@@ -535,7 +535,7 @@ describe('PostPaymentViews contract (AC 12)', () => {
 
   it('confirms each slice carries its own season field (no shared parent)', () => {
     // The AC 12 invariant — four slice payloads can carry DIFFERENT
-    // seasons simultaneously while a tone-switch is in flight (a hook
+    // seasons simultaneously while a hook refetch is in flight (a hook
     // refetches faster than another). Demonstrating this through a
     // runtime construction is the cheapest way to keep the invariant
     // observable in CI.

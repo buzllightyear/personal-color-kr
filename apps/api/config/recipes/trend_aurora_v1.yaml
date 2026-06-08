@@ -1,0 +1,27 @@
+# Generation recipe: Aurora Trend v1
+# Adding a new recipe YAML file is sufficient to make a new trend available.
+# No code changes required.
+
+recipe_id: "recipe_aurora_1"
+trend_id: "trend_aurora_2026"
+prompt_template: "A high-fashion selfie with aurora borealis lighting, {personal_color_modifier} skin tones, K-beauty style"
+style_params:
+  model: "flux"
+  strength: 0.75
+  guidance_scale: 7.5
+personal_color_modifiers:
+  봄: "warm golden undertones"
+  여름: "cool rose undertones"
+  가을: "deep amber undertones"
+  겨울: "crisp cool undertones"
+candidate_count: 4
+created_by: "operator_singleton"
+created_at: "2026-06-01T09:00:00Z"
+active: true
+enhancer_overrides:
+  sharpness_factor: 1.2
+  color_balance: "cool"
+reject_threshold_overrides:
+  identity_threshold: 0.65
+  artifact_threshold: 0.65
+  uncanny_threshold: 0.55

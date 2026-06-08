@@ -4,13 +4,13 @@
  * Pins exhaustive DataHook-state handling per screen:
  *   - state === 'loading' → renders <Skeleton testID="post-payment-skeleton" />
  *   - state === 'error'   → renders <ErrorRetry testID="post-payment-error-retry" />
- *   - state === 'ready'   → renders the screen body with its tone-keyed payload
+ *   - state === 'ready'   → renders the screen body with its season-keyed payload
  *
  * Strategy: each screen consumes a single hook (useEditContent /
  * useDiagnosisContent / useGuideContent / useCurationContent). We mock
  * those hooks per-test to force each of the 3 states, and verify the
- * correct render branch fires. The ToneStateProvider is mounted with
- * an injected season so the screens render deterministically.
+ * correct render branch fires. The screens read season from
+ * DEFAULT_DIAGNOSIS directly; no provider needed.
  */
 import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,8 +35,6 @@ vi.mock('react-native', async () => {
 });
 
 import { render } from '@testing-library/react-native';
-
-import { ToneStateProvider } from '../src/providers/ToneStateProvider';
 
 // PostHog mock — every tab fires `post_payment_tab_viewed` on mount.
 const captureFn = vi.fn();
@@ -71,18 +69,6 @@ import DiagnosisTab from '../app/(post-payment)/(tabs)/diagnosis';
 import EditTab from '../app/(post-payment)/(tabs)/edit';
 import GuideTab from '../app/(post-payment)/(tabs)/guide';
 
-function wrap(child: React.ReactElement): React.ReactElement {
-  return (
-    <ToneStateProvider
-      _readLastTone={async () => null}
-      _writeLastTone={async () => undefined}
-      _initialDiagnosisSeason="summer-cool"
-    >
-      {child}
-    </ToneStateProvider>
-  );
-}
-
 describe('Edit tab — 3-state DataHook handling', () => {
   beforeEach(() => {
     captureFn.mockReset();
@@ -91,14 +77,14 @@ describe('Edit tab — 3-state DataHook handling', () => {
 
   it('loading → renders <Skeleton>', () => {
     editHook.mockReturnValue({ state: 'loading', data: null });
-    const { getByTestId, queryByTestId } = render(wrap(<EditTab />));
+    const { getByTestId, queryByTestId } = render(<EditTab />);
     expect(getByTestId('post-payment-skeleton')).toBeTruthy();
     expect(queryByTestId('post-payment-tab-edit')).toBeNull();
   });
 
   it('error → renders <ErrorRetry>', () => {
     editHook.mockReturnValue({ state: 'error', data: null });
-    const { getByTestId } = render(wrap(<EditTab />));
+    const { getByTestId } = render(<EditTab />);
     expect(getByTestId('post-payment-error-retry')).toBeTruthy();
   });
 
@@ -114,7 +100,7 @@ describe('Edit tab — 3-state DataHook handling', () => {
         ctaMicrocopy: '편2',
       },
     });
-    const { getByTestId } = render(wrap(<EditTab />));
+    const { getByTestId } = render(<EditTab />);
     expect(getByTestId('post-payment-tab-edit')).toBeTruthy();
     expect(captureFn).toHaveBeenCalledWith('post_payment_tab_viewed', {
       tab: 'edit',
@@ -130,13 +116,13 @@ describe('Diagnosis tab — 3-state DataHook handling', () => {
 
   it('loading', () => {
     diagnosisHook.mockReturnValue({ state: 'loading', data: null });
-    const { getByTestId } = render(wrap(<DiagnosisTab />));
+    const { getByTestId } = render(<DiagnosisTab />);
     expect(getByTestId('post-payment-skeleton')).toBeTruthy();
   });
 
   it('error', () => {
     diagnosisHook.mockReturnValue({ state: 'error', data: null });
-    const { getByTestId } = render(wrap(<DiagnosisTab />));
+    const { getByTestId } = render(<DiagnosisTab />);
     expect(getByTestId('post-payment-error-retry')).toBeTruthy();
   });
 
@@ -152,7 +138,7 @@ describe('Diagnosis tab — 3-state DataHook handling', () => {
         categoryLine: '진1',
       },
     });
-    const { getByTestId } = render(wrap(<DiagnosisTab />));
+    const { getByTestId } = render(<DiagnosisTab />);
     expect(getByTestId('post-payment-tab-diagnosis')).toBeTruthy();
     expect(captureFn).toHaveBeenCalledWith('post_payment_tab_viewed', {
       tab: 'diagnosis',
@@ -168,13 +154,13 @@ describe('Guide tab — 3-state DataHook handling', () => {
 
   it('loading', () => {
     guideHook.mockReturnValue({ state: 'loading', data: null });
-    const { getByTestId } = render(wrap(<GuideTab />));
+    const { getByTestId } = render(<GuideTab />);
     expect(getByTestId('post-payment-skeleton')).toBeTruthy();
   });
 
   it('error', () => {
     guideHook.mockReturnValue({ state: 'error', data: null });
-    const { getByTestId } = render(wrap(<GuideTab />));
+    const { getByTestId } = render(<GuideTab />);
     expect(getByTestId('post-payment-error-retry')).toBeTruthy();
   });
 
@@ -187,7 +173,7 @@ describe('Guide tab — 3-state DataHook handling', () => {
         guideLines: ['지1', '지2', '지3', '지4'],
       },
     });
-    const { getByTestId } = render(wrap(<GuideTab />));
+    const { getByTestId } = render(<GuideTab />);
     expect(getByTestId('post-payment-tab-guide')).toBeTruthy();
     expect(captureFn).toHaveBeenCalledWith('post_payment_tab_viewed', {
       tab: 'guide',
@@ -203,13 +189,13 @@ describe('Curation tab — 3-state DataHook handling', () => {
 
   it('loading', () => {
     curationHook.mockReturnValue({ state: 'loading', data: null });
-    const { getByTestId } = render(wrap(<CurationTab />));
+    const { getByTestId } = render(<CurationTab />);
     expect(getByTestId('post-payment-skeleton')).toBeTruthy();
   });
 
   it('error', () => {
     curationHook.mockReturnValue({ state: 'error', data: null });
-    const { getByTestId } = render(wrap(<CurationTab />));
+    const { getByTestId } = render(<CurationTab />);
     expect(getByTestId('post-payment-error-retry')).toBeTruthy();
   });
 
@@ -227,7 +213,7 @@ describe('Curation tab — 3-state DataHook handling', () => {
         recommendationLines: ['헤1', '서1', '아1', '아2', '아3', '아4'],
       },
     });
-    const { getByTestId } = render(wrap(<CurationTab />));
+    const { getByTestId } = render(<CurationTab />);
     expect(getByTestId('post-payment-tab-curation')).toBeTruthy();
     expect(captureFn).toHaveBeenCalledWith('post_payment_tab_viewed', {
       tab: 'curation',

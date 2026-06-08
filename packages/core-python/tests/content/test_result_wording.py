@@ -32,14 +32,10 @@ import dataclasses
 import pytest
 
 from content.curations import (
-    CurationItem,
-    CurationItemKind,
-    FirstCuration,
     WordingTone,
     load_first_curation_for_season,
 )
 from content.guides import (
-    Guide,
     GuideCategory,
     load_guides_for_season,
 )

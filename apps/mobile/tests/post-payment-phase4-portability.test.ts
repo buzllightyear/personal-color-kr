@@ -1,16 +1,16 @@
 /**
  * Phase 4 hook-internal-only swap test — Phase 3.3 Sub-AC 19.
  *
- * Asserts the architectural invariant that the screens, layouts, Tone
- * Switcher, and AsyncStorage wrapper are decoupled from the shell-time
- * data hook (`useDummy`). Phase 4 swaps the 4 hooks' internals from
- * `useDummy` to `usePython` — that swap MUST require zero changes to
- * any of the surfaces listed below.
+ * Asserts the architectural invariant that the screens, layouts, and
+ * AsyncStorage wrapper are decoupled from the shell-time data hook
+ * (`useDummy`). Phase 4 swaps the 4 hooks' internals from `useDummy`
+ * to `usePython` — that swap MUST require zero changes to any of the
+ * surfaces listed below.
  *
- * Strategy: grep the screen + layout + provider files for `useDummy`
- * imports. The screens must depend on the per-screen hook contract,
- * not on `useDummy` directly. If a screen ever imports `useDummy`
- * directly it leaks the implementation detail and breaks the
+ * Strategy: grep the screen + layout files for `useDummy` imports.
+ * The screens must depend on the per-screen hook contract, not on
+ * `useDummy` directly. If a screen ever imports `useDummy` directly
+ * it leaks the implementation detail and breaks the
  * `phase4_portability` evaluation principle.
  */
 import * as fs from 'node:fs';
@@ -20,8 +20,8 @@ import { describe, expect, it } from 'vitest';
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 // Surfaces that MUST stay decoupled from `useDummy`. Listed as repo-
-// relative globs so a future surface gain (e.g. a new screen) only
-// requires adding a glob entry, not rewiring the test.
+// relative paths so a future surface gain (e.g. a new screen) only
+// requires adding an entry, not rewiring the test.
 const PROTECTED_SURFACES = [
   // Screens
   'apps/mobile/app/(post-payment)/diagnosis-reveal.tsx',
@@ -32,8 +32,6 @@ const PROTECTED_SURFACES = [
   // Layouts
   'apps/mobile/app/(post-payment)/_layout.tsx',
   'apps/mobile/app/(post-payment)/(tabs)/_layout.tsx',
-  // Tone Switcher (per Seed phase4_portability)
-  'apps/mobile/src/components/ToneSwitcher.tsx',
   // Storage wrapper
   'apps/mobile/src/storage/post-payment-storage.ts',
 ];

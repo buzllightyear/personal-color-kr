@@ -59,8 +59,7 @@
 /**
  * The 4 personal-color seasons as a closed tuple. Order is the canonical
  * spring → summer → autumn → winter sequence used everywhere else in the
- * project (Phase 3.1 `_PRESET_TO_PROMPT`, Phase 3.2 diagnose runtime,
- * Phase 3.3 ToneSwitcher chip order).
+ * project (Phase 3.1 `_PRESET_TO_PROMPT`, Phase 3.2 diagnose runtime).
  */
 export const SEASONS = [
   'spring-warm',

@@ -37,7 +37,6 @@ from content.magazine_publisher import (
     REASON_NO_ISSUE,
     REASON_NOT_PUBLISH_DAY,
     REASON_READY,
-    PublishDecision,
     current_month_key,
     evaluate_publish,
     get_current_issue,

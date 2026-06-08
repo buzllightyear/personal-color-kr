@@ -1,22 +1,23 @@
 /**
  * Invariant test — Phase 3.3 Sub-AC 13 (event name disjointness).
  *
- * Asserts that the 4 post-payment PostHog event-name constants form a
+ * Asserts that the 3 post-payment PostHog event-name constants form a
  * set disjoint from the existing 12-step funnel event-name surface.
  * Drift surfaces as a compile-time-detectable test failure rather than
  * a silent collision in production analytics.
+ *
+ * Note: `tone_switched` was removed in the moat rework (single-voice
+ * direction). The set now has 3 members.
  */
 import { describe, expect, it } from 'vitest';
 
 import { POST_PAYMENT_CONTENT_ENGAGED_EVENT_NAME } from '../src/analytics/track-post-payment-content-engaged';
 import { POST_PAYMENT_REVEALED_EVENT_NAME } from '../src/analytics/track-post-payment-revealed';
 import { POST_PAYMENT_TAB_VIEWED_EVENT_NAME } from '../src/analytics/track-post-payment-tab-viewed';
-import { TONE_SWITCHED_EVENT_NAME } from '../src/analytics/track-tone-switched';
 
 const POST_PAYMENT_EVENT_NAMES = new Set<string>([
   POST_PAYMENT_REVEALED_EVENT_NAME,
   POST_PAYMENT_TAB_VIEWED_EVENT_NAME,
-  TONE_SWITCHED_EVENT_NAME,
   POST_PAYMENT_CONTENT_ENGAGED_EVENT_NAME,
 ]);
 
@@ -34,11 +35,10 @@ const FUNNEL_EVENT_NAMES = new Set<string>([
 ]);
 
 describe('post-payment event-name surface (Phase 3.3 Sub-AC 13)', () => {
-  it('exposes exactly the 4 locked event names', () => {
-    expect(POST_PAYMENT_EVENT_NAMES.size).toBe(4);
+  it('exposes exactly the 3 locked event names', () => {
+    expect(POST_PAYMENT_EVENT_NAMES.size).toBe(3);
     expect(POST_PAYMENT_EVENT_NAMES).toContain('post_payment_revealed');
     expect(POST_PAYMENT_EVENT_NAMES).toContain('post_payment_tab_viewed');
-    expect(POST_PAYMENT_EVENT_NAMES).toContain('tone_switched');
     expect(POST_PAYMENT_EVENT_NAMES).toContain('post_payment_content_engaged');
   });
 

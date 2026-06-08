@@ -33,13 +33,10 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 import {
   DIAGNOSIS_REVEAL_SEEN_STORAGE_KEY,
   LAST_POST_PAYMENT_TAB_STORAGE_KEY,
-  LAST_TONE_STORAGE_KEY,
   readDiagnosisRevealSeen,
   readLastPostPaymentTab,
-  readLastTone,
   writeDiagnosisRevealSeen,
   writeLastPostPaymentTab,
-  writeLastTone,
 } from '../src/storage/post-payment-storage';
 
 describe('post-payment-storage wrapper (Phase 3.3 — Sub-AC 14)', () => {
@@ -52,10 +49,6 @@ describe('post-payment-storage wrapper (Phase 3.3 — Sub-AC 14)', () => {
   });
 
   describe('namespaced key constants', () => {
-    it('pins the last_tone key to its wire format', () => {
-      expect(LAST_TONE_STORAGE_KEY).toBe('pck.post_payment.last_tone');
-    });
-
     it('pins the last_tab key to its wire format', () => {
       expect(LAST_POST_PAYMENT_TAB_STORAGE_KEY).toBe('pck.post_payment.last_tab');
     });
@@ -66,38 +59,12 @@ describe('post-payment-storage wrapper (Phase 3.3 — Sub-AC 14)', () => {
       );
     });
 
-    it('keeps all 3 keys distinct (no collision)', () => {
+    it('keeps both remaining keys distinct (no collision)', () => {
       const keys = new Set([
-        LAST_TONE_STORAGE_KEY,
         LAST_POST_PAYMENT_TAB_STORAGE_KEY,
         DIAGNOSIS_REVEAL_SEEN_STORAGE_KEY,
       ]);
-      expect(keys.size).toBe(3);
-    });
-  });
-
-  describe('readLastTone / writeLastTone', () => {
-    it('returns null on first install (no persisted value)', async () => {
-      expect(await readLastTone()).toBeNull();
-    });
-
-    it('round-trips all 4 Seasons', async () => {
-      const seasons = [
-        'spring-warm',
-        'summer-cool',
-        'autumn-warm',
-        'winter-cool',
-      ] as const;
-
-      for (const season of seasons) {
-        await writeLastTone(season);
-        expect(await readLastTone()).toBe(season);
-      }
-    });
-
-    it('returns null when a drifted (non-enum) value is read back', async () => {
-      backingStore.set(LAST_TONE_STORAGE_KEY, 'corrupted-value');
-      expect(await readLastTone()).toBeNull();
+      expect(keys.size).toBe(2);
     });
   });
 

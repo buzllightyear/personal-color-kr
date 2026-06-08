@@ -86,8 +86,18 @@ def _load_script_directory() -> ScriptDirectory:
 
     Centralizing the construction in a helper keeps every assertion in
     this module reading the chain through one canonical entry point.
+
+    Note: ``script_location`` in alembic.ini is a relative path. We
+    explicitly set it to an absolute path via ``cfg.set_main_option`` so
+    the test works regardless of the current working directory (e.g. when
+    pytest is run from the monorepo root via the root pytest.ini).
     """
     cfg = Config(str(_ALEMBIC_INI_PATH))
+    # Override script_location with absolute path so this test is CWD-agnostic.
+    # alembic resolves relative script_location against CWD, not against the
+    # ini file directory, which breaks when pytest runs from the monorepo root.
+    abs_script_location = str(_APPS_API_ROOT / "src" / "api" / "db" / "migrations")
+    cfg.set_main_option("script_location", abs_script_location)
     return ScriptDirectory.from_config(cfg)
 
 

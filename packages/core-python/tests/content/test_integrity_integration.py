@@ -44,9 +44,7 @@ from typing import Any, Iterable
 import pytest
 
 from content.curations import (
-    CurationItem,
     CurationItemKind,
-    FirstCuration,
     WordingTone,
     load_all_first_curations,
 )

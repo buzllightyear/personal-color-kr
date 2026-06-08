@@ -1,0 +1,13 @@
+# Global reject-filter threshold defaults (AC5)
+# All values are float 0.0-1.0. score >= threshold = PASS.
+# Override per recipe in: config/reject_overrides/{recipe_id}.yaml
+# Code change is NOT required to update these values.
+
+global_defaults:
+  identity_threshold: 0.6
+  artifact_threshold: 0.6
+  uncanny_threshold: 0.5
+
+# Per-recipe overrides keyed by recipe_id.
+# Missing keys fall back to global_defaults above.
+per_recipe_overrides: {}

@@ -2,7 +2,6 @@ import { Stack, Redirect, usePathname } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 
-import { ToneStateProvider } from '../../src/providers/ToneStateProvider';
 import { readDiagnosisRevealSeen } from '../../src/storage/post-payment-storage';
 
 /**
@@ -133,21 +132,19 @@ export default function PostPaymentLayout(): JSX.Element {
   }
 
   return (
-    <ToneStateProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="diagnosis-reveal"
+        options={{
+          presentation: 'fullScreenModal',
+          gestureEnabled: false,
         }}
-      >
-        <Stack.Screen
-          name="diagnosis-reveal"
-          options={{
-            presentation: 'fullScreenModal',
-            gestureEnabled: false,
-          }}
-        />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-    </ToneStateProvider>
+      />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
