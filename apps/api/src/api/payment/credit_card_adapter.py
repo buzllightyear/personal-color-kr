@@ -274,9 +274,7 @@ class MockCreditCardSDK:
 
         return {
             "payment_id": f"mock-pid-{order_id}",
-            "payment_form_url": (
-                f"https://mockpg.kr/card-form/{order_id}"
-            ),
+            "payment_form_url": (f"https://mockpg.kr/card-form/{order_id}"),
         }
 
     async def confirm_payment(

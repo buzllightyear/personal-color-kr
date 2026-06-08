@@ -299,10 +299,9 @@ describe('ResultPreviewScreen — 트렌드 태그 (trend tags)', () => {
         typeof n.props?.children === 'string' &&
         n.props.children === '#셀피 감성',
     );
-    expect(
-      textNode?.length,
-      'chip 1 should contain "#셀피 감성" text',
-    ).toBeGreaterThan(0);
+    expect(textNode?.length, 'chip 1 should contain "#셀피 감성" text').toBeGreaterThan(
+      0,
+    );
   });
 
   it('renders the correct number of chips for an arbitrary trendTags array', () => {
@@ -408,9 +407,7 @@ describe('ResultPreviewScreen — headline and subhead', () => {
     // NOT raw AI output — Seed: 생짜 Fal.ai 출력 금지
     const tree = render(React.createElement(ResultPreviewScreen, DEFAULT_PROPS));
     const subhead = findHostByTestId(tree, 'result-preview-subhead');
-    expect(subhead?.props.children).toBe(
-      '퍼스널 컬러 recipe로 보정된 생성 예시',
-    );
+    expect(subhead?.props.children).toBe('퍼스널 컬러 recipe로 보정된 생성 예시');
   });
 
   it('renders the headline group container', () => {

@@ -40,7 +40,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { VOICE_CONFIG, type VoiceConfig, type VoiceId } from '../../src/voice/config.js';
+import {
+  VOICE_CONFIG,
+  type VoiceConfig,
+  type VoiceId,
+} from '../../src/voice/config.js';
 import { CTA_MAX_LENGTH, deriveCta } from '../../src/voice/cta.js';
 
 // ---------------------------------------------------------------------------
@@ -74,9 +78,7 @@ function buildStub(trendDropCtaPrimary: string): VoiceConfig {
  * Platform: iOS native — Korean CTA.
  * Touch/tap language; represents the primary iOS in-app button.
  */
-const PLATFORM_IOS_KO = buildStub(
-  'PLATFORM_IOS_KO: 지금 내 셀카에 바로 적용하기',
-);
+const PLATFORM_IOS_KO = buildStub('PLATFORM_IOS_KO: 지금 내 셀카에 바로 적용하기');
 
 /**
  * Platform: Android native — Korean CTA.
@@ -90,9 +92,7 @@ const PLATFORM_ANDROID_KO = buildStub(
  * Platform: Web — Korean CTA.
  * Click-friendly phrasing; distinct from native-app variants.
  */
-const PLATFORM_WEB_KO = buildStub(
-  'PLATFORM_WEB_KO: 내 사진에 트렌드 적용하기',
-);
+const PLATFORM_WEB_KO = buildStub('PLATFORM_WEB_KO: 내 사진에 트렌드 적용하기');
 
 /**
  * Language: English (ASCII-only) sentinel.
@@ -100,9 +100,7 @@ const PLATFORM_WEB_KO = buildStub(
  * Proves the function reads from the config and never returns Korean copy
  * when the slot value contains no Korean characters.
  */
-const LANGUAGE_EN_ASCII = buildStub(
-  'LANGUAGE_EN_ASCII: Apply Trend to My Selfie Now',
-);
+const LANGUAGE_EN_ASCII = buildStub('LANGUAGE_EN_ASCII: Apply Trend to My Selfie Now');
 
 // ---------------------------------------------------------------------------
 // Edge-case stubs (boundary-value inputs)

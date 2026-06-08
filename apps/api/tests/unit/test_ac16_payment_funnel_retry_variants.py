@@ -18,7 +18,6 @@ from api.payment.funnel import (
     get_stage_12_options,
 )
 
-
 # ---------------------------------------------------------------------------
 # AC16: Stage 11 re-entry for unpaid users
 # ---------------------------------------------------------------------------
@@ -47,7 +46,11 @@ def test_stage_11_reentry_message_mentions_annual_offer() -> None:
     """Stage 11 re-entry message mentions the annual trial offer."""
     result = check_stage_11_reentry(has_paid=False)
     # Should mention the free trial offer
-    assert "37" in result.message or "free" in result.message.lower() or "trial" in result.message.lower()
+    assert (
+        "37" in result.message
+        or "free" in result.message.lower()
+        or "trial" in result.message.lower()
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -53,8 +53,10 @@ from typing import Callable, Union
 from personal_color.face_detector import FaceNotDetectedError, detect_face_regions
 from personal_color.hsb_season_classifier import classify_season_from_hsb_features
 from personal_color.image_decoder import decode_image
-from personal_color.skin_tone_extractor import SkinToneFeature, extract_skin_tone_features
-
+from personal_color.skin_tone_extractor import (
+    SkinToneFeature,
+    extract_skin_tone_features,
+)
 
 # ---------------------------------------------------------------------------
 # Public type aliases

@@ -31,7 +31,6 @@ from api.generation.output_gate import (
 )
 from api.generation.reject_filter import ScoredCandidate
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -116,9 +115,9 @@ def test_proof_is_enhanced_image_ref_existence_not_boolean_flag() -> None:
         "ScoredCandidate must not have an is_enhanced boolean flag. "
         "The proof is enhanced_image_ref existence (AC2 constraint)."
     )
-    assert not hasattr(candidate_with_ref, "enhancer_applied"), (
-        "ScoredCandidate must not have an enhancer_applied boolean flag."
-    )
+    assert not hasattr(
+        candidate_with_ref, "enhancer_applied"
+    ), "ScoredCandidate must not have an enhancer_applied boolean flag."
 
     # Non-null enhanced_image_ref → passes
     result = require_enhanced_scored_candidate(candidate_with_ref)

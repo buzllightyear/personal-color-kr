@@ -52,7 +52,7 @@ def _fv(
 
 
 # Default threshold aliases for readable boundary assertions
-_WT = DEFAULT_FEATURE_THRESHOLDS.warm_threshold       # 0.02
+_WT = DEFAULT_FEATURE_THRESHOLDS.warm_threshold  # 0.02
 _MID = DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint  # 0.5
 
 
@@ -99,14 +99,14 @@ def test_confidence_is_in_unit_interval() -> None:
         (-0.15, 0.70),
         (0.15, 0.30),
         (-0.15, 0.30),
-        (0.03, 0.51),   # very close to both boundaries
-        (1.0, 0.0),     # extreme warm, very dark
-        (-1.0, 1.0),    # extreme cool, very bright
+        (0.03, 0.51),  # very close to both boundaries
+        (1.0, 0.0),  # extreme warm, very dark
+        (-1.0, 1.0),  # extreme cool, very bright
     ]:
         result = classify_personal_color(_fv(ct, br))
-        assert 0.0 <= result.confidence <= 1.0, (
-            f"confidence out of [0, 1] for ct={ct}, br={br}: {result.confidence}"
-        )
+        assert (
+            0.0 <= result.confidence <= 1.0
+        ), f"confidence out of [0, 1] for ct={ct}, br={br}: {result.confidence}"
 
 
 # ---------------------------------------------------------------------------
@@ -154,8 +154,7 @@ def test_category_slug_is_lowercase_ascii() -> None:
 def test_all_four_categories_are_reachable() -> None:
     """Smoke check: all four category slugs are producible."""
     categories = {
-        classify_personal_color(_fv(ct, br)).category
-        for ct, br, _ in _CATEGORY_TABLE
+        classify_personal_color(_fv(ct, br)).category for ct, br, _ in _CATEGORY_TABLE
     }
     assert categories == {"spring", "summer", "autumn", "winter"}
 
@@ -169,11 +168,11 @@ def test_all_four_categories_are_reachable() -> None:
 @pytest.mark.parametrize(
     "color_temperature",
     [
-        0.0,               # exact centre of neutral zone
-        _WT,               # exact upper boundary (inclusive → neutral)
-        -_WT,              # exact lower boundary (inclusive → neutral)
-        _WT * 0.5,         # inside the zone
-        -_WT * 0.5,        # inside the zone (negative)
+        0.0,  # exact centre of neutral zone
+        _WT,  # exact upper boundary (inclusive → neutral)
+        -_WT,  # exact lower boundary (inclusive → neutral)
+        _WT * 0.5,  # inside the zone
+        -_WT * 0.5,  # inside the zone (negative)
     ],
     ids=["zero", "upper_boundary", "lower_boundary", "inner_pos", "inner_neg"],
 )
@@ -192,8 +191,10 @@ def test_neutral_zone_raises_value_error(color_temperature: float) -> None:
 def test_confidence_near_zero_just_above_warm_threshold() -> None:
     """Just barely above warm_threshold → tone_conf ≈ 0 → confidence ≈ 0."""
     epsilon = 1e-9
-    ct = _WT + epsilon   # infinitesimally past the neutral-zone edge
-    result = classify_personal_color(_fv(ct, brightness=0.0))  # extreme brightness → bright_conf=1
+    ct = _WT + epsilon  # infinitesimally past the neutral-zone edge
+    result = classify_personal_color(
+        _fv(ct, brightness=0.0)
+    )  # extreme brightness → bright_conf=1
     # tone_conf = (ct - _WT) / (1 - _WT) ≈ 0, confidence ≈ sqrt(~0 * 1) ≈ 0
     assert result.confidence < 1e-4
 

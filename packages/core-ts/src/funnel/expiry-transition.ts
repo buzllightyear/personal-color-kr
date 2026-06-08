@@ -182,8 +182,8 @@ export function applyExpiryTransition(
   // Rules 2 & 3 — 긴급 오퍼 무효화 + 희소성 플래그 초기화 always applied.
   return Object.freeze<PaymentFunnelExpiryState>({
     step: nextStep,
-    status: state.status,    // 'active' — unchanged; auto-advance keeps funnel active
+    status: state.status, // 'active' — unchanged; auto-advance keeps funnel active
     urgentOfferActive: false, // 긴급 오퍼 무효화
-    scarcityFlagCount: 0,     // 희소성 플래그 초기화
+    scarcityFlagCount: 0, // 희소성 플래그 초기화
   });
 }

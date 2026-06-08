@@ -23,7 +23,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 
-
 # ---------------------------------------------------------------------------
 # Stage enum (12 stages, Korean market variant)
 # ---------------------------------------------------------------------------
@@ -315,11 +314,13 @@ def compute_conversion_guardrail(
     all_events = event_log.all_events()
 
     stage_1_entries = {
-        e.user_id for e in all_events
+        e.user_id
+        for e in all_events
         if e.stage == PaymentFunnelStage.가치_제시 and e.event_type == "entry"
     }
     stage_12_completions = {
-        e.user_id for e in all_events
+        e.user_id
+        for e in all_events
         if e.stage == PaymentFunnelStage.결제_모델_변형 and e.event_type == "completion"
     }
 

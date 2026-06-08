@@ -60,9 +60,7 @@ import { VOICE_CONFIG, type VoiceConfig } from '../voice/config.js';
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getDiagnosisWedgeHeadline(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getDiagnosisWedgeHeadline(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.diagnosis_wedge_headline;
 }
 
@@ -72,9 +70,7 @@ export function getDiagnosisWedgeHeadline(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getDiagnosisWedgeSubhead(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getDiagnosisWedgeSubhead(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.diagnosis_wedge_subhead;
 }
 
@@ -84,9 +80,7 @@ export function getDiagnosisWedgeSubhead(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getDiagnosisWedgeCta(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getDiagnosisWedgeCta(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.diagnosis_wedge_cta;
 }
 
@@ -121,9 +115,7 @@ export function getResultRevealHeadline(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getResultRevealSubhead(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getResultRevealSubhead(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.result_reveal_subhead;
 }
 
@@ -133,8 +125,6 @@ export function getResultRevealSubhead(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getResultRevealCta(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getResultRevealCta(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.result_reveal_cta;
 }

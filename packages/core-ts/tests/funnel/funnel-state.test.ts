@@ -22,9 +22,7 @@ import {
 // Type-level assertion helpers (vendored — no external dep)
 // ---------------------------------------------------------------------------
 type Equal<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-    ? true
-    : false;
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type Expect<T extends true> = T;
 
 // ---------------------------------------------------------------------------
@@ -210,7 +208,10 @@ describe('advance — Sub-AC 2 (전진 전이 순수 함수)', () => {
   // -------------------------------------------------------------------------
 
   it('완료 → 무효: status completed 상태에서 advance하면 동일 상태 반환(no-op)', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const next = advance(completed);
 
     expect(next).toBe(completed); // 동일 참조 반환 (cheap no-op)
@@ -219,7 +220,10 @@ describe('advance — Sub-AC 2 (전진 전이 순수 함수)', () => {
   });
 
   it('완료 → 무효: 연속 advance 호출도 동일 상태 유지', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const once = advance(completed);
     const twice = advance(once);
     const thrice = advance(twice);
@@ -342,8 +346,8 @@ describe('retreat — Sub-AC 3 (후퇴 전이 순수 함수)', () => {
   // advance 후 retreat으로 원점 복귀
   it('1 → 0: advance(initial)로 얻은 step 1에서 retreat하면 초기 상태와 동일한 값', () => {
     const initial = createFunnelState(); // { step: 0, status: 'idle' }
-    const stepped = advance(initial);    // { step: 1, status: 'active' }
-    const restored = retreat(stepped);   // { step: 0, status: 'idle' }
+    const stepped = advance(initial); // { step: 1, status: 'active' }
+    const restored = retreat(stepped); // { step: 0, status: 'idle' }
 
     expect(restored.step).toBe(initial.step);
     expect(restored.status).toBe(initial.status);
@@ -385,7 +389,10 @@ describe('retreat — Sub-AC 3 (후퇴 전이 순수 함수)', () => {
   // -------------------------------------------------------------------------
 
   it('완료 상태에서 retreat하면 동일 참조 반환 (no-op — completed는 단말 상태)', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const result = retreat(completed);
 
     // completed는 단말 상태 — retreat 허용 안 됨, 동일 참조 반환
@@ -395,7 +402,10 @@ describe('retreat — Sub-AC 3 (후퇴 전이 순수 함수)', () => {
   });
 
   it('완료 상태에서 연속 retreat 호출도 동일 상태 유지', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const once = retreat(completed);
     const twice = retreat(once);
 
@@ -478,7 +488,9 @@ describe('retreat — Sub-AC 3 (후퇴 전이 순수 함수)', () => {
   });
 
   it('순수 함수: 반환 객체는 FunnelStateObject 계약을 준수한다', () => {
-    const prev: FunnelStateObject = retreat(Object.freeze({ step: 5, status: 'active' }));
+    const prev: FunnelStateObject = retreat(
+      Object.freeze({ step: 5, status: 'active' }),
+    );
 
     expect(typeof prev.step).toBe('number');
     expect(typeof prev.status).toBe('string');
@@ -546,7 +558,10 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   // -------------------------------------------------------------------------
 
   it('완료 상태 → 초기화: step 12(completed)에서 reset하면 step 0, status idle 반환', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const result = reset(completed);
 
     expect(result.step).toBe(0);
@@ -554,14 +569,20 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   });
 
   it('완료 상태 → 초기화: 반환 객체는 불변(frozen)이다', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const result = reset(completed);
 
     expect(Object.isFrozen(result)).toBe(true);
   });
 
   it('완료 상태 → 초기화: 원본 상태를 변이하지 않는다', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     reset(completed);
 
     expect(completed.step).toBe(12);
@@ -569,7 +590,10 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   });
 
   it('완료 상태 → 초기화: 반환 객체는 원본과 다른 참조다', () => {
-    const completed: FunnelStateObject = Object.freeze({ step: 12, status: 'completed' });
+    const completed: FunnelStateObject = Object.freeze({
+      step: 12,
+      status: 'completed',
+    });
     const result = reset(completed);
 
     // reset은 retreat와 달리 completed → idle 복귀를 허용한다
@@ -615,7 +639,10 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   // -------------------------------------------------------------------------
 
   it('이탈 상태 → 초기화: abandoned 상태에서 reset하면 step 0, status idle 반환', () => {
-    const abandoned: FunnelStateObject = Object.freeze({ step: 7, status: 'abandoned' });
+    const abandoned: FunnelStateObject = Object.freeze({
+      step: 7,
+      status: 'abandoned',
+    });
     const result = reset(abandoned);
 
     expect(result.step).toBe(0);
@@ -623,14 +650,20 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   });
 
   it('이탈 상태 → 초기화: 반환 객체는 불변(frozen)이다', () => {
-    const abandoned: FunnelStateObject = Object.freeze({ step: 3, status: 'abandoned' });
+    const abandoned: FunnelStateObject = Object.freeze({
+      step: 3,
+      status: 'abandoned',
+    });
     const result = reset(abandoned);
 
     expect(Object.isFrozen(result)).toBe(true);
   });
 
   it('이탈 상태 → 초기화: 반환 객체는 원본과 다른 참조다', () => {
-    const abandoned: FunnelStateObject = Object.freeze({ step: 3, status: 'abandoned' });
+    const abandoned: FunnelStateObject = Object.freeze({
+      step: 3,
+      status: 'abandoned',
+    });
     const result = reset(abandoned);
 
     expect(result).not.toBe(abandoned);
@@ -651,7 +684,9 @@ describe('reset — Sub-AC 4 (초기화 전이 순수 함수)', () => {
   });
 
   it('순수 함수: 반환 객체는 FunnelStateObject 계약을 준수한다', () => {
-    const result: FunnelStateObject = reset(Object.freeze({ step: 6, status: 'active' }));
+    const result: FunnelStateObject = reset(
+      Object.freeze({ step: 6, status: 'active' }),
+    );
 
     expect(typeof result.step).toBe('number');
     expect(typeof result.status).toBe('string');

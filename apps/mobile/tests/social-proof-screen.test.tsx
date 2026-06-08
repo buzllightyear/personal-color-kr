@@ -169,7 +169,9 @@ describe('SocialProofScreen — render: layout & headline', () => {
     const tree = render(React.createElement(SocialProofScreen, { onNext: NO_OP }));
     const subhead = findHostByTestId(tree, 'social-proof-subhead');
     expect(subhead).toBeTruthy();
-    expect(subhead?.props.children).toBe('실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적');
+    expect(subhead?.props.children).toBe(
+      '실제 UGC + 인플루언서 인용 + 12만+ 사용자 진단 누적',
+    );
   });
 });
 
@@ -366,9 +368,7 @@ describe('SocialProofScreen — render: CTA', () => {
 describe('SocialProofScreen — interaction: CTA', () => {
   it('invokes onNext exactly once when the primary CTA is pressed', () => {
     const onNext = vi.fn();
-    const tree = render(
-      React.createElement(SocialProofScreen, { onNext }),
-    );
+    const tree = render(React.createElement(SocialProofScreen, { onNext }));
 
     const cta = findHostByTestId(tree, 'social-proof-cta');
     expect(cta).toBeTruthy();

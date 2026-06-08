@@ -142,21 +142,21 @@ describe('checkConsentStatus — 전체 동의 (all consented)', () => {
 
 describe('checkConsentStatus — 부분 동의 (partially consented)', () => {
   it('B1a: one of three required items checked (terms_of_service only) → partially_consented', () => {
-    expect(
-      checkConsentStatus('welcome_hook', ['terms_of_service']),
-    ).toBe('partially_consented');
+    expect(checkConsentStatus('welcome_hook', ['terms_of_service'])).toBe(
+      'partially_consented',
+    );
   });
 
   it('B1b: one of three required items checked (privacy_policy only) → partially_consented', () => {
-    expect(
-      checkConsentStatus('welcome_hook', ['privacy_policy']),
-    ).toBe('partially_consented');
+    expect(checkConsentStatus('welcome_hook', ['privacy_policy'])).toBe(
+      'partially_consented',
+    );
   });
 
   it('B1c: one of three required items checked (age_verification only) → partially_consented', () => {
-    expect(
-      checkConsentStatus('welcome_hook', ['age_verification']),
-    ).toBe('partially_consented');
+    expect(checkConsentStatus('welcome_hook', ['age_verification'])).toBe(
+      'partially_consented',
+    );
   });
 
   it('B2a: two of three required items checked (terms + privacy) → partially_consented', () => {
@@ -190,9 +190,9 @@ describe('checkConsentStatus — 부분 동의 (partially consented)', () => {
   it('B3: only optional marketing_consent checked, zero required → not_consented (not partial)', () => {
     // marketing_consent is NOT a required item — checking it alone contributes
     // zero required items, so the result is not_consented, not partially_consented.
-    expect(
-      checkConsentStatus('welcome_hook', ['marketing_consent']),
-    ).toBe('not_consented');
+    expect(checkConsentStatus('welcome_hook', ['marketing_consent'])).toBe(
+      'not_consented',
+    );
   });
 });
 
@@ -206,13 +206,15 @@ describe('checkConsentStatus — 미동의 (not consented)', () => {
   });
 
   it('C2: empty Set → not_consented', () => {
-    expect(checkConsentStatus('welcome_hook', new Set<ConsentItemId>())).toBe('not_consented');
+    expect(checkConsentStatus('welcome_hook', new Set<ConsentItemId>())).toBe(
+      'not_consented',
+    );
   });
 
   it('C3a: only optional item (marketing_consent) checked → not_consented', () => {
-    expect(
-      checkConsentStatus('welcome_hook', ['marketing_consent']),
-    ).toBe('not_consented');
+    expect(checkConsentStatus('welcome_hook', ['marketing_consent'])).toBe(
+      'not_consented',
+    );
   });
 
   it('C3b: Set with only optional item checked → not_consented', () => {
@@ -243,9 +245,7 @@ describe('isConsentGatePassed', () => {
   });
 
   it('D2: returns false for partially_consented', () => {
-    expect(
-      isConsentGatePassed('welcome_hook', ['terms_of_service']),
-    ).toBe(false);
+    expect(isConsentGatePassed('welcome_hook', ['terms_of_service'])).toBe(false);
   });
 
   it('D2b: returns false when two of three required items are checked', () => {
@@ -368,7 +368,11 @@ describe('checkConsentStatus — input variants', () => {
 
 describe('checkConsentStatus — purity', () => {
   it('G1a: calling twice with identical inputs returns the same result (all_consented)', () => {
-    const items: ConsentItemId[] = ['terms_of_service', 'privacy_policy', 'age_verification'];
+    const items: ConsentItemId[] = [
+      'terms_of_service',
+      'privacy_policy',
+      'age_verification',
+    ];
     expect(checkConsentStatus('welcome_hook', items)).toBe(
       checkConsentStatus('welcome_hook', items),
     );

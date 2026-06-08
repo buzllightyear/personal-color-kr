@@ -41,7 +41,6 @@ from personal_color.face_detector import FaceBoundingBox
 from personal_color.region_extractor import RGB, Image
 from personal_color.skin_extractor import extract_skin_pixels
 
-
 #: Default minimum sample count for :func:`sample_skin_pixels`.
 #: When the YCbCr-classified skin pixel count falls below this threshold
 #: the function falls back to returning all pixels in the face region.

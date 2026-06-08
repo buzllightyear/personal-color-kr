@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
-
 # ---------------------------------------------------------------------------
 # Subscription status enum
 # ---------------------------------------------------------------------------
@@ -208,7 +207,11 @@ def renew_subscription(
     if now is None:
         now = datetime.now(timezone.utc)
 
-    days = MONTHLY_PERIOD_DAYS if sub.plan == SubscriptionPlan.MONTHLY else ANNUAL_PERIOD_DAYS
+    days = (
+        MONTHLY_PERIOD_DAYS
+        if sub.plan == SubscriptionPlan.MONTHLY
+        else ANNUAL_PERIOD_DAYS
+    )
     base = max(sub.current_period_ends_at, now)
     sub.current_period_ends_at = base + timedelta(days=days)
     sub.status = SubscriptionStatus.ACTIVE

@@ -17,7 +17,6 @@ from pydantic import ValidationError
 from generation.recipe_loader import discover_recipes, load_recipe_file
 from generation.recipe_model import RecipeModel, validate_recipe
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -73,8 +72,16 @@ def test_new_recipe_file_adds_new_trend_without_code_change(tmp_path: Path) -> N
     import yaml
 
     # Write two recipe files with distinct recipe_ids
-    recipe_1 = {**_VALID_RECIPE_DICT, "recipe_id": "recipe_aurora_1", "trend_id": "trend_aurora"}
-    recipe_2 = {**_VALID_RECIPE_DICT, "recipe_id": "recipe_blooming_1", "trend_id": "trend_blooming"}
+    recipe_1 = {
+        **_VALID_RECIPE_DICT,
+        "recipe_id": "recipe_aurora_1",
+        "trend_id": "trend_aurora",
+    }
+    recipe_2 = {
+        **_VALID_RECIPE_DICT,
+        "recipe_id": "recipe_blooming_1",
+        "trend_id": "trend_blooming",
+    }
 
     (tmp_path / "aurora.yaml").write_text(yaml.dump(recipe_1), encoding="utf-8")
     (tmp_path / "blooming.yaml").write_text(yaml.dump(recipe_2), encoding="utf-8")

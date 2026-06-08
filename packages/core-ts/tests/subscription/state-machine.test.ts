@@ -80,81 +80,81 @@ describe('transition_subscription — valid transition table', () => {
 describe('transition_subscription — invalid transitions raise InvalidSubscriptionTransitionError', () => {
   describe('trial state rejects non-trial_end events', () => {
     it('throws on trial + payment_fail', () => {
-      expect(() =>
-        transition_subscription('trial', 'payment_fail'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('trial', 'payment_fail')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on trial + grace_expire', () => {
-      expect(() =>
-        transition_subscription('trial', 'grace_expire'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('trial', 'grace_expire')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on trial + user_cancel', () => {
-      expect(() =>
-        transition_subscription('trial', 'user_cancel'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('trial', 'user_cancel')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
   });
 
   describe('active state rejects non-payment_fail/non-user_cancel events', () => {
     it('throws on active + trial_end', () => {
-      expect(() =>
-        transition_subscription('active', 'trial_end'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('active', 'trial_end')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on active + grace_expire', () => {
-      expect(() =>
-        transition_subscription('active', 'grace_expire'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('active', 'grace_expire')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
   });
 
   describe('past_due state rejects non-grace_expire events', () => {
     it('throws on past_due + trial_end', () => {
-      expect(() =>
-        transition_subscription('past_due', 'trial_end'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('past_due', 'trial_end')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on past_due + payment_fail', () => {
-      expect(() =>
-        transition_subscription('past_due', 'payment_fail'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('past_due', 'payment_fail')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on past_due + user_cancel', () => {
-      expect(() =>
-        transition_subscription('past_due', 'user_cancel'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('past_due', 'user_cancel')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
   });
 
   describe('cancelled state is terminal — rejects all events', () => {
     it('throws on cancelled + trial_end', () => {
-      expect(() =>
-        transition_subscription('cancelled', 'trial_end'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('cancelled', 'trial_end')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on cancelled + payment_fail', () => {
-      expect(() =>
-        transition_subscription('cancelled', 'payment_fail'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('cancelled', 'payment_fail')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on cancelled + grace_expire', () => {
-      expect(() =>
-        transition_subscription('cancelled', 'grace_expire'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('cancelled', 'grace_expire')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
 
     it('throws on cancelled + user_cancel', () => {
-      expect(() =>
-        transition_subscription('cancelled', 'user_cancel'),
-      ).toThrowError(InvalidSubscriptionTransitionError);
+      expect(() => transition_subscription('cancelled', 'user_cancel')).toThrowError(
+        InvalidSubscriptionTransitionError,
+      );
     });
   });
 });
@@ -177,39 +177,39 @@ describe('transition_subscription — unknown state or event strings', () => {
   });
 
   it('throws for undefined state', () => {
-    expect(() =>
-      transition_subscription(undefined as never, 'trial_end'),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription(undefined as never, 'trial_end')).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 
   it('throws for null state', () => {
-    expect(() =>
-      transition_subscription(null as never, 'trial_end'),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription(null as never, 'trial_end')).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 
   it('throws for undefined event', () => {
-    expect(() =>
-      transition_subscription('trial', undefined as never),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription('trial', undefined as never)).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 
   it('throws for null event', () => {
-    expect(() =>
-      transition_subscription('trial', null as never),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription('trial', null as never)).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 
   it('throws for empty string state', () => {
-    expect(() =>
-      transition_subscription('' as never, 'trial_end'),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription('' as never, 'trial_end')).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 
   it('throws for empty string event', () => {
-    expect(() =>
-      transition_subscription('active', '' as never),
-    ).toThrowError(InvalidSubscriptionTransitionError);
+    expect(() => transition_subscription('active', '' as never)).toThrowError(
+      InvalidSubscriptionTransitionError,
+    );
   });
 });
 

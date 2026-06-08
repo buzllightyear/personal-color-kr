@@ -182,7 +182,11 @@ describe('publishEvent — 타임스탬프 주입', () => {
   it('now 옵션의 반환값이 타임스탬프로 사용된다', () => {
     const adapter = makeRecordingAdapter();
     const customTs = 1_700_000_000_000;
-    publishEvent(adapter, { eventName: 'ev', userId: USER_ID }, { now: () => customTs });
+    publishEvent(
+      adapter,
+      { eventName: 'ev', userId: USER_ID },
+      { now: () => customTs },
+    );
 
     expect((adapter.received[0] as AnalyticsEventPayload).timestamp).toBe(customTs);
   });
@@ -259,7 +263,9 @@ describe('publishEvent — 잘못된 eventName', () => {
   it('빈 문자열 eventName에 대해 invalid_event_name 에러를 던진다', () => {
     const adapter = makeRecordingAdapter();
     expect(() => publish(adapter, { eventName: '' })).toThrow(EventPublisherError);
-    expect(() => publish(adapter, { eventName: '' })).toThrow(/invalid_event_name|non-empty/i);
+    expect(() => publish(adapter, { eventName: '' })).toThrow(
+      /invalid_event_name|non-empty/i,
+    );
   });
 
   it('공백만 있는 eventName에 대해 에러를 던진다', () => {

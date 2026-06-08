@@ -29,7 +29,6 @@ from scan_option.options import (
     SCAN_OPTION_COUNT,
     SCAN_OPTION_SLOTS,
     ScanOptionId,
-    ScanOptionRole,
     ScanOptionStatus,
     get_available_options,
 )

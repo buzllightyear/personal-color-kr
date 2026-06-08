@@ -46,7 +46,6 @@ from api.voice.repository import (
     create_voice_config,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared canonical input fixture
 # ---------------------------------------------------------------------------
@@ -78,12 +77,12 @@ def test_create_returns_record_with_id_and_matching_fields() -> None:
     record: VoiceConfigRecord = repo.create(_SAMPLE_INPUT)
 
     # --- id field: present, non-None, valid UUID4 ---
-    assert record.voice_id is not None, (
-        "Sub-AC 13c-1: returned record must have a non-None voice_id."
-    )
-    assert isinstance(record.voice_id, uuid.UUID), (
-        f"Sub-AC 13c-1: voice_id must be a UUID, got {type(record.voice_id)!r}."
-    )
+    assert (
+        record.voice_id is not None
+    ), "Sub-AC 13c-1: returned record must have a non-None voice_id."
+    assert isinstance(
+        record.voice_id, uuid.UUID
+    ), f"Sub-AC 13c-1: voice_id must be a UUID, got {type(record.voice_id)!r}."
 
     # --- operator-supplied fields echo back verbatim ---
     assert record.tone_descriptor == _SAMPLE_INPUT.tone_descriptor, (
@@ -104,15 +103,15 @@ def test_create_returns_record_with_id_and_matching_fields() -> None:
     )
 
     # --- updated_at: set, timezone-aware UTC ---
-    assert record.updated_at is not None, (
-        "Sub-AC 13c-1: updated_at must be set on CREATE."
-    )
-    assert isinstance(record.updated_at, datetime), (
-        f"updated_at must be a datetime, got {type(record.updated_at)!r}."
-    )
-    assert record.updated_at.tzinfo is not None, (
-        "updated_at must be timezone-aware (UTC)."
-    )
+    assert (
+        record.updated_at is not None
+    ), "Sub-AC 13c-1: updated_at must be set on CREATE."
+    assert isinstance(
+        record.updated_at, datetime
+    ), f"updated_at must be a datetime, got {type(record.updated_at)!r}."
+    assert (
+        record.updated_at.tzinfo is not None
+    ), "updated_at must be timezone-aware (UTC)."
 
 
 # ---------------------------------------------------------------------------
@@ -164,9 +163,9 @@ def test_two_creates_produce_distinct_voice_ids() -> None:
         f"Both records got the same voice_id {first.voice_id!r}; "
         f"each CREATE must produce a unique UUID4."
     )
-    assert len(repo) == 2, (
-        f"Expected 2 records in repo after two creates, got {len(repo)}."
-    )
+    assert (
+        len(repo) == 2
+    ), f"Expected 2 records in repo after two creates, got {len(repo)}."
 
 
 # ---------------------------------------------------------------------------
@@ -187,9 +186,9 @@ def test_create_with_empty_cta_templates() -> None:
 
     record: VoiceConfigRecord = repo.create(minimal_input)
 
-    assert record.cta_templates == {}, (
-        f"Expected empty cta_templates, got {record.cta_templates!r}."
-    )
+    assert (
+        record.cta_templates == {}
+    ), f"Expected empty cta_templates, got {record.cta_templates!r}."
     assert record.voice_id is not None
     assert record.tone_descriptor == minimal_input.tone_descriptor
 
@@ -219,9 +218,9 @@ def test_create_voice_config_service_function_returns_matching_record() -> None:
     record: VoiceConfigRecord = create_voice_config(input_, repo=repo)
 
     # id must be present and non-None
-    assert record.voice_id is not None, (
-        "create_voice_config must return a record with a non-None voice_id."
-    )
+    assert (
+        record.voice_id is not None
+    ), "create_voice_config must return a record with a non-None voice_id."
     assert isinstance(record.voice_id, uuid.UUID)
 
     # All input fields echoed back verbatim
@@ -231,12 +230,12 @@ def test_create_voice_config_service_function_returns_matching_record() -> None:
     assert record.cta_templates == input_.cta_templates
 
     # Record is also persisted — len should be 1
-    assert len(repo) == 1, (
-        f"Expected 1 record in repo after create_voice_config, got {len(repo)}."
-    )
-    assert repo.find_by_id(record.voice_id) == record, (
-        "Record returned by create_voice_config is not retrievable by id."
-    )
+    assert (
+        len(repo) == 1
+    ), f"Expected 1 record in repo after create_voice_config, got {len(repo)}."
+    assert (
+        repo.find_by_id(record.voice_id) == record
+    ), "Record returned by create_voice_config is not retrievable by id."
 
 
 # ---------------------------------------------------------------------------

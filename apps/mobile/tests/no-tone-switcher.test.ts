@@ -42,10 +42,7 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 // Source-only paths (exclude tests/ and docs/ to avoid false positives from
 // pattern literal strings and historical documentation).
 // ---------------------------------------------------------------------------
-const SOURCE_PATHS = [
-  'apps/mobile/src',
-  'apps/mobile/app',
-] as const;
+const SOURCE_PATHS = ['apps/mobile/src', 'apps/mobile/app'] as const;
 
 /**
  * Run git grep against tracked files in the given paths.
@@ -54,10 +51,10 @@ const SOURCE_PATHS = [
 function grepTrackedFiles(pattern: string, paths: readonly string[]): string[] {
   let raw: string;
   try {
-    raw = execSync(
-      `git grep -l '${pattern}' -- ${paths.join(' ')}`,
-      { cwd: REPO_ROOT, encoding: 'utf8' },
-    );
+    raw = execSync(`git grep -l '${pattern}' -- ${paths.join(' ')}`, {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
   } catch {
     // git grep exits non-zero when no matches found — that is the desired
     // outcome (0 matches). Return an empty array.
@@ -73,7 +70,10 @@ function grepTrackedFiles(pattern: string, paths: readonly string[]): string[] {
  * Scan source files on disk (not just tracked) for a regex pattern.
  * Returns list of files with matches.
  */
-function scanFilesForPattern(pattern: RegExp, directories: readonly string[]): string[] {
+function scanFilesForPattern(
+  pattern: RegExp,
+  directories: readonly string[],
+): string[] {
   const matches: string[] = [];
 
   function walkDir(dir: string): void {
@@ -82,7 +82,11 @@ function scanFilesForPattern(pattern: RegExp, directories: readonly string[]): s
     const entries = fs.readdirSync(absDir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(absDir, entry.name);
-      if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+      if (
+        entry.isDirectory() &&
+        !entry.name.startsWith('.') &&
+        entry.name !== 'node_modules'
+      ) {
         walkDir(path.join(dir, entry.name));
       } else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) {
         const content = fs.readFileSync(fullPath, 'utf8');
@@ -178,7 +182,8 @@ const BRANCH_PATTERNS: Array<{ label: string; regex: RegExp }> = [
     // currentTone, tone.current, etc.) — ToneSwitcher branching pattern.
     // Data-value assignments like `editorial: '에디토리얼'` do not match.
     label: 'switch statement on tone state variable (e.g. switch(toneState.current))',
-    regex: /\bswitch\s*\(\s*[^)]*\b(toneState|currentTone|tone\.current|activeTone)\b[^)]*\)/,
+    regex:
+      /\bswitch\s*\(\s*[^)]*\b(toneState|currentTone|tone\.current|activeTone)\b[^)]*\)/,
   },
   {
     // ToneSource enum values used as case labels — 'diagnosis-default' and
@@ -217,7 +222,7 @@ describe('Sub-AC 13a §0: ToneSwitcher identifier dead-code removal (git tracked
 });
 
 describe('Sub-AC 13a §1: ToneSwitcher enum 정의 = 0 (no enum/type definitions)', () => {
-  it.each(ENUM_DEFINITION_PATTERNS.map(p => [p.label, p.regex]))(
+  it.each(ENUM_DEFINITION_PATTERNS.map((p) => [p.label, p.regex]))(
     '%s — 0 files in apps/mobile/src + app contain this pattern',
     (label, regex) => {
       const matches = scanFilesForPattern(regex as RegExp, SOURCE_PATHS);
@@ -230,7 +235,7 @@ describe('Sub-AC 13a §1: ToneSwitcher enum 정의 = 0 (no enum/type definitions
 });
 
 describe('Sub-AC 13a §2: ToneSwitcher import 참조 = 0 (no import references)', () => {
-  it.each(IMPORT_PATTERNS.map(p => [p.label, p.regex]))(
+  it.each(IMPORT_PATTERNS.map((p) => [p.label, p.regex]))(
     '%s — 0 files in apps/mobile/src + app contain this import',
     (label, regex) => {
       const matches = scanFilesForPattern(regex as RegExp, SOURCE_PATHS);
@@ -243,7 +248,7 @@ describe('Sub-AC 13a §2: ToneSwitcher import 참조 = 0 (no import references)'
 });
 
 describe('Sub-AC 13a §3: ToneSwitcher 분기(if/switch/match) 참조 = 0 (no branch references)', () => {
-  it.each(BRANCH_PATTERNS.map(p => [p.label, p.regex]))(
+  it.each(BRANCH_PATTERNS.map((p) => [p.label, p.regex]))(
     '%s — 0 files in apps/mobile/src + app contain this branch',
     (label, regex) => {
       const matches = scanFilesForPattern(regex as RegExp, SOURCE_PATHS);

@@ -30,7 +30,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { VOICE_CONFIG, type VoiceConfig, type VoiceId } from '../../src/voice/config.js';
+import {
+  VOICE_CONFIG,
+  type VoiceConfig,
+  type VoiceId,
+} from '../../src/voice/config.js';
 import { BODY_MAX_LENGTH, deriveBody } from '../../src/voice/body.js';
 
 // ---------------------------------------------------------------------------
@@ -321,9 +325,7 @@ describe('deriveBody — stub output proves no hardcoded string leakage', () => 
   });
 
   it('PERSONA_FREE_TRIAL output does not equal PERSONA_TREND_CADENCE output', () => {
-    expect(deriveBody(PERSONA_FREE_TRIAL)).not.toBe(
-      deriveBody(PERSONA_TREND_CADENCE),
-    );
+    expect(deriveBody(PERSONA_FREE_TRIAL)).not.toBe(deriveBody(PERSONA_TREND_CADENCE));
   });
 
   it('ASCII-only stub output never equals the production Korean output', () => {

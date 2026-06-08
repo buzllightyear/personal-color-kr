@@ -17,9 +17,8 @@ Notification delivery is a placeholder (no real push infra in v1).
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-
 
 # ---------------------------------------------------------------------------
 # Trend segment (criteria-declarative, AC10)

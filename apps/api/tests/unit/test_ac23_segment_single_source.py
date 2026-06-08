@@ -35,7 +35,6 @@ from api.trend_drop.push import (
     get_matching_segments,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -77,12 +76,13 @@ def test_no_segment_ids_field_declaration_in_source() -> None:
 
     # Filter out comment lines (lines starting with #)
     non_comment_matches = [
-        line for line in matches.splitlines()
+        line
+        for line in matches.splitlines()
         if line and not line.split(":", 2)[-1].strip().startswith("#")
     ]
 
     assert non_comment_matches == [], (
-        f"Found segment_ids field declaration(s) in source (AC23 violation):\n"
+        "Found segment_ids field declaration(s) in source (AC23 violation):\n"
         + "\n".join(non_comment_matches)
     )
 
@@ -99,12 +99,12 @@ def test_user_for_segment_has_no_segment_ids_field() -> None:
     Segment membership is computed from criteria — never stored on the user.
     """
     user = _user()
-    assert not hasattr(user, "segment_ids"), (
-        "UserForSegment must not have segment_ids (AC23: no user-side storage)"
-    )
-    assert not hasattr(user, "assigned_segment_ids"), (
-        "UserForSegment must not have assigned_segment_ids (AC23 violation)"
-    )
+    assert not hasattr(
+        user, "segment_ids"
+    ), "UserForSegment must not have segment_ids (AC23: no user-side storage)"
+    assert not hasattr(
+        user, "assigned_segment_ids"
+    ), "UserForSegment must not have assigned_segment_ids (AC23 violation)"
 
 
 @pytest.mark.unit
@@ -116,9 +116,9 @@ def test_trend_segment_record_has_no_assigned_user_ids_field() -> None:
     """
     repo = InMemoryTrendSegmentRepository()
     segment = repo.create("봄", SegmentCriteria(personal_color="봄"))
-    assert not hasattr(segment, "assigned_user_ids"), (
-        "TrendSegmentRecord must not have assigned_user_ids (AC23 violation)"
-    )
+    assert not hasattr(
+        segment, "assigned_user_ids"
+    ), "TrendSegmentRecord must not have assigned_user_ids (AC23 violation)"
 
 
 # ---------------------------------------------------------------------------
@@ -212,9 +212,9 @@ def test_criteria_change_immediately_reflects_in_membership() -> None:
 
     # Before criteria change: user IS in segment
     segs_before = get_matching_segments(user, repo)
-    assert any(s.segment_id == segment.segment_id for s in segs_before), (
-        "User should be in '봄 segment' before criteria change."
-    )
+    assert any(
+        s.segment_id == segment.segment_id for s in segs_before
+    ), "User should be in '봄 segment' before criteria change."
 
     # Change criteria to "겨울" — user should immediately leave the segment
     repo.update_criteria(segment.segment_id, SegmentCriteria(personal_color="겨울"))
@@ -248,9 +248,9 @@ def test_adding_user_to_segment_via_criteria_update() -> None:
 
     # After: user IS now in segment (only personal_color checked)
     segs_after = get_matching_segments(user, repo)
-    assert any(s.segment_id == segment.segment_id for s in segs_after), (
-        "User should now be in segment after criteria was loosened."
-    )
+    assert any(
+        s.segment_id == segment.segment_id for s in segs_after
+    ), "User should now be in segment after criteria was loosened."
 
 
 # ---------------------------------------------------------------------------
@@ -300,6 +300,6 @@ def test_multiple_users_same_segment_criteria_all_match() -> None:
 
     for user in users:
         result = get_matching_segments(user, repo)
-        assert any(s.segment_id == seg.segment_id for s in result), (
-            "Every '봄' user should match the '봄' segment."
-        )
+        assert any(
+            s.segment_id == seg.segment_id for s in result
+        ), "Every '봄' user should match the '봄' segment."

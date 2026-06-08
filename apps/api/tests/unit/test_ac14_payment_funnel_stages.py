@@ -19,7 +19,6 @@ from api.payment.funnel import (
     PaymentFunnelStage,
 )
 
-
 # ---------------------------------------------------------------------------
 # AC14: 12-stage enum exists
 # ---------------------------------------------------------------------------
@@ -96,8 +95,8 @@ def test_stage_entry_and_completion_pair_logged() -> None:
     log = InMemoryFunnelEventLog()
     user_id = uuid.uuid4()
 
-    entry = log.log_entry(user_id, PaymentFunnelStage.결과_프리뷰)
-    completion = log.log_completion(user_id, PaymentFunnelStage.결과_프리뷰)
+    log.log_entry(user_id, PaymentFunnelStage.결과_프리뷰)
+    log.log_completion(user_id, PaymentFunnelStage.결과_프리뷰)
 
     user_events = log.events_for_user(user_id)
     assert len(user_events) == 2

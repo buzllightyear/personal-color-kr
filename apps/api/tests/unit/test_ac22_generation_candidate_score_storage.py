@@ -325,7 +325,9 @@ def test_annotate_candidates_returns_all_including_rejected() -> None:
     assert len(survivors) == 1
 
     # The rejected candidate is in annotated but NOT in survivors
-    reject_indices = {c.candidate_index for c in all_annotated if not c.reject_filter_passed}
+    reject_indices = {
+        c.candidate_index for c in all_annotated if not c.reject_filter_passed
+    }
     survivor_indices = {c.candidate_index for c in survivors}
     assert 1 in reject_indices
     assert 1 not in survivor_indices

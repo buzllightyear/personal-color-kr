@@ -138,8 +138,7 @@ def test_validate_voice_config_raises_on_missing_required_field(
 
     error_str = str(exc_info.value)
     assert missing_field in error_str, (
-        f"ValidationError should mention '{missing_field}'; "
-        f"got: {error_str[:300]}"
+        f"ValidationError should mention '{missing_field}'; " f"got: {error_str[:300]}"
     )
 
 
@@ -178,18 +177,14 @@ def test_validate_voice_config_raises_on_cta_templates_as_integer() -> None:
 def test_validate_voice_config_raises_on_cta_templates_non_str_value() -> None:
     """cta_templates dict with non-string value raises ValidationError."""
     with pytest.raises(ValidationError):
-        validate_voice_config(
-            _payload(cta_templates={"trend_drop": 123})
-        )
+        validate_voice_config(_payload(cta_templates={"trend_drop": 123}))
 
 
 @pytest.mark.unit
 def test_validate_voice_config_raises_on_cta_templates_none_value() -> None:
     """cta_templates dict with None value raises ValidationError."""
     with pytest.raises(ValidationError):
-        validate_voice_config(
-            _payload(cta_templates={"trend_drop": None})
-        )
+        validate_voice_config(_payload(cta_templates={"trend_drop": None}))
 
 
 # ---------------------------------------------------------------------------

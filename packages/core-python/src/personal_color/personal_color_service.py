@@ -55,7 +55,6 @@ from personal_color.feature_vector_classifier import (
 )
 from personal_color.selfie_feature_extractor import extract_selfie_color_features
 
-
 # ---------------------------------------------------------------------------
 # Public type alias
 # ---------------------------------------------------------------------------

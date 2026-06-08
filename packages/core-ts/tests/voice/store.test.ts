@@ -120,9 +120,7 @@ describe('VoiceConfigStore.update() — Sub-AC 13c-3', () => {
 
     // All other slots unchanged
     const patchedKeys = new Set(['trend_drop_push_body', 'diagnosis_wedge_cta']);
-    for (const key of Object.keys(before.slots) as Array<
-      keyof typeof before.slots
-    >) {
+    for (const key of Object.keys(before.slots) as Array<keyof typeof before.slots>) {
       if (!patchedKeys.has(key)) {
         expect(after.slots[key], `slots.${key} should be preserved`).toBe(
           before.slots[key],
@@ -138,9 +136,7 @@ describe('VoiceConfigStore.update() — Sub-AC 13c-3', () => {
     const result = store.update({});
     expect(result.voiceId).toBe(before.voiceId);
     expect(result.description).toBe(before.description);
-    for (const key of Object.keys(before.slots) as Array<
-      keyof typeof before.slots
-    >) {
+    for (const key of Object.keys(before.slots) as Array<keyof typeof before.slots>) {
       expect(result.slots[key]).toBe(before.slots[key]);
     }
   });
@@ -153,7 +149,9 @@ describe('VoiceConfigStore.update() — Sub-AC 13c-3', () => {
   });
 
   it('update() returns a frozen slots object', () => {
-    const result = store.update({ slots: { trend_drop_cta_primary: '업데이트된 CTA' } });
+    const result = store.update({
+      slots: { trend_drop_cta_primary: '업데이트된 CTA' },
+    });
     expect(Object.isFrozen(result.slots)).toBe(true);
   });
 
@@ -167,15 +165,15 @@ describe('VoiceConfigStore.update() — Sub-AC 13c-3', () => {
   // ── Validation ──────────────────────────────────────────────────────────────
 
   it('throws when a patched slot value is an empty string', () => {
-    expect(() =>
-      store.update({ slots: { trend_drop_push_title: '' } }),
-    ).toThrow(/empty slot values/);
+    expect(() => store.update({ slots: { trend_drop_push_title: '' } })).toThrow(
+      /empty slot values/,
+    );
   });
 
   it('throws when a patched slot value is whitespace-only', () => {
-    expect(() =>
-      store.update({ slots: { trend_drop_push_title: '   ' } }),
-    ).toThrow(/empty slot values/);
+    expect(() => store.update({ slots: { trend_drop_push_title: '   ' } })).toThrow(
+      /empty slot values/,
+    );
   });
 
   // ── voiceId immutability ────────────────────────────────────────────────────

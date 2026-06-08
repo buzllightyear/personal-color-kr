@@ -170,9 +170,7 @@ describe('isStepInputSatisfied — 전체 충족 (all fields satisfied)', () => 
     });
 
     it('B1c: returns true for any non-empty string URI', () => {
-      expect(
-        isStepInputSatisfied('diagnosis_input', { selfieUri: 'x' }),
-      ).toBe(true);
+      expect(isStepInputSatisfied('diagnosis_input', { selfieUri: 'x' })).toBe(true);
     });
   });
 

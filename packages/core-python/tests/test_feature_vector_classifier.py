@@ -109,8 +109,7 @@ def test_truth_table_all_four_seasons_are_distinct() -> None:
     """The function is a bijection on the 2×2 feature space — no two cells
     collapse to the same season."""
     seasons = {
-        classify_season_from_feature_vector(_fv(ct, br))
-        for ct, br, _ in _TRUTH_TABLE
+        classify_season_from_feature_vector(_fv(ct, br)) for ct, br, _ in _TRUTH_TABLE
     }
     assert len(seasons) == 4, (
         "truth table does not produce four distinct seasons — "
@@ -173,7 +172,7 @@ _MIDPOINT = DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint  # 0.5
 @pytest.mark.parametrize(
     ("color_temperature", "expected_season"),
     [
-        (0.15, Season.AUTUMN),   # warm, brightness == midpoint → LOW → 가을
+        (0.15, Season.AUTUMN),  # warm, brightness == midpoint → LOW → 가을
         (-0.15, Season.SUMMER),  # cool, brightness == midpoint → LOW → 여름
     ],
     ids=["autumn", "summer"],
@@ -220,9 +219,9 @@ def test_raises_type_error_for_non_thresholds() -> None:
 @pytest.mark.parametrize(
     ("color_temperature", "brightness"),
     [
-        (2.0, 0.5),   # color_temperature > 1.0 (out of [-1, 1])
+        (2.0, 0.5),  # color_temperature > 1.0 (out of [-1, 1])
         (-2.0, 0.5),  # color_temperature < -1.0
-        (0.3, 1.5),   # brightness > 1.0 (out of [0, 1])
+        (0.3, 1.5),  # brightness > 1.0 (out of [0, 1])
         (0.3, -0.1),  # brightness < 0.0
     ],
     ids=["ct_too_high", "ct_too_low", "br_too_high", "br_too_low"],
@@ -268,7 +267,10 @@ def test_custom_warm_threshold_passes_for_value_above_it() -> None:
     """With warm_threshold=0.20, color_temperature=0.25 → WARM (봄 or 가을)."""
     custom = FeatureVectorThresholds(warm_threshold=0.20, brightness_midpoint=0.5)
     features = _fv(0.25, brightness=0.7)
-    assert classify_season_from_feature_vector(features, thresholds=custom) is Season.SPRING
+    assert (
+        classify_season_from_feature_vector(features, thresholds=custom)
+        is Season.SPRING
+    )
 
 
 @pytest.mark.unit
@@ -276,7 +278,10 @@ def test_custom_brightness_midpoint_shifts_contrast_boundary() -> None:
     """With brightness_midpoint=0.7, brightness=0.6 → LOW contrast (가을)."""
     custom = FeatureVectorThresholds(warm_threshold=0.02, brightness_midpoint=0.7)
     features = _fv(0.15, brightness=0.6)
-    assert classify_season_from_feature_vector(features, thresholds=custom) is Season.AUTUMN
+    assert (
+        classify_season_from_feature_vector(features, thresholds=custom)
+        is Season.AUTUMN
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -311,9 +316,7 @@ def test_round_trip_warm_high_key_pixels_spring() -> None:
     prototypical Spring (봄웜) skin signature.
     """
     # High-key peach pixels: R >> B, bright (brightness ≈ 0.80 > 0.5)
-    warm_bright_pixels = tuple(
-        (220, 185, 155) for _ in range(10)
-    )
+    warm_bright_pixels = tuple((220, 185, 155) for _ in range(10))
     features = compute_color_features(warm_bright_pixels)
     assert features.color_temperature > DEFAULT_FEATURE_THRESHOLDS.warm_threshold
     assert features.brightness > DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint
@@ -327,9 +330,7 @@ def test_round_trip_cool_high_key_pixels_winter() -> None:
     Pinkish-cool high-key pixels are the prototypical Winter (겨울쿨) skin
     signature: porcelain/ivory with a blue-pink undertone.
     """
-    cool_bright_pixels = tuple(
-        (195, 205, 230) for _ in range(10)
-    )
+    cool_bright_pixels = tuple((195, 205, 230) for _ in range(10))
     features = compute_color_features(cool_bright_pixels)
     assert features.color_temperature < -DEFAULT_FEATURE_THRESHOLDS.warm_threshold
     assert features.brightness > DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint
@@ -344,9 +345,7 @@ def test_round_trip_warm_low_key_pixels_autumn() -> None:
     signature: rich, dark, muted warm tone.
     """
     # (140, 100, 80): ct = (140-80)/255 ≈ 0.235 (warm), brightness ≈ 0.430 (< 0.5)
-    warm_dark_pixels = tuple(
-        (140, 100, 80) for _ in range(10)
-    )
+    warm_dark_pixels = tuple((140, 100, 80) for _ in range(10))
     features = compute_color_features(warm_dark_pixels)
     assert features.color_temperature > DEFAULT_FEATURE_THRESHOLDS.warm_threshold
     assert features.brightness <= DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint
@@ -361,9 +360,7 @@ def test_round_trip_cool_low_key_pixels_summer() -> None:
     Summer (여름쿨) skin signature: soft, muted, cool.
     """
     # (110, 105, 130): ct = (110-130)/255 ≈ -0.078 (cool), brightness ≈ 0.429 (< 0.5)
-    cool_muted_pixels = tuple(
-        (110, 105, 130) for _ in range(10)
-    )
+    cool_muted_pixels = tuple((110, 105, 130) for _ in range(10))
     features = compute_color_features(cool_muted_pixels)
     assert features.color_temperature < -DEFAULT_FEATURE_THRESHOLDS.warm_threshold
     assert features.brightness <= DEFAULT_FEATURE_THRESHOLDS.brightness_midpoint
@@ -379,13 +376,10 @@ def test_round_trip_cool_low_key_pixels_summer() -> None:
 def test_classifier_can_produce_all_four_seasons() -> None:
     """Smoke check: every Season member is reachable via this classifier."""
     cases = [
-        (0.10, 0.70),   # SPRING
+        (0.10, 0.70),  # SPRING
         (-0.10, 0.70),  # WINTER
-        (0.10, 0.30),   # AUTUMN
+        (0.10, 0.30),  # AUTUMN
         (-0.10, 0.30),  # SUMMER
     ]
-    produced = {
-        classify_season_from_feature_vector(_fv(ct, br))
-        for ct, br in cases
-    }
+    produced = {classify_season_from_feature_vector(_fv(ct, br)) for ct, br in cases}
     assert produced == set(Season)

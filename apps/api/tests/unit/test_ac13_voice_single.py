@@ -17,12 +17,10 @@ import pytest
 from api.voice.repository import (
     InMemoryVoiceConfigRepository,
     VoiceConfigCreateInput,
-    VoiceConfigRecord,
     create_voice_config,
     delete_voice_config,
     get_voice_config,
 )
-
 
 # ---------------------------------------------------------------------------
 # AC13: ToneSwitcher grep = 0 (code-level assertion)
@@ -56,12 +54,12 @@ def test_no_tone_switcher_enum_or_branch_code() -> None:
     class_matches = class_result.stdout.strip()
     usage_matches = usage_result.stdout.strip()
 
-    assert class_matches == "", (
-        f"ToneSwitcher class definition found (AC13 violation):\n{class_matches}"
-    )
-    assert usage_matches == "", (
-        f"ToneSwitcher usage (.attribute) found (AC13 violation):\n{usage_matches}"
-    )
+    assert (
+        class_matches == ""
+    ), f"ToneSwitcher class definition found (AC13 violation):\n{class_matches}"
+    assert (
+        usage_matches == ""
+    ), f"ToneSwitcher usage (.attribute) found (AC13 violation):\n{usage_matches}"
 
 
 # ---------------------------------------------------------------------------
@@ -133,12 +131,12 @@ def test_voice_config_fields_are_copy_text_tone_only() -> None:
     assert hasattr(record, "cta_templates")
 
     # Fields that must NOT exist (technical parameters)
-    assert not hasattr(record, "sharpness_factor"), (
-        "voice_config must not contain technical sharpness parameter"
-    )
-    assert not hasattr(record, "color_balance"), (
-        "voice_config must not contain color balance parameter"
-    )
-    assert not hasattr(record, "composition_angle"), (
-        "voice_config must not contain composition angle parameter"
-    )
+    assert not hasattr(
+        record, "sharpness_factor"
+    ), "voice_config must not contain technical sharpness parameter"
+    assert not hasattr(
+        record, "color_balance"
+    ), "voice_config must not contain color balance parameter"
+    assert not hasattr(
+        record, "composition_angle"
+    ), "voice_config must not contain composition angle parameter"

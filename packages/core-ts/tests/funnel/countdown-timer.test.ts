@@ -208,7 +208,7 @@ describe('isExpired', () => {
 
   it('isExpired(state, now) === getRemainingMs(state, now) <= 0 (정의 일관성)', () => {
     const cases: Array<{ expiresAt: number; now: number }> = [
-      { expiresAt: 1_000, now: 500 },   // 미래
+      { expiresAt: 1_000, now: 500 }, // 미래
       { expiresAt: 1_000, now: 1_000 }, // 경계
       { expiresAt: 1_000, now: 1_500 }, // 만료
     ];

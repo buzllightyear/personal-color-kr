@@ -9,7 +9,6 @@ AC10: operator가 trend_id + recipe_id + target_segment_id로 drop push →
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 
 import pytest
 
@@ -19,7 +18,6 @@ from api.trend_drop.push import (
     UserForSegment,
     push_trend_drop,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

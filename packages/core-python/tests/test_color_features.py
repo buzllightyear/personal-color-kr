@@ -136,10 +136,10 @@ _BLACK_SAT = 0.0
         (_AUTUMN_WARM, _AUTUMN_WARM_TEMP, _AUTUMN_WARM_BRIGHT, _AUTUMN_WARM_SAT),
         (_SUMMER_COOL, _SUMMER_COOL_TEMP, _SUMMER_COOL_BRIGHT, _SUMMER_COOL_SAT),
         (_WINTER_COOL, _WINTER_COOL_TEMP, _WINTER_COOL_BRIGHT, _WINTER_COOL_SAT),
-        (_PURE_RED,    _PURE_RED_TEMP,    _PURE_RED_BRIGHT,    _PURE_RED_SAT),
-        (_PURE_BLUE,   _PURE_BLUE_TEMP,   _PURE_BLUE_BRIGHT,   _PURE_BLUE_SAT),
-        (_PURE_WHITE,  _WHITE_TEMP,       _WHITE_BRIGHT,       _WHITE_SAT),
-        (_BLACK,       _BLACK_TEMP,       _BLACK_BRIGHT,       _BLACK_SAT),
+        (_PURE_RED, _PURE_RED_TEMP, _PURE_RED_BRIGHT, _PURE_RED_SAT),
+        (_PURE_BLUE, _PURE_BLUE_TEMP, _PURE_BLUE_BRIGHT, _PURE_BLUE_SAT),
+        (_PURE_WHITE, _WHITE_TEMP, _WHITE_BRIGHT, _WHITE_SAT),
+        (_BLACK, _BLACK_TEMP, _BLACK_BRIGHT, _BLACK_SAT),
     ],
     ids=[
         "spring_warm",
@@ -218,39 +218,39 @@ def test_compute_color_features_white_is_brighter_than_black() -> None:
     white_result = compute_color_features((_PURE_WHITE,))
     black_result = compute_color_features((_BLACK,))
 
-    assert _approx(1.0, white_result.brightness), (
-        f"White brightness should be 1.0, got {white_result.brightness}"
-    )
-    assert _approx(0.0, black_result.brightness), (
-        f"Black brightness should be 0.0, got {black_result.brightness}"
-    )
+    assert _approx(
+        1.0, white_result.brightness
+    ), f"White brightness should be 1.0, got {white_result.brightness}"
+    assert _approx(
+        0.0, black_result.brightness
+    ), f"Black brightness should be 0.0, got {black_result.brightness}"
 
 
 @pytest.mark.unit
 def test_compute_color_features_white_has_zero_saturation() -> None:
     """White pixel (255, 255, 255) must return saturation = 0.0 (achromatic)."""
     result = compute_color_features((_PURE_WHITE,))
-    assert _approx(0.0, result.saturation), (
-        f"White saturation should be 0.0, got {result.saturation}"
-    )
+    assert _approx(
+        0.0, result.saturation
+    ), f"White saturation should be 0.0, got {result.saturation}"
 
 
 @pytest.mark.unit
 def test_compute_color_features_black_has_zero_saturation() -> None:
     """Black pixel (0, 0, 0) must return saturation = 0.0 (degenerate case)."""
     result = compute_color_features((_BLACK,))
-    assert _approx(0.0, result.saturation), (
-        f"Black saturation should be 0.0, got {result.saturation}"
-    )
+    assert _approx(
+        0.0, result.saturation
+    ), f"Black saturation should be 0.0, got {result.saturation}"
 
 
 @pytest.mark.unit
 def test_compute_color_features_pure_red_has_full_saturation() -> None:
     """Pure red (255, 0, 0) must return saturation = 1.0."""
     result = compute_color_features((_PURE_RED,))
-    assert _approx(1.0, result.saturation), (
-        f"Pure red saturation should be 1.0, got {result.saturation}"
-    )
+    assert _approx(
+        1.0, result.saturation
+    ), f"Pure red saturation should be 1.0, got {result.saturation}"
 
 
 # ===========================================================================
@@ -317,8 +317,7 @@ def test_compute_color_features_two_pixels_average() -> None:
         f"got {result.brightness:.6f}"
     )
     assert _approx(exp_sat, result.saturation), (
-        f"Two-pixel saturation: expected {exp_sat:.6f}, "
-        f"got {result.saturation:.6f}"
+        f"Two-pixel saturation: expected {exp_sat:.6f}, " f"got {result.saturation:.6f}"
     )
 
 
@@ -357,9 +356,9 @@ def test_compute_color_features_returns_frozen_dataclass() -> None:
     """Return type must be a frozen ColorFeatureVector dataclass."""
     result = compute_color_features((_SPRING_WARM,))
 
-    assert isinstance(result, ColorFeatureVector), (
-        f"Expected ColorFeatureVector, got {type(result)}"
-    )
+    assert isinstance(
+        result, ColorFeatureVector
+    ), f"Expected ColorFeatureVector, got {type(result)}"
     # frozen=True means attribute assignment raises FrozenInstanceError
     with pytest.raises((AttributeError, TypeError)):
         result.color_temperature = 0.0  # type: ignore[misc]
@@ -370,15 +369,15 @@ def test_compute_color_features_fields_are_floats() -> None:
     """All three fields of the returned vector must be Python float instances."""
     result = compute_color_features((_SPRING_WARM,))
 
-    assert isinstance(result.color_temperature, float), (
-        f"color_temperature must be float, got {type(result.color_temperature)}"
-    )
-    assert isinstance(result.brightness, float), (
-        f"brightness must be float, got {type(result.brightness)}"
-    )
-    assert isinstance(result.saturation, float), (
-        f"saturation must be float, got {type(result.saturation)}"
-    )
+    assert isinstance(
+        result.color_temperature, float
+    ), f"color_temperature must be float, got {type(result.color_temperature)}"
+    assert isinstance(
+        result.brightness, float
+    ), f"brightness must be float, got {type(result.brightness)}"
+    assert isinstance(
+        result.saturation, float
+    ), f"saturation must be float, got {type(result.saturation)}"
 
 
 @pytest.mark.unit
@@ -393,7 +392,15 @@ def test_compute_color_features_fields_are_floats() -> None:
         _SUMMER_COOL,
         _WINTER_COOL,
     ],
-    ids=["black", "white", "gray", "spring_warm", "autumn_warm", "summer_cool", "winter_cool"],
+    ids=[
+        "black",
+        "white",
+        "gray",
+        "spring_warm",
+        "autumn_warm",
+        "summer_cool",
+        "winter_cool",
+    ],
 )
 def test_compute_color_features_all_fields_in_valid_range(
     pixel: tuple[int, int, int],
@@ -405,12 +412,12 @@ def test_compute_color_features_all_fields_in_valid_range(
         f"color_temperature {result.color_temperature} out of [-1, 1] "
         f"for pixel {pixel}"
     )
-    assert 0.0 <= result.brightness <= 1.0, (
-        f"brightness {result.brightness} out of [0, 1] for pixel {pixel}"
-    )
-    assert 0.0 <= result.saturation <= 1.0, (
-        f"saturation {result.saturation} out of [0, 1] for pixel {pixel}"
-    )
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"brightness {result.brightness} out of [0, 1] for pixel {pixel}"
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"saturation {result.saturation} out of [0, 1] for pixel {pixel}"
 
 
 # ===========================================================================
@@ -506,8 +513,8 @@ def test_compute_color_features_negative_channel_raises_value_error() -> None:
 def test_compute_color_features_second_pixel_bad_channel_raises() -> None:
     """Validation must check every pixel, not just the first."""
     bad_pixels = (
-        (200, 185, 150),   # valid spring-warm pixel
-        (256, 0, 0),       # invalid — second pixel, channel R = 256
+        (200, 185, 150),  # valid spring-warm pixel
+        (256, 0, 0),  # invalid — second pixel, channel R = 256
     )
     with pytest.raises(ValueError, match="0-255"):
         compute_color_features(bad_pixels)

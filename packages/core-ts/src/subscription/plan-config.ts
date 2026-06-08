@@ -149,5 +149,5 @@ export function getPlanConfig(planType: unknown): PlanConfig {
   if (planType !== 'monthly' && planType !== 'annual') {
     throw new UnknownPlanTypeError(planType);
   }
-  return PLAN_CATALOGUE[planType as PlanType];
+  return PLAN_CATALOGUE[planType];
 }

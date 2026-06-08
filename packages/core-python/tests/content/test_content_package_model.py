@@ -30,11 +30,10 @@ import dataclasses
 import pytest
 
 from content.curations import (
-    FirstCuration,
     get_curation_by_color,
     load_first_curation_for_season,
 )
-from content.guides import Guide, load_guides_for_season
+from content.guides import load_guides_for_season
 from content.post_payment_package import ContentPackage
 from image_edit.pipeline import PipelineResult
 from image_edit.vendor_client import VendorResponse

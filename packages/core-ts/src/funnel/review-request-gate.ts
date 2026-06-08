@@ -162,7 +162,10 @@ function validateInput(input: ShouldRequestReviewInput): void {
     );
   }
 
-  if (input.minimumUsageCount !== undefined && !isNonNegativeInteger(input.minimumUsageCount)) {
+  if (
+    input.minimumUsageCount !== undefined &&
+    !isNonNegativeInteger(input.minimumUsageCount)
+  ) {
     throw new ReviewRequestGateError(
       'invalid_minimum_usage_count',
       `minimumUsageCount must be a non-negative integer when provided (got ${String(input.minimumUsageCount)})`,

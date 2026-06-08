@@ -210,10 +210,7 @@ export function ResultPreviewScreen(
   const { trendTags, generationExampleText, onGenerate } = props;
 
   return (
-    <FunnelScreenLayout
-      testID="result-preview-screen"
-      accessibilityLabel="결과 프리뷰"
-    >
+    <FunnelScreenLayout testID="result-preview-screen" accessibilityLabel="결과 프리뷰">
       <FunnelHeadline
         headline={RESULT_PREVIEW_HEADLINE}
         subhead={RESULT_PREVIEW_SUBHEAD}

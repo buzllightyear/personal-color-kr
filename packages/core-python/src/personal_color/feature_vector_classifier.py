@@ -65,7 +65,6 @@ from personal_color.contrast_classifier import Contrast
 from personal_color.season_classifier import Season, classify_season
 from personal_color.tone_classifier import Tone
 
-
 # ---------------------------------------------------------------------------
 # Tunables
 # ---------------------------------------------------------------------------
@@ -144,8 +143,7 @@ def classify_season_from_feature_vector(
     """
     if not isinstance(features, ColorFeatureVector):
         raise TypeError(
-            f"features must be a ColorFeatureVector, "
-            f"got {type(features).__name__}",
+            f"features must be a ColorFeatureVector, " f"got {type(features).__name__}",
         )
     if not isinstance(thresholds, FeatureVectorThresholds):
         raise TypeError(
@@ -293,7 +291,9 @@ def classify_personal_color(
     """
     # Delegate season determination — raises TypeError / ValueError on bad input
     # or neutral undertone, consistent with the Sub-AC 12.2 contract.
-    season: Season = classify_season_from_feature_vector(features, thresholds=thresholds)
+    season: Season = classify_season_from_feature_vector(
+        features, thresholds=thresholds
+    )
 
     # ------------------------------------------------------------------
     # Axis 1 — tone confidence: how far |color_temperature| is from the
@@ -307,7 +307,9 @@ def classify_personal_color(
         # at the very boundary — confidence is 0 on this axis.
         tone_conf: float = 0.0
     else:
-        tone_conf = max(0.0, min(1.0, (abs_ct - thresholds.warm_threshold) / tone_denom))
+        tone_conf = max(
+            0.0, min(1.0, (abs_ct - thresholds.warm_threshold) / tone_denom)
+        )
 
     # ------------------------------------------------------------------
     # Axis 2 — brightness confidence: how far brightness is from the

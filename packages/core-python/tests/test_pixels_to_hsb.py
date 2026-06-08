@@ -60,14 +60,14 @@ def _approx(expected: float, actual: float, *, tol: float = _TOL) -> bool:
 # (255, 0, 0): r'=1, g'=0, b'=0 → cmax=1, cmin=0, delta=1
 # brightness=1.0, saturation=1.0, hue=60*((0-0)/1 % 6)=0.0
 _RED = (255, 0, 0)
-_RED_H_LO, _RED_H_HI = 0.0, 1.0     # hue in [0°, 1°)
+_RED_H_LO, _RED_H_HI = 0.0, 1.0  # hue in [0°, 1°)
 _RED_S, _RED_B = 1.0, 1.0
 
 # ── 순수 노랑 (pure yellow) ──────────────────────────────────────────────────
 # (255, 255, 0): r'=1, g'=1, b'=0 → cmax=1, cmin=0, delta=1
 # brightness=1.0, saturation=1.0, hue=60*((1-0)/1 % 6)=60.0
 _YELLOW = (255, 255, 0)
-_YELLOW_H_LO, _YELLOW_H_HI = 59.0, 61.0   # hue ≈ 60°
+_YELLOW_H_LO, _YELLOW_H_HI = 59.0, 61.0  # hue ≈ 60°
 _YELLOW_S, _YELLOW_B = 1.0, 1.0
 
 # ── 중립 회색 (neutral gray) ─────────────────────────────────────────────────
@@ -92,27 +92,27 @@ def test_pixels_to_hsb_pure_red_hue_in_expected_range() -> None:
     return a hue within [0°, 1°) to account for floating-point rounding.
     """
     result = pixels_to_hsb((_RED,))
-    assert _RED_H_LO <= result.hue < _RED_H_HI, (
-        f"Pure red hue expected in [{_RED_H_LO}, {_RED_H_HI}), got {result.hue}"
-    )
+    assert (
+        _RED_H_LO <= result.hue < _RED_H_HI
+    ), f"Pure red hue expected in [{_RED_H_LO}, {_RED_H_HI}), got {result.hue}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_pure_red_saturation() -> None:
     """순수 빨강 → saturation = 1.0."""
     result = pixels_to_hsb((_RED,))
-    assert _approx(_RED_S, result.saturation), (
-        f"Pure red saturation expected {_RED_S}, got {result.saturation}"
-    )
+    assert _approx(
+        _RED_S, result.saturation
+    ), f"Pure red saturation expected {_RED_S}, got {result.saturation}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_pure_red_brightness() -> None:
     """순수 빨강 → brightness = 1.0."""
     result = pixels_to_hsb((_RED,))
-    assert _approx(_RED_B, result.brightness), (
-        f"Pure red brightness expected {_RED_B}, got {result.brightness}"
-    )
+    assert _approx(
+        _RED_B, result.brightness
+    ), f"Pure red brightness expected {_RED_B}, got {result.brightness}"
 
 
 @pytest.mark.unit
@@ -133,18 +133,18 @@ def test_pixels_to_hsb_pure_yellow_hue_in_expected_range() -> None:
 def test_pixels_to_hsb_pure_yellow_saturation() -> None:
     """순수 노랑 → saturation = 1.0."""
     result = pixels_to_hsb((_YELLOW,))
-    assert _approx(_YELLOW_S, result.saturation), (
-        f"Pure yellow saturation expected {_YELLOW_S}, got {result.saturation}"
-    )
+    assert _approx(
+        _YELLOW_S, result.saturation
+    ), f"Pure yellow saturation expected {_YELLOW_S}, got {result.saturation}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_pure_yellow_brightness() -> None:
     """순수 노랑 → brightness = 1.0."""
     result = pixels_to_hsb((_YELLOW,))
-    assert _approx(_YELLOW_B, result.brightness), (
-        f"Pure yellow brightness expected {_YELLOW_B}, got {result.brightness}"
-    )
+    assert _approx(
+        _YELLOW_B, result.brightness
+    ), f"Pure yellow brightness expected {_YELLOW_B}, got {result.brightness}"
 
 
 @pytest.mark.unit
@@ -154,9 +154,9 @@ def test_pixels_to_hsb_neutral_gray_saturation() -> None:
     All channels equal → zero chroma → fully desaturated.
     """
     result = pixels_to_hsb((_GRAY,))
-    assert _approx(_GRAY_S, result.saturation), (
-        f"Neutral gray saturation expected {_GRAY_S}, got {result.saturation}"
-    )
+    assert _approx(
+        _GRAY_S, result.saturation
+    ), f"Neutral gray saturation expected {_GRAY_S}, got {result.saturation}"
 
 
 @pytest.mark.unit
@@ -166,18 +166,18 @@ def test_pixels_to_hsb_neutral_gray_brightness_in_expected_range() -> None:
     brightness = max(R, G, B) / 255 = 128 / 255.
     """
     result = pixels_to_hsb((_GRAY,))
-    assert math.isclose(result.brightness, _GRAY_B, abs_tol=1e-3, rel_tol=0), (
-        f"Neutral gray brightness expected ≈{_GRAY_B:.5f}, got {result.brightness:.5f}"
-    )
+    assert math.isclose(
+        result.brightness, _GRAY_B, abs_tol=1e-3, rel_tol=0
+    ), f"Neutral gray brightness expected ≈{_GRAY_B:.5f}, got {result.brightness:.5f}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_neutral_gray_hue_is_zero() -> None:
     """중립 회색 → hue = 0.0 (achromatic canonical value)."""
     result = pixels_to_hsb((_GRAY,))
-    assert _approx(_GRAY_H, result.hue), (
-        f"Neutral gray hue expected {_GRAY_H}, got {result.hue}"
-    )
+    assert _approx(
+        _GRAY_H, result.hue
+    ), f"Neutral gray hue expected {_GRAY_H}, got {result.hue}"
 
 
 # ===========================================================================
@@ -214,42 +214,40 @@ def test_pixels_to_hsb_primary_hues(
         f"Hue for {pixel}: expected in [{exp_h_lo}, {exp_h_hi}), "
         f"got {result.hue:.4f}"
     )
-    assert _approx(exp_s, result.saturation), (
-        f"Saturation for {pixel}: expected {exp_s}, got {result.saturation}"
-    )
-    assert _approx(exp_b, result.brightness), (
-        f"Brightness for {pixel}: expected {exp_b}, got {result.brightness}"
-    )
+    assert _approx(
+        exp_s, result.saturation
+    ), f"Saturation for {pixel}: expected {exp_s}, got {result.saturation}"
+    assert _approx(
+        exp_b, result.brightness
+    ), f"Brightness for {pixel}: expected {exp_b}, got {result.brightness}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_pure_white() -> None:
     """White (255, 255, 255): saturation=0, brightness=1.0, hue=0 (achromatic)."""
     result = pixels_to_hsb(((255, 255, 255),))
-    assert _approx(0.0, result.saturation), (
-        f"White saturation expected 0.0, got {result.saturation}"
-    )
-    assert _approx(1.0, result.brightness), (
-        f"White brightness expected 1.0, got {result.brightness}"
-    )
-    assert _approx(0.0, result.hue), (
-        f"White hue expected 0.0 (achromatic), got {result.hue}"
-    )
+    assert _approx(
+        0.0, result.saturation
+    ), f"White saturation expected 0.0, got {result.saturation}"
+    assert _approx(
+        1.0, result.brightness
+    ), f"White brightness expected 1.0, got {result.brightness}"
+    assert _approx(
+        0.0, result.hue
+    ), f"White hue expected 0.0 (achromatic), got {result.hue}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_pure_black() -> None:
     """Black (0, 0, 0): saturation=0, brightness=0, hue=0."""
     result = pixels_to_hsb(((0, 0, 0),))
-    assert _approx(0.0, result.saturation), (
-        f"Black saturation expected 0.0, got {result.saturation}"
-    )
-    assert _approx(0.0, result.brightness), (
-        f"Black brightness expected 0.0, got {result.brightness}"
-    )
-    assert _approx(0.0, result.hue), (
-        f"Black hue expected 0.0, got {result.hue}"
-    )
+    assert _approx(
+        0.0, result.saturation
+    ), f"Black saturation expected 0.0, got {result.saturation}"
+    assert _approx(
+        0.0, result.brightness
+    ), f"Black brightness expected 0.0, got {result.brightness}"
+    assert _approx(0.0, result.hue), f"Black hue expected 0.0, got {result.hue}"
 
 
 # ===========================================================================
@@ -263,15 +261,15 @@ def test_pixels_to_hsb_two_identical_pixels_same_as_one() -> None:
     single = pixels_to_hsb((_RED,))
     double = pixels_to_hsb((_RED, _RED))
 
-    assert _approx(single.hue, double.hue), (
-        f"Hue mismatch: {single.hue} vs {double.hue}"
-    )
-    assert _approx(single.saturation, double.saturation), (
-        f"Saturation mismatch: {single.saturation} vs {double.saturation}"
-    )
-    assert _approx(single.brightness, double.brightness), (
-        f"Brightness mismatch: {single.brightness} vs {double.brightness}"
-    )
+    assert _approx(
+        single.hue, double.hue
+    ), f"Hue mismatch: {single.hue} vs {double.hue}"
+    assert _approx(
+        single.saturation, double.saturation
+    ), f"Saturation mismatch: {single.saturation} vs {double.saturation}"
+    assert _approx(
+        single.brightness, double.brightness
+    ), f"Brightness mismatch: {single.brightness} vs {double.brightness}"
 
 
 @pytest.mark.unit
@@ -290,28 +288,28 @@ def test_pixels_to_hsb_red_and_green_averages_to_yellow_hue() -> None:
     result = pixels_to_hsb((_RED, (0, 255, 0)))
     # mean = (127.5, 127.5, 0) → high-yellow / orange-ish region
     # Saturation and brightness must be non-zero
-    assert result.saturation > 0.0, (
-        f"Saturation should be > 0 for a colored average, got {result.saturation}"
-    )
-    assert result.brightness > 0.0, (
-        f"Brightness should be > 0 for a non-black average, got {result.brightness}"
-    )
+    assert (
+        result.saturation > 0.0
+    ), f"Saturation should be > 0 for a colored average, got {result.saturation}"
+    assert (
+        result.brightness > 0.0
+    ), f"Brightness should be > 0 for a non-black average, got {result.brightness}"
     # Hue should be in the red-yellow region [0°, 61°)
-    assert 0.0 <= result.hue < 61.0, (
-        f"Red+green average hue expected in [0, 61), got {result.hue}"
-    )
+    assert (
+        0.0 <= result.hue < 61.0
+    ), f"Red+green average hue expected in [0, 61), got {result.hue}"
 
 
 @pytest.mark.unit
 def test_pixels_to_hsb_multi_gray_pixels_same_as_single_gray() -> None:
     """Multiple identical gray pixels must yield S=0.0, B=128/255."""
     result = pixels_to_hsb((_GRAY, _GRAY, _GRAY))
-    assert _approx(0.0, result.saturation), (
-        f"Multi-gray saturation should be 0.0, got {result.saturation}"
-    )
-    assert math.isclose(result.brightness, _GRAY_B, abs_tol=1e-3, rel_tol=0), (
-        f"Multi-gray brightness expected ≈{_GRAY_B:.4f}, got {result.brightness:.4f}"
-    )
+    assert _approx(
+        0.0, result.saturation
+    ), f"Multi-gray saturation should be 0.0, got {result.saturation}"
+    assert math.isclose(
+        result.brightness, _GRAY_B, abs_tol=1e-3, rel_tol=0
+    ), f"Multi-gray brightness expected ≈{_GRAY_B:.4f}, got {result.brightness:.4f}"
 
 
 # ===========================================================================
@@ -323,9 +321,9 @@ def test_pixels_to_hsb_multi_gray_pixels_same_as_single_gray() -> None:
 def test_pixels_to_hsb_returns_hsb_color_instance() -> None:
     """Return value must be an HSBColor frozen dataclass."""
     result = pixels_to_hsb((_RED,))
-    assert isinstance(result, HSBColor), (
-        f"Expected HSBColor instance, got {type(result)}"
-    )
+    assert isinstance(
+        result, HSBColor
+    ), f"Expected HSBColor instance, got {type(result)}"
 
 
 @pytest.mark.unit
@@ -340,15 +338,13 @@ def test_pixels_to_hsb_return_is_frozen() -> None:
 def test_pixels_to_hsb_fields_are_floats() -> None:
     """All three fields must be Python float instances."""
     result = pixels_to_hsb((_YELLOW,))
-    assert isinstance(result.hue, float), (
-        f"hue must be float, got {type(result.hue)}"
-    )
-    assert isinstance(result.saturation, float), (
-        f"saturation must be float, got {type(result.saturation)}"
-    )
-    assert isinstance(result.brightness, float), (
-        f"brightness must be float, got {type(result.brightness)}"
-    )
+    assert isinstance(result.hue, float), f"hue must be float, got {type(result.hue)}"
+    assert isinstance(
+        result.saturation, float
+    ), f"saturation must be float, got {type(result.saturation)}"
+    assert isinstance(
+        result.brightness, float
+    ), f"brightness must be float, got {type(result.brightness)}"
 
 
 @pytest.mark.unit
@@ -361,11 +357,19 @@ def test_pixels_to_hsb_fields_are_floats() -> None:
         _RED,
         _YELLOW,
         _GRAY,
-        (220, 185, 150),   # 봄웜 skin tone
-        (195, 180, 175),   # 겨울쿨 skin tone
+        (220, 185, 150),  # 봄웜 skin tone
+        (195, 180, 175),  # 겨울쿨 skin tone
     ],
-    ids=["black", "white", "gray", "pure_red", "pure_yellow", "neutral_gray",
-         "spring_warm", "winter_cool"],
+    ids=[
+        "black",
+        "white",
+        "gray",
+        "pure_red",
+        "pure_yellow",
+        "neutral_gray",
+        "spring_warm",
+        "winter_cool",
+    ],
 )
 def test_pixels_to_hsb_all_fields_in_valid_range(
     pixel: tuple[int, int, int],
@@ -373,15 +377,15 @@ def test_pixels_to_hsb_all_fields_in_valid_range(
     """hue ∈ [0, 360), saturation ∈ [0, 1], brightness ∈ [0, 1] for any pixel."""
     result = pixels_to_hsb((pixel,))
 
-    assert 0.0 <= result.hue < 360.0, (
-        f"hue {result.hue} out of [0, 360) for pixel {pixel}"
-    )
-    assert 0.0 <= result.saturation <= 1.0, (
-        f"saturation {result.saturation} out of [0, 1] for pixel {pixel}"
-    )
-    assert 0.0 <= result.brightness <= 1.0, (
-        f"brightness {result.brightness} out of [0, 1] for pixel {pixel}"
-    )
+    assert (
+        0.0 <= result.hue < 360.0
+    ), f"hue {result.hue} out of [0, 360) for pixel {pixel}"
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"saturation {result.saturation} out of [0, 1] for pixel {pixel}"
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"brightness {result.brightness} out of [0, 1] for pixel {pixel}"
 
 
 # ===========================================================================

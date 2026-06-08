@@ -29,7 +29,11 @@
 export type SubscriptionState = 'trial' | 'active' | 'past_due' | 'cancelled';
 
 /** All possible subscription lifecycle events that can trigger a transition. */
-export type SubscriptionEvent = 'trial_end' | 'payment_fail' | 'grace_expire' | 'user_cancel';
+export type SubscriptionEvent =
+  | 'trial_end'
+  | 'payment_fail'
+  | 'grace_expire'
+  | 'user_cancel';
 
 // ---------------------------------------------------------------------------
 // Transition table (frozen — deterministic, no mutation)
@@ -42,7 +46,9 @@ export type SubscriptionEvent = 'trial_end' | 'payment_fail' | 'grace_expire' | 
  * combination returns `undefined`, which the function turns into a thrown error.
  */
 const TRANSITIONS: Readonly<
-  Partial<Record<SubscriptionState, Partial<Record<SubscriptionEvent, SubscriptionState>>>>
+  Partial<
+    Record<SubscriptionState, Partial<Record<SubscriptionEvent, SubscriptionState>>>
+  >
 > = Object.freeze({
   trial: Object.freeze({
     trial_end: 'active' as const,

@@ -17,9 +17,7 @@ from api.trend.model import (
     InMemoryTrendCallLogRepository,
     PreemptOrFollowTag,
     TrendCallLogCreateInput,
-    TrendCallLogRecord,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -54,7 +54,6 @@ from personal_color.image_decoder import InvalidSelfieError, decode_image
 from personal_color.region_extractor import Image
 from personal_color.skin_extractor import extract_skin_pixels
 
-
 # ---------------------------------------------------------------------------
 # Public error type
 # ---------------------------------------------------------------------------

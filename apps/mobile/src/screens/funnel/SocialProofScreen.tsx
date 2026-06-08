@@ -150,21 +150,24 @@ export const REVIEW_CARDS: readonly ReviewCardConfig[] = [
   {
     id: 'ugc-kim',
     authorHandle: '@user_kim',
-    reviewText: '퍼스널 컬러 진단 받고 사진 생성해봤는데 진짜 내 피부톤에 딱 맞아요. 트렌드 드롭 알림도 완전 좋아요!',
+    reviewText:
+      '퍼스널 컬러 진단 받고 사진 생성해봤는데 진짜 내 피부톤에 딱 맞아요. 트렌드 드롭 알림도 완전 좋아요!',
     starCount: 5,
     source: 'ugc',
   },
   {
     id: 'influencer-beautymee',
     authorHandle: '@beautymee',
-    reviewText: '가을 웜톤 recipe로 생성한 셀카가 기존 필터 앱이랑 차원이 달라요. de-slop 보정이 뭔지 처음 느꼈어요.',
+    reviewText:
+      '가을 웜톤 recipe로 생성한 셀카가 기존 필터 앱이랑 차원이 달라요. de-slop 보정이 뭔지 처음 느꼈어요.',
     starCount: 5,
     source: 'influencer',
   },
   {
     id: 'ugc-seonghee',
     authorHandle: '@seonghee_daily',
-    reviewText: '트렌드 드롭 올 때마다 새 recipe 바로 써볼 수 있어서 지루할 틈이 없어요. 진짜 쓸수록 좋아지는 앱.',
+    reviewText:
+      '트렌드 드롭 올 때마다 새 recipe 바로 써볼 수 있어서 지루할 틈이 없어요. 진짜 쓸수록 좋아지는 앱.',
     starCount: 5,
     source: 'ugc',
   },
@@ -209,16 +212,11 @@ export interface SocialProofScreenProps {
  *
  * @see SocialProofScreenProps
  */
-export function SocialProofScreen(
-  props: SocialProofScreenProps,
-): React.ReactElement {
+export function SocialProofScreen(props: SocialProofScreenProps): React.ReactElement {
   const { onNext } = props;
 
   return (
-    <FunnelScreenLayout
-      testID="social-proof-screen"
-      accessibilityLabel="사회적 증거"
-    >
+    <FunnelScreenLayout testID="social-proof-screen" accessibilityLabel="사회적 증거">
       <FunnelHeadline
         headline={SCREEN.headline}
         subhead={SCREEN.subhead}
@@ -232,7 +230,10 @@ export function SocialProofScreen(
         accessibilityRole="text"
         accessibilityLabel={USER_COUNT_BADGE_TEXT}
       >
-        <Text style={styles.userCountBadgeText} testID="social-proof-user-count-badge-text">
+        <Text
+          style={styles.userCountBadgeText}
+          testID="social-proof-user-count-badge-text"
+        >
           {USER_COUNT_BADGE_TEXT}
         </Text>
       </View>
@@ -256,9 +257,7 @@ export function SocialProofScreen(
               style={styles.sourceTag}
               testID={`social-proof-review-card-${card.id}-source-tag`}
             >
-              <Text style={styles.sourceTagText}>
-                {SOURCE_LABELS[card.source]}
-              </Text>
+              <Text style={styles.sourceTagText}>{SOURCE_LABELS[card.source]}</Text>
             </View>
 
             {/* Author handle */}

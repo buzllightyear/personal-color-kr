@@ -43,15 +43,15 @@ from personal_color.skin_extractor import (
 #   pure red  (255, 0, 0):    Cb ≈ 85.0   Cr ≈ 255.5  → NOT skin ✓
 # ---------------------------------------------------------------------------
 
-_SPRING_WARM: tuple[int, int, int] = (220, 185, 150)   # 봄웜 — skin ✓
-_AUTUMN_WARM: tuple[int, int, int] = (200, 160, 130)   # 가을웜 — skin ✓
-_SUMMER_COOL: tuple[int, int, int] = (190, 170, 170)   # 여름쿨 — skin ✓
-_WINTER_COOL: tuple[int, int, int] = (195, 180, 175)   # 겨울쿨 — skin ✓
+_SPRING_WARM: tuple[int, int, int] = (220, 185, 150)  # 봄웜 — skin ✓
+_AUTUMN_WARM: tuple[int, int, int] = (200, 160, 130)  # 가을웜 — skin ✓
+_SUMMER_COOL: tuple[int, int, int] = (190, 170, 170)  # 여름쿨 — skin ✓
+_WINTER_COOL: tuple[int, int, int] = (195, 180, 175)  # 겨울쿨 — skin ✓
 
-_BLUE_SKY: tuple[int, int, int] = (50, 100, 200)    # NOT skin
-_DARK_BG: tuple[int, int, int] = (20, 20, 20)       # NOT skin
-_WHITE: tuple[int, int, int] = (255, 255, 255)      # NOT skin
-_PURE_RED: tuple[int, int, int] = (255, 0, 0)       # NOT skin
+_BLUE_SKY: tuple[int, int, int] = (50, 100, 200)  # NOT skin
+_DARK_BG: tuple[int, int, int] = (20, 20, 20)  # NOT skin
+_WHITE: tuple[int, int, int] = (255, 255, 255)  # NOT skin
+_PURE_RED: tuple[int, int, int] = (255, 0, 0)  # NOT skin
 
 
 # ---------------------------------------------------------------------------
@@ -112,8 +112,7 @@ def test_extract_skin_pixels_known_skin_pixel_is_in_result(
     result = extract_skin_pixels(image)
 
     assert result.mask == ((True,),), (
-        f"Expected mask=((True,)) for skin pixel {skin_pixel}, "
-        f"got {result.mask}"
+        f"Expected mask=((True,)) for skin pixel {skin_pixel}, " f"got {result.mask}"
     )
     assert result.pixels == (skin_pixel,), (
         f"Expected pixels=({skin_pixel},) for skin pixel {skin_pixel}, "
@@ -170,16 +169,16 @@ def test_extract_skin_pixels_all_skin_image_full_mask() -> None:
 
     for row_idx, row in enumerate(result.mask):
         for col_idx, cell in enumerate(row):
-            assert cell is True, (
-                f"Expected True at mask[{row_idx}][{col_idx}], got False"
-            )
-    assert len(result.pixels) == 12, (
-        f"Expected 12 skin pixels (4×3 all-skin), got {len(result.pixels)}"
-    )
+            assert (
+                cell is True
+            ), f"Expected True at mask[{row_idx}][{col_idx}], got False"
+    assert (
+        len(result.pixels) == 12
+    ), f"Expected 12 skin pixels (4×3 all-skin), got {len(result.pixels)}"
     # All entries in pixels must equal the uniform fill color.
-    assert all(p == _SPRING_WARM for p in result.pixels), (
-        f"All pixels should be {_SPRING_WARM}"
-    )
+    assert all(
+        p == _SPRING_WARM for p in result.pixels
+    ), f"All pixels should be {_SPRING_WARM}"
 
 
 @pytest.mark.unit
@@ -207,12 +206,12 @@ def test_extract_skin_pixels_all_non_skin_image_empty_mask() -> None:
 
     for row_idx, row in enumerate(result.mask):
         for col_idx, cell in enumerate(row):
-            assert cell is False, (
-                f"Expected False at mask[{row_idx}][{col_idx}], got True"
-            )
-    assert result.pixels == (), (
-        f"Expected empty pixels tuple for all-non-skin image, got {result.pixels}"
-    )
+            assert (
+                cell is False
+            ), f"Expected False at mask[{row_idx}][{col_idx}], got True"
+    assert (
+        result.pixels == ()
+    ), f"Expected empty pixels tuple for all-non-skin image, got {result.pixels}"
 
 
 @pytest.mark.unit
@@ -258,9 +257,9 @@ def test_extract_skin_pixels_mixed_image_partial_mask() -> None:
         assert result.mask[2][col] is False, f"mask[2][{col}] must be False (non-skin)"
         assert result.mask[3][col] is False, f"mask[3][{col}] must be False (non-skin)"
 
-    assert len(result.pixels) == 8, (
-        f"Expected 8 skin pixels (top 4×2), got {len(result.pixels)}"
-    )
+    assert (
+        len(result.pixels) == 8
+    ), f"Expected 8 skin pixels (top 4×2), got {len(result.pixels)}"
     assert all(p == _SPRING_WARM for p in result.pixels)
 
 
@@ -319,13 +318,13 @@ def test_extract_skin_pixels_mask_shape_matches_image_shape() -> None:
     image = _solid(width=width, height=height, rgb=_SPRING_WARM)
     result = extract_skin_pixels(image)
 
-    assert len(result.mask) == height, (
-        f"Expected {height} mask rows, got {len(result.mask)}"
-    )
+    assert (
+        len(result.mask) == height
+    ), f"Expected {height} mask rows, got {len(result.mask)}"
     for row_idx, row in enumerate(result.mask):
-        assert len(row) == width, (
-            f"Expected {width} columns in mask row {row_idx}, got {len(row)}"
-        )
+        assert (
+            len(row) == width
+        ), f"Expected {width} columns in mask row {row_idx}, got {len(row)}"
 
 
 @pytest.mark.unit
@@ -377,13 +376,13 @@ def test_extract_skin_pixels_pixels_is_tuple_of_rgb_tuples() -> None:
 
     assert isinstance(result.pixels, tuple), "pixels must be a tuple"
     for pixel in result.pixels:
-        assert isinstance(pixel, tuple) and len(pixel) == 3, (
-            f"Each pixel must be a 3-tuple, got {pixel!r}"
-        )
+        assert (
+            isinstance(pixel, tuple) and len(pixel) == 3
+        ), f"Each pixel must be a 3-tuple, got {pixel!r}"
         for ch in pixel:
-            assert isinstance(ch, int) and 0 <= ch <= 255, (
-                f"Each channel must be int in 0-255, got {ch!r}"
-            )
+            assert (
+                isinstance(ch, int) and 0 <= ch <= 255
+            ), f"Each channel must be int in 0-255, got {ch!r}"
 
 
 @pytest.mark.unit
@@ -413,9 +412,9 @@ def test_extract_skin_pixels_row_major_order_preserved() -> None:
     result = extract_skin_pixels(image)
 
     expected = (_AUTUMN_WARM, _SPRING_WARM, _SUMMER_COOL, _WINTER_COOL)
-    assert result.pixels == expected, (
-        f"Expected row-major order {expected}, got {result.pixels}"
-    )
+    assert (
+        result.pixels == expected
+    ), f"Expected row-major order {expected}, got {result.pixels}"
 
 
 # ===========================================================================

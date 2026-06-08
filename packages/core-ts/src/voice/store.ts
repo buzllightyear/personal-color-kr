@@ -84,7 +84,7 @@ export class VoiceConfigStore {
       description: seed.description,
       // Shallow copy of slots object — all values are primitives (strings)
       // so a shallow copy is a full independent copy.
-      slots: { ...seed.slots } as VoiceCopySlots,
+      slots: { ...seed.slots },
     };
   }
 
@@ -124,7 +124,7 @@ export class VoiceConfigStore {
     // integrity contract.
     if (patch.slots) {
       const emptyPatchSlots = Object.entries(patch.slots)
-        .filter(([, v]) => typeof v === 'string' && (v as string).trim() === '')
+        .filter(([, v]) => typeof v === 'string' && v.trim() === '')
         .map(([k]) => k);
 
       if (emptyPatchSlots.length > 0) {
@@ -142,7 +142,7 @@ export class VoiceConfigStore {
     const updatedSlots: VoiceCopySlots = {
       ...this._state.slots,
       ...(patch.slots ?? {}),
-    } as VoiceCopySlots;
+    };
 
     // Replace internal state atomically (no partial mutation)
     this._state = {
@@ -164,7 +164,7 @@ export class VoiceConfigStore {
     this._state = {
       voiceId: seed.voiceId,
       description: seed.description,
-      slots: { ...seed.slots } as VoiceCopySlots,
+      slots: { ...seed.slots },
     };
   }
 }

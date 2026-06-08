@@ -168,9 +168,7 @@ describe('planFeatureMapper — cell.value', () => {
   });
 
   it('returns null when featureKey is absent from plan.features', () => {
-    const plans: readonly Plan[] = [
-      { planId: 'free', name: '무료', features: {} },
-    ];
+    const plans: readonly Plan[] = [{ planId: 'free', name: '무료', features: {} }];
     const defs: readonly FeatureDef[] = [
       { featureKey: 'missingFeature', label: '없는 기능' },
     ];
@@ -180,7 +178,11 @@ describe('planFeatureMapper — cell.value', () => {
 
   it('returns null when stored value is undefined', () => {
     const plans: readonly Plan[] = [
-      { planId: 'test', name: '테스트', features: { explicit: undefined as unknown as FeatureValue } },
+      {
+        planId: 'test',
+        name: '테스트',
+        features: { explicit: undefined as unknown as FeatureValue },
+      },
     ];
     const defs: readonly FeatureDef[] = [
       { featureKey: 'explicit', label: '명시적 undefined' },
@@ -226,12 +228,8 @@ describe('planFeatureMapper — cell.available', () => {
   });
 
   it('available=false when value is null (key absent)', () => {
-    const plans: readonly Plan[] = [
-      { planId: 'free', name: '무료', features: {} },
-    ];
-    const defs: readonly FeatureDef[] = [
-      { featureKey: 'missing', label: '없음' },
-    ];
+    const plans: readonly Plan[] = [{ planId: 'free', name: '무료', features: {} }];
+    const defs: readonly FeatureDef[] = [{ featureKey: 'missing', label: '없음' }];
     const matrix = planFeatureMapper(plans, defs);
     expect(matrix.rows[0]!.cells[0]!.available).toBe(false);
   });
@@ -251,9 +249,7 @@ describe('planFeatureMapper — cell.available', () => {
     const plans: readonly Plan[] = [
       { planId: 'test', name: '테스트', features: { nullVal: null } },
     ];
-    const defs: readonly FeatureDef[] = [
-      { featureKey: 'nullVal', label: '널 값' },
-    ];
+    const defs: readonly FeatureDef[] = [{ featureKey: 'nullVal', label: '널 값' }];
     const matrix = planFeatureMapper(plans, defs);
     expect(matrix.rows[0]!.cells[0]!.available).toBe(false);
   });
@@ -321,9 +317,7 @@ describe('planFeatureMapper — cell.highlighted (isRecommended fallback)', () =
     const plans: readonly Plan[] = [
       { planId: 'annual', name: '연간', features: {}, isRecommended: true },
     ];
-    const defs: readonly FeatureDef[] = [
-      { featureKey: 'ghost', label: '없는 기능' },
-    ];
+    const defs: readonly FeatureDef[] = [{ featureKey: 'ghost', label: '없는 기능' }];
     const matrix = planFeatureMapper(plans, defs);
     expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(false);
   });
@@ -342,7 +336,7 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
   it('highlights only the specified planId even when it is not isRecommended', () => {
     const plans: readonly Plan[] = [
       { planId: 'monthly', name: '월간', features: { f: true }, isRecommended: false },
-      { planId: 'annual',  name: '연간',  features: { f: true }, isRecommended: true },
+      { planId: 'annual', name: '연간', features: { f: true }, isRecommended: true },
     ];
     const defs: readonly FeatureDef[] = [
       { featureKey: 'f', label: '기능', highlightedPlanIds: ['monthly'] },
@@ -368,7 +362,7 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
   it('highlights multiple plans when highlightedPlanIds lists several ids', () => {
     const plans: readonly Plan[] = [
       { planId: 'monthly', name: '월간', features: { f: true } },
-      { planId: 'annual',  name: '연간',  features: { f: true } },
+      { planId: 'annual', name: '연간', features: { f: true } },
     ];
     const defs: readonly FeatureDef[] = [
       { featureKey: 'f', label: '기능', highlightedPlanIds: ['monthly', 'annual'] },
@@ -392,8 +386,18 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
 
   it('per-featureDef override applies independently to each row', () => {
     const plans: readonly Plan[] = [
-      { planId: 'monthly', name: '월간', features: { f1: true, f2: true }, isRecommended: false },
-      { planId: 'annual',  name: '연간',  features: { f1: true, f2: true }, isRecommended: true },
+      {
+        planId: 'monthly',
+        name: '월간',
+        features: { f1: true, f2: true },
+        isRecommended: false,
+      },
+      {
+        planId: 'annual',
+        name: '연간',
+        features: { f1: true, f2: true },
+        isRecommended: true,
+      },
     ];
     // f1 row: highlight monthly only (override)
     // f2 row: no override → fall back to isRecommended (annual)
@@ -404,12 +408,12 @@ describe('planFeatureMapper — cell.highlighted (featureDef.highlightedPlanIds 
     const matrix = planFeatureMapper(plans, defs);
 
     // f1 row
-    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(true);  // monthly, override
+    expect(matrix.rows[0]!.cells[0]!.highlighted).toBe(true); // monthly, override
     expect(matrix.rows[0]!.cells[1]!.highlighted).toBe(false); // annual, not in override list
 
     // f2 row
     expect(matrix.rows[1]!.cells[0]!.highlighted).toBe(false); // monthly, isRecommended=false
-    expect(matrix.rows[1]!.cells[1]!.highlighted).toBe(true);  // annual, isRecommended=true
+    expect(matrix.rows[1]!.cells[1]!.highlighted).toBe(true); // annual, isRecommended=true
   });
 });
 
@@ -464,9 +468,7 @@ describe('planFeatureMapper — pure function', () => {
   });
 
   it('does not mutate the input plans array', () => {
-    const plans: Plan[] = [
-      { planId: 'monthly', name: '월간', features: { f: true } },
-    ];
+    const plans: Plan[] = [{ planId: 'monthly', name: '월간', features: { f: true } }];
     const originalLength = plans.length;
     planFeatureMapper(plans, [{ featureKey: 'f', label: 'F' }]);
     expect(plans).toHaveLength(originalLength);
@@ -598,7 +600,7 @@ describe('planFeatureMapper — Seed pricing scenario', () => {
     expect(dropRow.cells[0]!.available).toBe(true);
     expect(dropRow.cells[0]!.highlighted).toBe(false); // monthly, not recommended
     expect(dropRow.cells[1]!.available).toBe(true);
-    expect(dropRow.cells[1]!.highlighted).toBe(true);  // annual, recommended
+    expect(dropRow.cells[1]!.highlighted).toBe(true); // annual, recommended
   });
 
   it('monthly plan: generationCandidates=5 → available, not highlighted', () => {

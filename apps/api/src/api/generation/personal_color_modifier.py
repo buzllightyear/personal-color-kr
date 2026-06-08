@@ -12,8 +12,6 @@ recipe.personal_color_modifiers.
 
 from __future__ import annotations
 
-from typing import Any
-
 # ---------------------------------------------------------------------------
 # Category normalization mapping
 # ---------------------------------------------------------------------------

@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from api.generation.reject_filter import ScoredCandidate
 
-
 # ---------------------------------------------------------------------------
 # Value objects
 # ---------------------------------------------------------------------------

@@ -26,7 +26,8 @@ export const ANNUAL_CONNECTION_TRIAL_DAYS = 7 as const;
 export const ANNUAL_FULL_TRIAL_DAYS = 30 as const;
 
 /** Total free-trial days for an annual subscription (7 + 30). */
-export const ANNUAL_TOTAL_TRIAL_DAYS = ANNUAL_CONNECTION_TRIAL_DAYS + ANNUAL_FULL_TRIAL_DAYS; // 37
+export const ANNUAL_TOTAL_TRIAL_DAYS =
+  ANNUAL_CONNECTION_TRIAL_DAYS + ANNUAL_FULL_TRIAL_DAYS; // 37
 
 /** Free-trial days for a monthly subscription (none). */
 export const MONTHLY_TRIAL_DAYS = 0 as const;

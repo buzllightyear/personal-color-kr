@@ -132,7 +132,9 @@ describe('trackPaymentAttempt — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['planId']).toBe('annual');
   });
 
@@ -144,7 +146,9 @@ describe('trackPaymentAttempt — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['planId']).toBe('monthly');
   });
 
@@ -156,7 +160,9 @@ describe('trackPaymentAttempt — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['amount']).toBe(59);
   });
 
@@ -168,7 +174,9 @@ describe('trackPaymentAttempt — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['currency']).toBe('USD');
   });
 
@@ -180,7 +188,9 @@ describe('trackPaymentAttempt — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['currency']).toBe('KRW');
     expect(props?.['amount']).toBe(15900);
   });
@@ -205,7 +215,9 @@ describe('trackPaymentAttempt — transactionId', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['transactionId']).toBe('txn_attempt_001');
   });
 
@@ -217,7 +229,9 @@ describe('trackPaymentAttempt — transactionId', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['transactionId']).toBeUndefined();
   });
 });
@@ -396,7 +410,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['planId']).toBe('annual');
   });
 
@@ -414,7 +430,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['planId']).toBe('monthly');
   });
 
@@ -432,7 +450,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['amount']).toBe(59);
   });
 
@@ -450,7 +470,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['currency']).toBe('USD');
   });
 
@@ -468,7 +490,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['transactionId']).toBe('toss_payment_txn_999');
   });
 
@@ -486,7 +510,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props).toBeDefined();
     expect(Object.prototype.hasOwnProperty.call(props, 'transactionId')).toBe(true);
   });
@@ -505,7 +531,9 @@ describe('trackPaymentComplete — 결제 전용 필드', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['currency']).toBe('KRW');
     expect(props?.['amount']).toBe(15900);
     expect(props?.['transactionId']).toBe('toss_kr_txn_001');

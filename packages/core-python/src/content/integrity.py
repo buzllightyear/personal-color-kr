@@ -52,7 +52,7 @@ from content.curations import (
     WordingTone,
     load_all_first_curations,
 )
-from content.guides import Guide, GuideCategory, load_all_guides
+from content.guides import GuideCategory, load_all_guides
 from content.magazines import load_all_magazines
 from personal_color.season_classifier import Season
 

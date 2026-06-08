@@ -161,9 +161,7 @@ describe('A — API unavailability: isAvailableAsync() throws (에러 핸들러 
     // Review framework is not available (e.g. on simulator, in TestFlight
     // review, or when the entitlement is missing).
     storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error(
-        'Error: SKStoreReviewController is not available on this device.',
-      ),
+      new Error('Error: SKStoreReviewController is not available on this device.'),
     );
 
     const outcome = await requestStoreReview();
@@ -195,9 +193,7 @@ describe('A — API unavailability: isAvailableAsync() throws (에러 핸들러 
   it('A4 — non-Error thrown value (string): error handler still catches, state rolls back', async () => {
     // The catch block receives `unknown`; the string conversion in devWarn
     // handles this. Verifies the handler is not narrowed to `Error` only.
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      'unexpected string rejection',
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue('unexpected string rejection');
 
     const outcome = await requestStoreReview();
 
@@ -210,16 +206,22 @@ describe('A — API unavailability: isAvailableAsync() throws (에러 핸들러 
     // The state rollback must be per-call, not per-module. Two sequential
     // failures must each produce the same rolled-back outcome without
     // interfering with each other.
-    storeReviewSpies.isAvailableAsync.mockRejectedValue(
-      new Error('API unavailable'),
-    );
+    storeReviewSpies.isAvailableAsync.mockRejectedValue(new Error('API unavailable'));
 
     const firstOutcome = await requestStoreReview();
     const secondOutcome = await requestStoreReview();
 
     // Both calls roll back independently.
-    expect(firstOutcome).toEqual({ attempted: false, available: false, platform: 'ios' });
-    expect(secondOutcome).toEqual({ attempted: false, available: false, platform: 'ios' });
+    expect(firstOutcome).toEqual({
+      attempted: false,
+      available: false,
+      platform: 'ios',
+    });
+    expect(secondOutcome).toEqual({
+      attempted: false,
+      available: false,
+      platform: 'ios',
+    });
     // No dispatch ever reached on either call.
     expect(storeReviewSpies.requestReview).not.toHaveBeenCalled();
   });
@@ -449,7 +451,9 @@ describe('D — helper never rejects across all failure modes (에러 핸들러 
     const failures = [
       // API unavailability
       async (): Promise<void> => {
-        storeReviewSpies.isAvailableAsync.mockRejectedValueOnce(new Error('unavailable'));
+        storeReviewSpies.isAvailableAsync.mockRejectedValueOnce(
+          new Error('unavailable'),
+        );
       },
       // iOS restriction (probe false)
       async (): Promise<void> => {

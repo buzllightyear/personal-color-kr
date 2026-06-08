@@ -46,9 +46,7 @@ export class StepRangeError extends Error {
   public readonly requestedStep: number;
 
   constructor(requestedStep: number, reason: string) {
-    super(
-      `Funnel step range error — requested step ${requestedStep}: ${reason}`,
-    );
+    super(`Funnel step range error — requested step ${requestedStep}: ${reason}`);
     this.requestedStep = requestedStep;
     // Restore prototype chain so `instanceof StepRangeError` works after transpilation.
     Object.setPrototypeOf(this, StepRangeError.prototype);
@@ -77,16 +75,10 @@ export class StepRangeError extends Error {
  */
 export function validateStepRange(step: number): void {
   if (step < MIN_FUNNEL_STEP) {
-    throw new StepRangeError(
-      step,
-      `below minimum step ${MIN_FUNNEL_STEP}`,
-    );
+    throw new StepRangeError(step, `below minimum step ${MIN_FUNNEL_STEP}`);
   }
   if (step > MAX_FUNNEL_STEP) {
-    throw new StepRangeError(
-      step,
-      `above maximum step ${MAX_FUNNEL_STEP}`,
-    );
+    throw new StepRangeError(step, `above maximum step ${MAX_FUNNEL_STEP}`);
   }
 }
 

@@ -19,7 +19,6 @@ from api.operator.auth import (
     require_operator,
 )
 
-
 # ---------------------------------------------------------------------------
 # require_operator: passes for operator
 # ---------------------------------------------------------------------------
@@ -56,6 +55,7 @@ def test_empty_caller_raises_forbidden_error() -> None:
 def test_arbitrary_jwt_sub_raises_forbidden_error() -> None:
     """A random JWT sub that is not the operator raises ForbiddenError."""
     import uuid
+
     with pytest.raises(ForbiddenError):
         require_operator(str(uuid.uuid4()))
 
@@ -94,7 +94,12 @@ def test_is_operator_returns_false_for_end_user() -> None:
 @pytest.mark.unit
 def test_four_operator_only_apis_defined() -> None:
     """OPERATOR_ONLY_APIS contains exactly the 4 required API names."""
-    expected = {"recipe_crud", "reject_threshold_setting", "trend_drop_push", "call_log_write"}
+    expected = {
+        "recipe_crud",
+        "reject_threshold_setting",
+        "trend_drop_push",
+        "call_log_write",
+    }
     assert set(OPERATOR_ONLY_APIS) == expected
 
 
@@ -130,7 +135,12 @@ def _call_log_write_api(caller_id: str) -> str:
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "api_fn",
-    [_recipe_crud_api, _reject_threshold_api, _trend_drop_push_api, _call_log_write_api],
+    [
+        _recipe_crud_api,
+        _reject_threshold_api,
+        _trend_drop_push_api,
+        _call_log_write_api,
+    ],
     ids=["recipe_crud", "reject_threshold", "trend_drop_push", "call_log_write"],
 )
 def test_end_user_receives_forbidden_on_all_four_apis(api_fn: object) -> None:
@@ -142,7 +152,12 @@ def test_end_user_receives_forbidden_on_all_four_apis(api_fn: object) -> None:
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "api_fn",
-    [_recipe_crud_api, _reject_threshold_api, _trend_drop_push_api, _call_log_write_api],
+    [
+        _recipe_crud_api,
+        _reject_threshold_api,
+        _trend_drop_push_api,
+        _call_log_write_api,
+    ],
     ids=["recipe_crud", "reject_threshold", "trend_drop_push", "call_log_write"],
 )
 def test_operator_can_call_all_four_apis(api_fn: object) -> None:

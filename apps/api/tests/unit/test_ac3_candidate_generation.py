@@ -55,7 +55,9 @@ def _fake_commodity_ai_generate(
     In production this would call Fal.ai / Replicate. Here we call the
     injected mock so tests can verify the call count and output count.
     """
-    return [commodity_ai_fn(selfie_bytes, recipe, i) for i in range(recipe.candidate_count)]
+    return [
+        commodity_ai_fn(selfie_bytes, recipe, i) for i in range(recipe.candidate_count)
+    ]
 
 
 @pytest.mark.unit
@@ -65,14 +67,16 @@ def test_candidate_count_drives_commodity_ai_call_count() -> None:
     mock_ai = MagicMock(return_value=b"raw_image_bytes")
     selfie = b"selfie_bytes"
 
-    raw_candidates = _fake_commodity_ai_generate(selfie, recipe, commodity_ai_fn=mock_ai)
+    raw_candidates = _fake_commodity_ai_generate(
+        selfie, recipe, commodity_ai_fn=mock_ai
+    )
 
-    assert len(raw_candidates) == 3, (
-        f"Expected 3 raw candidates (recipe.candidate_count=3), got {len(raw_candidates)}"
-    )
-    assert mock_ai.call_count == 3, (
-        f"Expected commodity AI called 3 times, got {mock_ai.call_count}"
-    )
+    assert (
+        len(raw_candidates) == 3
+    ), f"Expected 3 raw candidates (recipe.candidate_count=3), got {len(raw_candidates)}"
+    assert (
+        mock_ai.call_count == 3
+    ), f"Expected commodity AI called 3 times, got {mock_ai.call_count}"
 
 
 @pytest.mark.unit
@@ -81,7 +85,9 @@ def test_candidate_count_5_returns_5_candidates() -> None:
     recipe = validate_recipe(_recipe(candidate_count=5))
     mock_ai = MagicMock(return_value=b"img")
 
-    raw_candidates = _fake_commodity_ai_generate(b"selfie", recipe, commodity_ai_fn=mock_ai)
+    raw_candidates = _fake_commodity_ai_generate(
+        b"selfie", recipe, commodity_ai_fn=mock_ai
+    )
 
     assert len(raw_candidates) == 5
 

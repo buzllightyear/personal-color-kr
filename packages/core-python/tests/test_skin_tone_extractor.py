@@ -69,9 +69,9 @@ _AUTUMN_WARM: tuple[int, int, int] = (200, 160, 130)  # 가을웜 — skin ✓
 _SUMMER_COOL: tuple[int, int, int] = (190, 170, 170)  # 여름쿨 — skin ✓
 _WINTER_COOL: tuple[int, int, int] = (195, 180, 175)  # 겨울쿨 — skin ✓
 
-_BLUE_SKY: tuple[int, int, int] = (50, 100, 200)   # NOT skin
+_BLUE_SKY: tuple[int, int, int] = (50, 100, 200)  # NOT skin
 _MID_GREY: tuple[int, int, int] = (180, 180, 180)  # NOT skin (Cb = 128 > 127)
-_WHITE: tuple[int, int, int] = (255, 255, 255)     # NOT skin
+_WHITE: tuple[int, int, int] = (255, 255, 255)  # NOT skin
 
 # Pre-computed expected SkinToneFeature values for 봄웜 (220, 185, 150)
 # -----------------------------------------------------------------------
@@ -137,9 +137,9 @@ def test_known_skin_image_returns_skin_tone_feature() -> None:
     image = _solid(10, 10, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert isinstance(result, SkinToneFeature), (
-        f"Expected SkinToneFeature, got {type(result).__name__}"
-    )
+    assert isinstance(
+        result, SkinToneFeature
+    ), f"Expected SkinToneFeature, got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -151,9 +151,9 @@ def test_known_skin_image_hue_in_expected_range() -> None:
     image = _solid(10, 10, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert 0.0 <= result.hue < 360.0, (
-        f"hue {result.hue} out of expected range [0.0, 360.0)"
-    )
+    assert (
+        0.0 <= result.hue < 360.0
+    ), f"hue {result.hue} out of expected range [0.0, 360.0)"
 
 
 @pytest.mark.unit
@@ -165,9 +165,9 @@ def test_known_skin_image_saturation_in_expected_range() -> None:
     image = _solid(10, 10, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert 0.0 <= result.saturation <= 1.0, (
-        f"saturation {result.saturation} out of expected range [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"saturation {result.saturation} out of expected range [0.0, 1.0]"
 
 
 @pytest.mark.unit
@@ -179,9 +179,9 @@ def test_known_skin_image_brightness_in_expected_range() -> None:
     image = _solid(10, 10, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert 0.0 <= result.brightness <= 1.0, (
-        f"brightness {result.brightness} out of expected range [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"brightness {result.brightness} out of expected range [0.0, 1.0]"
 
 
 @pytest.mark.unit
@@ -193,9 +193,9 @@ def test_known_skin_image_warm_cool_score_in_expected_range() -> None:
     image = _solid(10, 10, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert -1.0 <= result.warm_cool_score <= 1.0, (
-        f"warm_cool_score {result.warm_cool_score} out of expected range [-1.0, 1.0]"
-    )
+    assert (
+        -1.0 <= result.warm_cool_score <= 1.0
+    ), f"warm_cool_score {result.warm_cool_score} out of expected range [-1.0, 1.0]"
 
 
 @pytest.mark.unit
@@ -208,11 +208,15 @@ def test_known_skin_image_all_four_fields_in_range() -> None:
     result = extract_skin_tone_features(image)
 
     assert 0.0 <= result.hue < 360.0, f"hue {result.hue} out of range"
-    assert 0.0 <= result.saturation <= 1.0, f"saturation {result.saturation} out of range"
-    assert 0.0 <= result.brightness <= 1.0, f"brightness {result.brightness} out of range"
-    assert -1.0 <= result.warm_cool_score <= 1.0, (
-        f"warm_cool_score {result.warm_cool_score} out of range"
-    )
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"saturation {result.saturation} out of range"
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"brightness {result.brightness} out of range"
+    assert (
+        -1.0 <= result.warm_cool_score <= 1.0
+    ), f"warm_cool_score {result.warm_cool_score} out of range"
 
 
 @pytest.mark.unit
@@ -237,18 +241,16 @@ def test_all_korean_skin_tones_all_four_fields_in_range(
     image = _solid(6, 6, rgb)
     result = extract_skin_tone_features(image)
 
-    assert 0.0 <= result.hue < 360.0, (
-        f"[{label}] hue {result.hue} out of [0.0, 360.0)"
-    )
-    assert 0.0 <= result.saturation <= 1.0, (
-        f"[{label}] saturation {result.saturation} out of [0.0, 1.0]"
-    )
-    assert 0.0 <= result.brightness <= 1.0, (
-        f"[{label}] brightness {result.brightness} out of [0.0, 1.0]"
-    )
-    assert -1.0 <= result.warm_cool_score <= 1.0, (
-        f"[{label}] warm_cool_score {result.warm_cool_score} out of [-1.0, 1.0]"
-    )
+    assert 0.0 <= result.hue < 360.0, f"[{label}] hue {result.hue} out of [0.0, 360.0)"
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"[{label}] saturation {result.saturation} out of [0.0, 1.0]"
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"[{label}] brightness {result.brightness} out of [0.0, 1.0]"
+    assert (
+        -1.0 <= result.warm_cool_score <= 1.0
+    ), f"[{label}] warm_cool_score {result.warm_cool_score} out of [-1.0, 1.0]"
 
 
 # ===========================================================================
@@ -307,9 +309,9 @@ def test_no_skin_pixels_error_is_value_error_subclass() -> None:
     with pytest.raises(NoSkinPixelsError) as exc_info:
         extract_skin_tone_features(image)
 
-    assert isinstance(exc_info.value, ValueError), (
-        "NoSkinPixelsError must subclass ValueError for permanent-error taxonomy"
-    )
+    assert isinstance(
+        exc_info.value, ValueError
+    ), "NoSkinPixelsError must subclass ValueError for permanent-error taxonomy"
 
 
 @pytest.mark.unit
@@ -326,9 +328,9 @@ def test_no_skin_pixels_error_message_describes_failure_shape() -> None:
     # PII safety — no caller-side identifiers.
     forbidden = ("distinct_id", "transaction_id", "customer_email", "selfieUri")
     for token in forbidden:
-        assert token not in message, (
-            f"NoSkinPixelsError message must not contain PII token {token!r}"
-        )
+        assert (
+            token not in message
+        ), f"NoSkinPixelsError message must not contain PII token {token!r}"
 
 
 # ===========================================================================
@@ -352,18 +354,18 @@ def test_output_fields_are_all_floats() -> None:
     image = _solid(6, 6, _AUTUMN_WARM)
     result = extract_skin_tone_features(image)
 
-    assert isinstance(result.hue, float), (
-        f"hue must be float, got {type(result.hue).__name__}"
-    )
-    assert isinstance(result.saturation, float), (
-        f"saturation must be float, got {type(result.saturation).__name__}"
-    )
-    assert isinstance(result.brightness, float), (
-        f"brightness must be float, got {type(result.brightness).__name__}"
-    )
-    assert isinstance(result.warm_cool_score, float), (
-        f"warm_cool_score must be float, got {type(result.warm_cool_score).__name__}"
-    )
+    assert isinstance(
+        result.hue, float
+    ), f"hue must be float, got {type(result.hue).__name__}"
+    assert isinstance(
+        result.saturation, float
+    ), f"saturation must be float, got {type(result.saturation).__name__}"
+    assert isinstance(
+        result.brightness, float
+    ), f"brightness must be float, got {type(result.brightness).__name__}"
+    assert isinstance(
+        result.warm_cool_score, float
+    ), f"warm_cool_score must be float, got {type(result.warm_cool_score).__name__}"
 
 
 @pytest.mark.unit
@@ -378,9 +380,12 @@ def test_output_has_exactly_four_fields() -> None:
     result = extract_skin_tone_features(image)
 
     field_names = {f.name for f in dataclasses.fields(result)}
-    assert field_names == {"hue", "saturation", "brightness", "warm_cool_score"}, (
-        f"SkinToneFeature must have exactly 4 fields, got {sorted(field_names)}"
-    )
+    assert field_names == {
+        "hue",
+        "saturation",
+        "brightness",
+        "warm_cool_score",
+    }, f"SkinToneFeature must have exactly 4 fields, got {sorted(field_names)}"
 
 
 @pytest.mark.unit
@@ -412,9 +417,9 @@ def test_spring_warm_score_is_positive() -> None:
     image = _solid(6, 6, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert result.warm_cool_score > 0, (
-        f"봄웜 warm_cool_score must be positive, got {result.warm_cool_score}"
-    )
+    assert (
+        result.warm_cool_score > 0
+    ), f"봄웜 warm_cool_score must be positive, got {result.warm_cool_score}"
 
 
 @pytest.mark.unit
@@ -423,9 +428,9 @@ def test_autumn_warm_score_is_positive() -> None:
     image = _solid(6, 6, _AUTUMN_WARM)
     result = extract_skin_tone_features(image)
 
-    assert result.warm_cool_score > 0, (
-        f"가을웜 warm_cool_score must be positive, got {result.warm_cool_score}"
-    )
+    assert (
+        result.warm_cool_score > 0
+    ), f"가을웜 warm_cool_score must be positive, got {result.warm_cool_score}"
 
 
 @pytest.mark.unit
@@ -457,9 +462,9 @@ def test_spring_warm_hue_expected_value() -> None:
     image = _solid(6, 6, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert math.isclose(result.hue, _WARM_HUE, abs_tol=1e-3), (
-        f"봄웜 hue expected ≈{_WARM_HUE:.4f}°, got {result.hue:.4f}°"
-    )
+    assert math.isclose(
+        result.hue, _WARM_HUE, abs_tol=1e-3
+    ), f"봄웜 hue expected ≈{_WARM_HUE:.4f}°, got {result.hue:.4f}°"
 
 
 @pytest.mark.unit
@@ -468,9 +473,9 @@ def test_spring_warm_saturation_expected_value() -> None:
     image = _solid(6, 6, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert _approx(_WARM_SAT, result.saturation), (
-        f"봄웜 saturation expected {_WARM_SAT:.6f}, got {result.saturation:.6f}"
-    )
+    assert _approx(
+        _WARM_SAT, result.saturation
+    ), f"봄웜 saturation expected {_WARM_SAT:.6f}, got {result.saturation:.6f}"
 
 
 @pytest.mark.unit
@@ -479,9 +484,9 @@ def test_spring_warm_brightness_expected_value() -> None:
     image = _solid(6, 6, _SPRING_WARM)
     result = extract_skin_tone_features(image)
 
-    assert _approx(_WARM_BRIGHT, result.brightness), (
-        f"봄웜 brightness expected {_WARM_BRIGHT:.6f}, got {result.brightness:.6f}"
-    )
+    assert _approx(
+        _WARM_BRIGHT, result.brightness
+    ), f"봄웜 brightness expected {_WARM_BRIGHT:.6f}, got {result.brightness:.6f}"
 
 
 @pytest.mark.unit
@@ -502,9 +507,9 @@ def test_summer_cool_saturation_expected_value() -> None:
     image = _solid(6, 6, _SUMMER_COOL)
     result = extract_skin_tone_features(image)
 
-    assert _approx(_COOL_SAT, result.saturation), (
-        f"여름쿨 saturation expected {_COOL_SAT:.6f}, got {result.saturation:.6f}"
-    )
+    assert _approx(
+        _COOL_SAT, result.saturation
+    ), f"여름쿨 saturation expected {_COOL_SAT:.6f}, got {result.saturation:.6f}"
 
 
 @pytest.mark.unit
@@ -513,9 +518,9 @@ def test_summer_cool_brightness_expected_value() -> None:
     image = _solid(6, 6, _SUMMER_COOL)
     result = extract_skin_tone_features(image)
 
-    assert _approx(_COOL_BRIGHT, result.brightness), (
-        f"여름쿨 brightness expected {_COOL_BRIGHT:.6f}, got {result.brightness:.6f}"
-    )
+    assert _approx(
+        _COOL_BRIGHT, result.brightness
+    ), f"여름쿨 brightness expected {_COOL_BRIGHT:.6f}, got {result.brightness:.6f}"
 
 
 @pytest.mark.unit
@@ -583,15 +588,15 @@ def test_identical_to_single_pixel_for_uniform_image() -> None:
     single = extract_skin_tone_features([[_SPRING_WARM]])
     large = extract_skin_tone_features(_solid(5, 5, _SPRING_WARM))
 
-    assert _approx(single.hue, large.hue), (
-        f"hue mismatch: single={single.hue}, large={large.hue}"
-    )
-    assert _approx(single.saturation, large.saturation), (
-        f"saturation mismatch: single={single.saturation}, large={large.saturation}"
-    )
-    assert _approx(single.brightness, large.brightness), (
-        f"brightness mismatch: single={single.brightness}, large={large.brightness}"
-    )
+    assert _approx(
+        single.hue, large.hue
+    ), f"hue mismatch: single={single.hue}, large={large.hue}"
+    assert _approx(
+        single.saturation, large.saturation
+    ), f"saturation mismatch: single={single.saturation}, large={large.saturation}"
+    assert _approx(
+        single.brightness, large.brightness
+    ), f"brightness mismatch: single={single.brightness}, large={large.brightness}"
     assert _approx(single.warm_cool_score, large.warm_cool_score), (
         f"warm_cool_score mismatch: single={single.warm_cool_score}, "
         f"large={large.warm_cool_score}"

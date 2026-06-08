@@ -283,10 +283,10 @@ describe('복합 전이 — 모든 케이스가 단일 호출에서 동시에 �
     });
     const after = applyExpiryTransition(before);
 
-    expect(after.step).toBe(6);               // 단계 전환
+    expect(after.step).toBe(6); // 단계 전환
     expect(after.status).toBe('active');
     expect(after.urgentOfferActive).toBe(false); // 긴급 오퍼 무효화
-    expect(after.scarcityFlagCount).toBe(0);     // 희소성 초기화
+    expect(after.scarcityFlagCount).toBe(0); // 희소성 초기화
   });
 
   it('step 8에서 urgentOfferActive + scarcityFlagCount + 단계 전환 모두 적용', () => {
@@ -310,7 +310,7 @@ describe('복합 전이 — 모든 케이스가 단일 호출에서 동시에 �
     });
     const after = applyExpiryTransition(before);
 
-    expect(after.step).toBe(12);               // 단계 전환 없음
+    expect(after.step).toBe(12); // 단계 전환 없음
     expect(after.urgentOfferActive).toBe(false);
     expect(after.scarcityFlagCount).toBe(0);
   });
@@ -534,7 +534,7 @@ describe('통합 시나리오 — 타이머 만료 확인 후 퍼널 전이 적�
 
     const invalidated = applyExpiryTransition(paymentState);
 
-    expect(invalidated.step).toBe(12);    // 자동 전진 없음
+    expect(invalidated.step).toBe(12); // 자동 전진 없음
     expect(invalidated.urgentOfferActive).toBe(false);
     expect(invalidated.scarcityFlagCount).toBe(0);
     expect(invalidated.status).toBe('active');
@@ -553,7 +553,11 @@ describe('통합 시나리오 — 타이머 만료 확인 후 퍼널 전이 적�
 
   it('연속 단계 전환: step 5 → step 6 → (step 6은 auto-advance 아님) 유지', () => {
     // step 5에서 타이머 만료
-    const step5 = makeActiveState({ step: 5, urgentOfferActive: true, scarcityFlagCount: 3 });
+    const step5 = makeActiveState({
+      step: 5,
+      urgentOfferActive: true,
+      scarcityFlagCount: 3,
+    });
     const step6 = applyExpiryTransition(step5);
 
     expect(step6.step).toBe(6);

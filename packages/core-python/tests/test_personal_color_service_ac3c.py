@@ -132,9 +132,9 @@ def test_unit_diagnose_selfie_bytes_returns_personal_color_result() -> None:
 
     result = diagnose_selfie(warm_png)
 
-    assert isinstance(result, PersonalColorResult), (
-        f"diagnose_selfie must return PersonalColorResult, got {type(result).__name__}"
-    )
+    assert isinstance(
+        result, PersonalColorResult
+    ), f"diagnose_selfie must return PersonalColorResult, got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -212,9 +212,9 @@ def test_integration_face_selfie_fixture_confidence_in_unit_interval() -> None:
 
     result = diagnose_selfie(_FACE_SELFIE)
 
-    assert 0.0 <= result.confidence <= 1.0, (
-        f"confidence {result.confidence!r} is outside [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.confidence <= 1.0
+    ), f"confidence {result.confidence!r} is outside [0.0, 1.0]"
 
 
 @pytest.mark.integration
@@ -255,9 +255,9 @@ def test_integration_face_selfie_fixture_combined() -> None:
     )
 
     # constraint 2: confidence is in [0.0, 1.0]
-    assert 0.0 <= result.confidence <= 1.0, (
-        f"confidence {result.confidence!r} is outside [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.confidence <= 1.0
+    ), f"confidence {result.confidence!r} is outside [0.0, 1.0]"
 
 
 # ===========================================================================
@@ -347,15 +347,15 @@ def test_integration_programmatic_warm_png_bytes_category_spring() -> None:
     warm_png = _make_minimal_png(10, 10, _WARM_PIXEL)
     result = diagnose_selfie(warm_png)
 
-    assert result.category in _VALID_CATEGORIES, (
-        f"category {result.category!r} is not valid"
-    )
-    assert 0.0 <= result.confidence <= 1.0, (
-        f"confidence {result.confidence!r} outside [0.0, 1.0]"
-    )
-    assert result.category == "spring", (
-        f"봄웜 PNG should classify as 'spring', got {result.category!r}"
-    )
+    assert (
+        result.category in _VALID_CATEGORIES
+    ), f"category {result.category!r} is not valid"
+    assert (
+        0.0 <= result.confidence <= 1.0
+    ), f"confidence {result.confidence!r} outside [0.0, 1.0]"
+    assert (
+        result.category == "spring"
+    ), f"봄웜 PNG should classify as 'spring', got {result.category!r}"
 
 
 # ===========================================================================

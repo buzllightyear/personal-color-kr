@@ -70,7 +70,9 @@ describe('calculate_trial_days("monthly")', () => {
 
 describe('calculate_trial_days — boundary values (unknown plan types)', () => {
   it('throws UnknownPlanTypeError for an arbitrary string', () => {
-    expect(() => calculate_trial_days('lifetime' as never)).toThrowError(UnknownPlanTypeError);
+    expect(() => calculate_trial_days('lifetime' as never)).toThrowError(
+      UnknownPlanTypeError,
+    );
   });
 
   it('throws UnknownPlanTypeError for an empty string', () => {
@@ -78,11 +80,15 @@ describe('calculate_trial_days — boundary values (unknown plan types)', () => 
   });
 
   it('throws UnknownPlanTypeError for undefined', () => {
-    expect(() => calculate_trial_days(undefined as never)).toThrowError(UnknownPlanTypeError);
+    expect(() => calculate_trial_days(undefined as never)).toThrowError(
+      UnknownPlanTypeError,
+    );
   });
 
   it('throws UnknownPlanTypeError for null', () => {
-    expect(() => calculate_trial_days(null as never)).toThrowError(UnknownPlanTypeError);
+    expect(() => calculate_trial_days(null as never)).toThrowError(
+      UnknownPlanTypeError,
+    );
   });
 
   it('throws UnknownPlanTypeError for a numeric value', () => {
@@ -123,7 +129,9 @@ describe('exported named constants', () => {
   });
 
   it('ANNUAL_CONNECTION_TRIAL_DAYS + ANNUAL_FULL_TRIAL_DAYS equals ANNUAL_TOTAL_TRIAL_DAYS', () => {
-    expect(ANNUAL_CONNECTION_TRIAL_DAYS + ANNUAL_FULL_TRIAL_DAYS).toBe(ANNUAL_TOTAL_TRIAL_DAYS);
+    expect(ANNUAL_CONNECTION_TRIAL_DAYS + ANNUAL_FULL_TRIAL_DAYS).toBe(
+      ANNUAL_TOTAL_TRIAL_DAYS,
+    );
   });
 });
 
@@ -133,7 +141,9 @@ describe('exported named constants', () => {
 
 describe('cross-plan invariants', () => {
   it('annual trial is strictly greater than monthly trial', () => {
-    expect(calculate_trial_days('annual')).toBeGreaterThan(calculate_trial_days('monthly'));
+    expect(calculate_trial_days('annual')).toBeGreaterThan(
+      calculate_trial_days('monthly'),
+    );
   });
 
   it('both valid plan types return non-negative integers', () => {

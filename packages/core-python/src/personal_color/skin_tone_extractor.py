@@ -65,7 +65,6 @@ from personal_color.color_features import compute_warm_cool_score, pixels_to_hsb
 from personal_color.region_extractor import Image
 from personal_color.skin_extractor import extract_skin_pixels
 
-
 # ---------------------------------------------------------------------------
 # Output type
 # ---------------------------------------------------------------------------

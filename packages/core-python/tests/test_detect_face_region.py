@@ -150,9 +150,9 @@ def test_detect_face_region_no_face_none_detections_returns_none(
 
     result = detect_face_region(no_face_image)
 
-    assert result is None, (
-        f"detect_face_region must return None when no face is found, got {result!r}"
-    )
+    assert (
+        result is None
+    ), f"detect_face_region must return None when no face is found, got {result!r}"
 
 
 @pytest.mark.unit
@@ -170,9 +170,9 @@ def test_detect_face_region_no_face_empty_detections_returns_none(
 
     result = detect_face_region(no_face_image)
 
-    assert result is None, (
-        f"detect_face_region must return None for empty detections, got {result!r}"
-    )
+    assert (
+        result is None
+    ), f"detect_face_region must return None for empty detections, got {result!r}"
 
 
 @pytest.mark.unit
@@ -226,10 +226,12 @@ def test_detect_face_region_face_fixture_returns_face_bounding_box(
 
     result = detect_face_region(face_image)
 
-    assert result is not None, "detect_face_region must return FaceBoundingBox when a face is found"
-    assert isinstance(result, FaceBoundingBox), (
-        f"detect_face_region must return FaceBoundingBox, got {type(result).__name__}"
-    )
+    assert (
+        result is not None
+    ), "detect_face_region must return FaceBoundingBox when a face is found"
+    assert isinstance(
+        result, FaceBoundingBox
+    ), f"detect_face_region must return FaceBoundingBox, got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -276,18 +278,18 @@ def test_detect_face_region_bounding_box_fields_are_non_negative_integers(
     result = detect_face_region(_make_face_selfie_fixture())
 
     assert result is not None
-    assert isinstance(result.x, int) and result.x >= 0, (
-        f"box.x must be int >= 0, got {result.x!r}"
-    )
-    assert isinstance(result.y, int) and result.y >= 0, (
-        f"box.y must be int >= 0, got {result.y!r}"
-    )
-    assert isinstance(result.width, int) and result.width >= 1, (
-        f"box.width must be int >= 1, got {result.width!r}"
-    )
-    assert isinstance(result.height, int) and result.height >= 1, (
-        f"box.height must be int >= 1, got {result.height!r}"
-    )
+    assert (
+        isinstance(result.x, int) and result.x >= 0
+    ), f"box.x must be int >= 0, got {result.x!r}"
+    assert (
+        isinstance(result.y, int) and result.y >= 0
+    ), f"box.y must be int >= 0, got {result.y!r}"
+    assert (
+        isinstance(result.width, int) and result.width >= 1
+    ), f"box.width must be int >= 1, got {result.width!r}"
+    assert (
+        isinstance(result.height, int) and result.height >= 1
+    ), f"box.height must be int >= 1, got {result.height!r}"
 
 
 @pytest.mark.unit
@@ -353,9 +355,9 @@ def test_detect_face_region_empty_image_raises_value_error(
     with pytest.raises(ValueError) as exc_info:
         detect_face_region([])
 
-    assert not isinstance(exc_info.value, FaceNotDetectedError), (
-        "Empty image must raise plain ValueError, not FaceNotDetectedError"
-    )
+    assert not isinstance(
+        exc_info.value, FaceNotDetectedError
+    ), "Empty image must raise plain ValueError, not FaceNotDetectedError"
 
 
 @pytest.mark.unit
@@ -366,9 +368,9 @@ def test_detect_face_region_zero_width_image_raises_value_error(
     with pytest.raises(ValueError) as exc_info:
         detect_face_region([[]])
 
-    assert not isinstance(exc_info.value, FaceNotDetectedError), (
-        "Zero-column image must raise plain ValueError, not FaceNotDetectedError"
-    )
+    assert not isinstance(
+        exc_info.value, FaceNotDetectedError
+    ), "Zero-column image must raise plain ValueError, not FaceNotDetectedError"
 
 
 # ===========================================================================

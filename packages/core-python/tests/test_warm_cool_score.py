@@ -80,7 +80,9 @@ def test_warm_cool_score_spring_warm_is_positive() -> None:
     """봄웜 대표 피부색 (220, 185, 150): R > B → 양수."""
     pixels = ((220, 185, 150),)  # Spring Warm
     score = compute_warm_cool_score(pixels)
-    assert score > 0, f"봄웜 (spring warm) pixels must yield positive score, got {score}"
+    assert (
+        score > 0
+    ), f"봄웜 (spring warm) pixels must yield positive score, got {score}"
 
 
 @pytest.mark.unit
@@ -88,7 +90,9 @@ def test_warm_cool_score_autumn_warm_is_positive() -> None:
     """가을웜 대표 피부색 (200, 160, 130): R > B → 양수."""
     pixels = ((200, 160, 130),)  # Autumn Warm
     score = compute_warm_cool_score(pixels)
-    assert score > 0, f"가을웜 (autumn warm) pixels must yield positive score, got {score}"
+    assert (
+        score > 0
+    ), f"가을웜 (autumn warm) pixels must yield positive score, got {score}"
 
 
 @pytest.mark.unit
@@ -104,9 +108,9 @@ def test_warm_cool_score_summer_cool_is_positive_but_less_than_spring() -> None:
     spring_score = compute_warm_cool_score(spring_pixels)
     summer_score = compute_warm_cool_score(summer_pixels)
 
-    assert spring_score > summer_score, (
-        f"봄웜 score ({spring_score:.4f}) must exceed 여름쿨 score ({summer_score:.4f})"
-    )
+    assert (
+        spring_score > summer_score
+    ), f"봄웜 score ({spring_score:.4f}) must exceed 여름쿨 score ({summer_score:.4f})"
 
 
 @pytest.mark.unit
@@ -114,9 +118,7 @@ def test_warm_cool_score_strongly_cool_blue_dominant_is_negative() -> None:
     """강한 쿨톤 픽셀 (70, 120, 200): B dominates R → 음수."""
     pixels = ((70, 120, 200),)
     score = compute_warm_cool_score(pixels)
-    assert score < 0, (
-        f"Blue-dominant cool pixel must yield negative score, got {score}"
-    )
+    assert score < 0, f"Blue-dominant cool pixel must yield negative score, got {score}"
 
 
 @pytest.mark.unit
@@ -136,9 +138,9 @@ def test_warm_cool_score_warm_multi_pixel_set_is_positive() -> None:
 def test_warm_cool_score_cool_multi_pixel_set_is_negative() -> None:
     """쿨톤 픽셀 집합(여러 픽셀): B > R 우세 → 음수."""
     cool_pixels = (
-        (0, 0, 255),    # pure blue
-        (50, 100, 200), # blue-dominant
-        (80, 130, 210), # blue-dominant
+        (0, 0, 255),  # pure blue
+        (50, 100, 200),  # blue-dominant
+        (80, 130, 210),  # blue-dominant
         (30, 80, 180),  # blue-dominant
     )
     score = compute_warm_cool_score(cool_pixels)
@@ -215,9 +217,9 @@ def test_warm_cool_score_equal_warm_cool_mix_is_zero() -> None:
     """
     pixels = ((255, 0, 0), (0, 0, 255))
     score = compute_warm_cool_score(pixels)
-    assert _approx(0.0, score), (
-        f"Equal warm+cool mix must yield score ≈ 0.0, got {score}"
-    )
+    assert _approx(
+        0.0, score
+    ), f"Equal warm+cool mix must yield score ≈ 0.0, got {score}"
 
 
 @pytest.mark.unit
@@ -232,9 +234,9 @@ def test_warm_cool_score_two_warm_pixels_expected_value() -> None:
     pixels = ((200, 100, 50), (100, 100, 150))
     score = compute_warm_cool_score(pixels)
     expected = 50 / 255
-    assert _approx(expected, score), (
-        f"Two-pixel warm score: expected {expected:.6f}, got {score:.6f}"
-    )
+    assert _approx(
+        expected, score
+    ), f"Two-pixel warm score: expected {expected:.6f}, got {score:.6f}"
 
 
 @pytest.mark.unit
@@ -243,9 +245,9 @@ def test_warm_cool_score_identical_pixels_same_as_single() -> None:
     pixel = (220, 185, 150)
     single = compute_warm_cool_score((pixel,))
     triple = compute_warm_cool_score((pixel, pixel, pixel))
-    assert _approx(single, triple), (
-        f"Identical pixels: single={single:.6f}, triple={triple:.6f}"
-    )
+    assert _approx(
+        single, triple
+    ), f"Identical pixels: single={single:.6f}, triple={triple:.6f}"
 
 
 # ===========================================================================
@@ -257,9 +259,9 @@ def test_warm_cool_score_identical_pixels_same_as_single() -> None:
 def test_warm_cool_score_returns_float() -> None:
     """Return value must be a Python float."""
     score = compute_warm_cool_score(((220, 185, 150),))
-    assert isinstance(score, float), (
-        f"compute_warm_cool_score must return float, got {type(score).__name__}"
-    )
+    assert isinstance(
+        score, float
+    ), f"compute_warm_cool_score must return float, got {type(score).__name__}"
 
 
 @pytest.mark.unit
@@ -275,14 +277,23 @@ def test_warm_cool_score_returns_float() -> None:
         (255, 0, 0),
         (255, 255, 0),
     ],
-    ids=["black", "white", "grey", "spring_warm", "autumn_warm", "pure_blue", "pure_red", "yellow"],
+    ids=[
+        "black",
+        "white",
+        "grey",
+        "spring_warm",
+        "autumn_warm",
+        "pure_blue",
+        "pure_red",
+        "yellow",
+    ],
 )
 def test_warm_cool_score_in_valid_range(pixel: tuple[int, int, int]) -> None:
     """Score must lie within [-1.0, 1.0] for any valid pixel input."""
     score = compute_warm_cool_score((pixel,))
-    assert -1.0 <= score <= 1.0, (
-        f"Score {score:.6f} out of [-1.0, 1.0] for pixel {pixel}"
-    )
+    assert (
+        -1.0 <= score <= 1.0
+    ), f"Score {score:.6f} out of [-1.0, 1.0] for pixel {pixel}"
 
 
 # ===========================================================================

@@ -239,9 +239,7 @@ class MockTossSDK:
     모든 호출은 ``calls`` 리스트에 ``(method_name, kwargs)`` 튜플로 기록된다.
     """
 
-    def __init__(
-        self, scenario: TossScenario | str = TossScenario.SUCCESS
-    ) -> None:
+    def __init__(self, scenario: TossScenario | str = TossScenario.SUCCESS) -> None:
         self._scenario = TossScenario(scenario)
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
@@ -273,9 +271,7 @@ class MockTossSDK:
 
         return {
             "order_id": order_id,
-            "checkout_url": (
-                f"https://mockpay.toss.im/checkout/{order_id}"
-            ),
+            "checkout_url": (f"https://mockpay.toss.im/checkout/{order_id}"),
         }
 
     async def confirm_payment(

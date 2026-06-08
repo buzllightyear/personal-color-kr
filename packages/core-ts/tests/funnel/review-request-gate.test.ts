@@ -323,7 +323,9 @@ describe('shouldRequestReview — 순수성 (deterministic)', () => {
 
   it('서로 다른 입력은 독립적인 결과를 반환한다', () => {
     const trueDecision = shouldRequestReview(makeValidInput());
-    const falseDecision = shouldRequestReview(makeValidInput({ paymentCompleted: false }));
+    const falseDecision = shouldRequestReview(
+      makeValidInput({ paymentCompleted: false }),
+    );
     expect(trueDecision.shouldRequest).toBe(true);
     expect(falseDecision.shouldRequest).toBe(false);
   });
@@ -382,18 +384,14 @@ describe('shouldRequestReview — 입력 검증: paymentCompleted', () => {
 describe('shouldRequestReview — 입력 검증: hasPreviouslyRequested', () => {
   it('hasPreviouslyRequested가 string이면 ReviewRequestGateError를 throw한다', () => {
     const err = expectThrows(() =>
-      shouldRequestReview(
-        makeValidInput({ hasPreviouslyRequested: 'no' as never }),
-      ),
+      shouldRequestReview(makeValidInput({ hasPreviouslyRequested: 'no' as never })),
     );
     expect(err.reason).toBe('invalid_has_previously_requested');
   });
 
   it('hasPreviouslyRequested가 0(number)이면 ReviewRequestGateError를 throw한다', () => {
     const err = expectThrows(() =>
-      shouldRequestReview(
-        makeValidInput({ hasPreviouslyRequested: 0 as never }),
-      ),
+      shouldRequestReview(makeValidInput({ hasPreviouslyRequested: 0 as never })),
     );
     expect(err.reason).toBe('invalid_has_previously_requested');
   });

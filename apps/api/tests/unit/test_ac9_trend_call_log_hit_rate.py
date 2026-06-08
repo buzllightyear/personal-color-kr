@@ -20,7 +20,6 @@ from api.trend.model import (
     TrendCallLogCreateInput,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -97,9 +96,9 @@ def test_preempt_hit_rate_partial() -> None:
     """2 preempt logs, 1 confirmed → hit rate = 0.5."""
     repo = InMemoryTrendCallLogRepository()
     log1 = repo.create(_input(tag=PreemptOrFollowTag.PREEMPT))
-    log2 = repo.create(_input(tag=PreemptOrFollowTag.PREEMPT))
+    repo.create(_input(tag=PreemptOrFollowTag.PREEMPT))
     repo.mark_hit_confirmed(log1.log_id, confirmed=True)
-    # log2 stays hit_confirmed=False
+    # the second entry stays hit_confirmed=False
 
     rate = repo.compute_preempt_hit_rate()
     assert rate == pytest.approx(0.5)

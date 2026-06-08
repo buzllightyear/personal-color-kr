@@ -8,14 +8,12 @@ AC18: 퍼스널 컬러 4 카테고리(봄/여름/가을/겨울) 자동 분류.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
 
 import pytest
 
 from personal_color.face_detector import FaceNotDetectedError
 from personal_color.skin_tone_extractor import SkinToneFeature
 from personal_color.wedge_hook import diagnose_personal_color_category
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -54,15 +52,19 @@ _AUTUMN_FEATURES = SkinToneFeature(
 
 def _mock_extract_fn(features: SkinToneFeature):
     """Return a mock extract function that yields specified features."""
+
     def extract(raw: bytes) -> SkinToneFeature:
         return features
+
     return extract
 
 
 def _mock_classify_fn(result: str):
     """Return a mock classify function that yields specified category."""
+
     def classify(features: SkinToneFeature) -> str:
         return result
+
     return classify
 
 
@@ -123,6 +125,7 @@ def test_classify_result_is_a_string() -> None:
 @pytest.mark.unit
 def test_face_not_detected_propagates() -> None:
     """FaceNotDetectedError from the extractor propagates to caller."""
+
     def bad_extract(raw: bytes) -> SkinToneFeature:
         raise FaceNotDetectedError("no face found")
 

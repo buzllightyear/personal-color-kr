@@ -19,7 +19,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-
 # ---------------------------------------------------------------------------
 # Stage names
 # ---------------------------------------------------------------------------
@@ -89,6 +88,7 @@ class PipelineTiming:
     def __post_init__(self) -> None:
         if self._time_fn is None:
             import time
+
             self._time_fn = time.monotonic
 
     def start_stage(self, stage: str) -> None:
@@ -112,9 +112,7 @@ class PipelineTiming:
                 entry.end_time = self._time_fn()
                 entry.duration_seconds = entry.end_time - entry.start_time
                 return
-        raise ValueError(
-            f"Stage {stage!r} was not started or was already ended."
-        )
+        raise ValueError(f"Stage {stage!r} was not started or was already ended.")
 
     def get_stage_duration(self, stage: str) -> float | None:
         """Return duration_seconds for the most recent completed entry of a stage."""
@@ -129,9 +127,7 @@ class PipelineTiming:
         Returns the sum of all completed stage durations.
         """
         return sum(
-            e.duration_seconds
-            for e in self.entries
-            if e.duration_seconds is not None
+            e.duration_seconds for e in self.entries if e.duration_seconds is not None
         )
 
     def all_stages_logged(self) -> bool:

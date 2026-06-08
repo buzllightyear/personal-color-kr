@@ -15,7 +15,11 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { VOICE_CONFIG, type VoiceCopySlots, type VoiceConfig } from '../../src/voice/config.js';
+import {
+  VOICE_CONFIG,
+  type VoiceCopySlots,
+  type VoiceConfig,
+} from '../../src/voice/config.js';
 
 // ---------------------------------------------------------------------------
 // Required slot keys — derived from the VoiceCopySlots interface.
@@ -83,20 +87,11 @@ describe('VOICE_CONFIG — Sub-AC 2: single voice config module', () => {
     expect(VOICE_CONFIG.slots).not.toBeNull();
   });
 
-  it.each(REQUIRED_SLOT_KEYS)(
-    'slot "%s" is present and non-empty',
-    (slotKey) => {
-      const value = VOICE_CONFIG.slots[slotKey];
-      expect(
-        typeof value,
-        `slots.${slotKey} should be a string`,
-      ).toBe('string');
-      expect(
-        (value as string).trim(),
-        `slots.${slotKey} must not be blank`,
-      ).not.toBe('');
-    },
-  );
+  it.each(REQUIRED_SLOT_KEYS)('slot "%s" is present and non-empty', (slotKey) => {
+    const value = VOICE_CONFIG.slots[slotKey];
+    expect(typeof value, `slots.${slotKey} should be a string`).toBe('string');
+    expect((value as string).trim(), `slots.${slotKey} must not be blank`).not.toBe('');
+  });
 
   it('all required slots are covered — no slot key is missing', () => {
     for (const key of REQUIRED_SLOT_KEYS) {

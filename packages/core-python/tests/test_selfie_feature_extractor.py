@@ -274,8 +274,7 @@ def test_output_has_exactly_three_fields() -> None:
 
     field_names = {f.name for f in dataclasses.fields(result)}
     assert field_names == {"color_temperature", "brightness", "saturation"}, (
-        f"ColorFeatureVector must have exactly 3 fields, "
-        f"got {sorted(field_names)}"
+        f"ColorFeatureVector must have exactly 3 fields, " f"got {sorted(field_names)}"
     )
 
 
@@ -291,15 +290,15 @@ def test_output_fields_are_all_floats_warm() -> None:
         _decoder=_stub_decoder(_make_warm_selfie()),
     )
 
-    assert isinstance(result.color_temperature, float), (
-        f"color_temperature must be float, got {type(result.color_temperature)}"
-    )
-    assert isinstance(result.brightness, float), (
-        f"brightness must be float, got {type(result.brightness)}"
-    )
-    assert isinstance(result.saturation, float), (
-        f"saturation must be float, got {type(result.saturation)}"
-    )
+    assert isinstance(
+        result.color_temperature, float
+    ), f"color_temperature must be float, got {type(result.color_temperature)}"
+    assert isinstance(
+        result.brightness, float
+    ), f"brightness must be float, got {type(result.brightness)}"
+    assert isinstance(
+        result.saturation, float
+    ), f"saturation must be float, got {type(result.saturation)}"
 
 
 # ===========================================================================
@@ -357,9 +356,9 @@ def test_brightness_in_valid_range(
         _decoder=_stub_decoder(fixture_fn()),
     )
 
-    assert 0.0 <= result.brightness <= 1.0, (
-        f"[{label}] brightness {result.brightness!r} outside [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.brightness <= 1.0
+    ), f"[{label}] brightness {result.brightness!r} outside [0.0, 1.0]"
 
 
 @pytest.mark.unit
@@ -384,9 +383,9 @@ def test_saturation_in_valid_range(
         _decoder=_stub_decoder(fixture_fn()),
     )
 
-    assert 0.0 <= result.saturation <= 1.0, (
-        f"[{label}] saturation {result.saturation!r} outside [0.0, 1.0]"
-    )
+    assert (
+        0.0 <= result.saturation <= 1.0
+    ), f"[{label}] saturation {result.saturation!r} outside [0.0, 1.0]"
 
 
 # ===========================================================================
@@ -550,9 +549,9 @@ def test_no_skin_pixels_error_is_value_error_subclass() -> None:
             _decoder=_stub_decoder(_make_no_skin_image()),
         )
 
-    assert isinstance(exc_info.value, ValueError), (
-        "NoSkinPixelsError must subclass ValueError for the permanent-error taxonomy"
-    )
+    assert isinstance(
+        exc_info.value, ValueError
+    ), "NoSkinPixelsError must subclass ValueError for the permanent-error taxonomy"
 
 
 @pytest.mark.unit
@@ -578,9 +577,9 @@ def test_no_skin_pixels_error_message_is_sanitized() -> None:
         "selfieUri",
     )
     for token in forbidden_tokens:
-        assert token not in message, (
-            f"NoSkinPixelsError message leaked PII token {token!r}: {message!r}"
-        )
+        assert (
+            token not in message
+        ), f"NoSkinPixelsError message leaked PII token {token!r}: {message!r}"
 
 
 # ===========================================================================

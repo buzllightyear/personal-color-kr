@@ -40,7 +40,6 @@ from dataclasses import dataclass
 
 from personal_color.region_extractor import RGB, Image
 
-
 # ---------------------------------------------------------------------------
 # Output type
 # ---------------------------------------------------------------------------
@@ -241,8 +240,7 @@ def _validate_pixel(pixel: object, *, x: int, y: int) -> RGB:
             )
         if not 0 <= ch <= 255:
             raise ValueError(
-                f"channel '{ch_name}' at (x={x}, y={y}) must be 0-255, "
-                f"got {ch}",
+                f"channel '{ch_name}' at (x={x}, y={y}) must be 0-255, " f"got {ch}",
             )
     return pixel  # type: ignore[return-value]
 

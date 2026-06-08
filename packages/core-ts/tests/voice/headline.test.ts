@@ -29,7 +29,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { VOICE_CONFIG, type VoiceConfig, type VoiceId } from '../../src/voice/config.js';
+import {
+  VOICE_CONFIG,
+  type VoiceConfig,
+  type VoiceId,
+} from '../../src/voice/config.js';
 import { deriveHeadline } from '../../src/voice/headline.js';
 
 // ---------------------------------------------------------------------------
@@ -101,8 +105,12 @@ describe('deriveHeadline — deterministic pure function (Sub-AC 13b-2)', () => 
 
   it('is deterministic: same config → same output across repeated calls', () => {
     // Call each config twice and assert equality — proves referential transparency.
-    expect(deriveHeadline(PERSONA_TREND_TIMING)).toBe(deriveHeadline(PERSONA_TREND_TIMING));
-    expect(deriveHeadline(PERSONA_PHOTO_CRAFT)).toBe(deriveHeadline(PERSONA_PHOTO_CRAFT));
+    expect(deriveHeadline(PERSONA_TREND_TIMING)).toBe(
+      deriveHeadline(PERSONA_TREND_TIMING),
+    );
+    expect(deriveHeadline(PERSONA_PHOTO_CRAFT)).toBe(
+      deriveHeadline(PERSONA_PHOTO_CRAFT),
+    );
     expect(deriveHeadline(PERSONA_ASCII_ONLY)).toBe(deriveHeadline(PERSONA_ASCII_ONLY));
     expect(deriveHeadline(VOICE_CONFIG)).toBe(deriveHeadline(VOICE_CONFIG));
   });

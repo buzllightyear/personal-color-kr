@@ -101,7 +101,9 @@ def test_load_recipe_file_valid_json_preserves_nested_values(tmp_path: Path) -> 
 def test_load_recipe_file_valid_yaml_returns_recipe_model(tmp_path: Path) -> None:
     """A syntactically valid YAML recipe file (.yaml) is parsed into RecipeModel."""
     recipe_file = tmp_path / "recipe.yaml"
-    recipe_file.write_text(yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8")
+    recipe_file.write_text(
+        yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8"
+    )
 
     result = load_recipe_file(recipe_file)
 
@@ -115,7 +117,9 @@ def test_load_recipe_file_valid_yaml_returns_recipe_model(tmp_path: Path) -> Non
 def test_load_recipe_file_valid_yaml_preserves_unicode(tmp_path: Path) -> None:
     """Korean unicode values in YAML are preserved correctly on the RecipeModel."""
     recipe_file = tmp_path / "recipe.yaml"
-    recipe_file.write_text(yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8")
+    recipe_file.write_text(
+        yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8"
+    )
 
     result = load_recipe_file(recipe_file)
 
@@ -128,10 +132,14 @@ def test_load_recipe_file_valid_yaml_preserves_unicode(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_load_recipe_file_valid_yml_extension_returns_recipe_model(tmp_path: Path) -> None:
+def test_load_recipe_file_valid_yml_extension_returns_recipe_model(
+    tmp_path: Path,
+) -> None:
     """A valid YAML recipe file with .yml extension is accepted and validated."""
     recipe_file = tmp_path / "recipe.yml"
-    recipe_file.write_text(yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8")
+    recipe_file.write_text(
+        yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8"
+    )
 
     result = load_recipe_file(recipe_file)
 
@@ -145,7 +153,9 @@ def test_load_recipe_file_valid_yml_extension_returns_recipe_model(tmp_path: Pat
 
 
 @pytest.mark.unit
-def test_load_recipe_file_nonexistent_json_raises_file_not_found(tmp_path: Path) -> None:
+def test_load_recipe_file_nonexistent_json_raises_file_not_found(
+    tmp_path: Path,
+) -> None:
     """A non-existent JSON path raises FileNotFoundError."""
     missing = tmp_path / "missing_recipe.json"
 
@@ -154,7 +164,9 @@ def test_load_recipe_file_nonexistent_json_raises_file_not_found(tmp_path: Path)
 
 
 @pytest.mark.unit
-def test_load_recipe_file_nonexistent_yaml_raises_file_not_found(tmp_path: Path) -> None:
+def test_load_recipe_file_nonexistent_yaml_raises_file_not_found(
+    tmp_path: Path,
+) -> None:
     """A non-existent YAML path raises FileNotFoundError."""
     missing = tmp_path / "missing_recipe.yaml"
 
@@ -187,7 +199,9 @@ def test_load_recipe_file_broken_json_raises_json_decode_error(tmp_path: Path) -
 
 
 @pytest.mark.unit
-def test_load_recipe_file_truncated_json_raises_json_decode_error(tmp_path: Path) -> None:
+def test_load_recipe_file_truncated_json_raises_json_decode_error(
+    tmp_path: Path,
+) -> None:
     """A truncated JSON file (unclosed brace) raises json.JSONDecodeError."""
     truncated_json = tmp_path / "truncated.json"
     truncated_json.write_text('{"recipe_id": "r1"', encoding="utf-8")
@@ -235,7 +249,9 @@ def test_load_recipe_file_broken_yml_syntax_raises_yaml_error(tmp_path: Path) ->
 
 
 @pytest.mark.unit
-def test_load_recipe_file_unsupported_extension_raises_value_error(tmp_path: Path) -> None:
+def test_load_recipe_file_unsupported_extension_raises_value_error(
+    tmp_path: Path,
+) -> None:
     """A file with an unsupported extension raises ValueError before reading."""
     toml_file = tmp_path / "recipe.toml"
     toml_file.write_text('recipe_id = "r1"\n', encoding="utf-8")
@@ -319,7 +335,9 @@ def test_load_recipe_file_case_insensitive_json_extension(tmp_path: Path) -> Non
 def test_load_recipe_file_case_insensitive_yaml_extension(tmp_path: Path) -> None:
     """Upper-case .YAML extension is treated as YAML and returns RecipeModel."""
     recipe_file = tmp_path / "recipe.YAML"
-    recipe_file.write_text(yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8")
+    recipe_file.write_text(
+        yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8"
+    )
 
     result = load_recipe_file(recipe_file)
 
@@ -333,7 +351,9 @@ def test_load_recipe_file_case_insensitive_yaml_extension(tmp_path: Path) -> Non
 
 
 @pytest.mark.unit
-def test_load_recipe_file_yaml_list_at_top_level_raises_value_error(tmp_path: Path) -> None:
+def test_load_recipe_file_yaml_list_at_top_level_raises_value_error(
+    tmp_path: Path,
+) -> None:
     """A YAML file that parses to a list (not a dict) raises ValueError."""
     list_yaml = tmp_path / "list_recipe.yaml"
     list_yaml.write_text("- recipe_id: r1\n- recipe_id: r2\n", encoding="utf-8")
@@ -343,7 +363,9 @@ def test_load_recipe_file_yaml_list_at_top_level_raises_value_error(tmp_path: Pa
 
 
 @pytest.mark.unit
-def test_load_recipe_file_json_array_at_top_level_raises_value_error(tmp_path: Path) -> None:
+def test_load_recipe_file_json_array_at_top_level_raises_value_error(
+    tmp_path: Path,
+) -> None:
     """A JSON file containing a top-level array raises ValueError."""
     array_json = tmp_path / "array_recipe.json"
     array_json.write_text('[{"recipe_id": "r1"}]', encoding="utf-8")
@@ -489,7 +511,9 @@ def test_load_recipe_file_return_type_is_recipe_model(tmp_path: Path) -> None:
 def test_load_recipe_file_returned_model_is_immutable(tmp_path: Path) -> None:
     """The RecipeModel returned by load_recipe_file is immutable (frozen)."""
     recipe_file = tmp_path / "recipe.yaml"
-    recipe_file.write_text(yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8")
+    recipe_file.write_text(
+        yaml.dump(_MINIMAL_RECIPE, allow_unicode=True), encoding="utf-8"
+    )
 
     result = load_recipe_file(recipe_file)
 
@@ -559,7 +583,9 @@ def test_discover_recipes_multiple_files_returns_all_models(tmp_path: Path) -> N
 
 
 @pytest.mark.unit
-def test_discover_recipes_multiple_files_contains_all_recipe_ids(tmp_path: Path) -> None:
+def test_discover_recipes_multiple_files_contains_all_recipe_ids(
+    tmp_path: Path,
+) -> None:
     """discover_recipes returns models with the correct recipe_ids from all files."""
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
     (tmp_path / "recipe_b.yaml").write_text(
@@ -629,7 +655,9 @@ def test_discover_recipes_new_file_included_on_rediscovery(tmp_path: Path) -> No
 
 
 @pytest.mark.unit
-def test_discover_recipes_adding_yml_file_included_on_rediscovery(tmp_path: Path) -> None:
+def test_discover_recipes_adding_yml_file_included_on_rediscovery(
+    tmp_path: Path,
+) -> None:
     """After adding a .yml recipe file, rediscovery returns the new model."""
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
 
@@ -681,7 +709,9 @@ def test_discover_recipes_directory_with_no_recipe_files_returns_empty_list(
 
 
 @pytest.mark.unit
-def test_discover_recipes_returns_list_of_recipe_model_instances(tmp_path: Path) -> None:
+def test_discover_recipes_returns_list_of_recipe_model_instances(
+    tmp_path: Path,
+) -> None:
     """discover_recipes return type is list[RecipeModel], never a list of dicts."""
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
 
@@ -692,7 +722,9 @@ def test_discover_recipes_returns_list_of_recipe_model_instances(tmp_path: Path)
 
 
 @pytest.mark.unit
-def test_discover_recipes_result_is_deterministic_on_repeated_calls(tmp_path: Path) -> None:
+def test_discover_recipes_result_is_deterministic_on_repeated_calls(
+    tmp_path: Path,
+) -> None:
     """Repeated discover_recipes calls on the same directory return the same order."""
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
     (tmp_path / "recipe_b.yaml").write_text(
@@ -708,7 +740,9 @@ def test_discover_recipes_result_is_deterministic_on_repeated_calls(tmp_path: Pa
 @pytest.mark.unit
 def test_discover_recipes_single_valid_file_returns_one_model(tmp_path: Path) -> None:
     """discover_recipes with a single valid file returns a one-element list."""
-    (tmp_path / "recipe_only.json").write_text(json.dumps(_MINIMAL_RECIPE), encoding="utf-8")
+    (tmp_path / "recipe_only.json").write_text(
+        json.dumps(_MINIMAL_RECIPE), encoding="utf-8"
+    )
 
     results = discover_recipes(tmp_path)
 
@@ -734,7 +768,9 @@ def test_discover_recipes_schema_invalid_file_is_skipped(tmp_path: Path) -> None
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
     # Schema violation: candidate_count missing entirely.
     invalid = {k: v for k, v in _RECIPE_B.items() if k != "candidate_count"}
-    (tmp_path / "recipe_b_invalid.json").write_text(json.dumps(invalid), encoding="utf-8")
+    (tmp_path / "recipe_b_invalid.json").write_text(
+        json.dumps(invalid), encoding="utf-8"
+    )
 
     results = discover_recipes(tmp_path)
 
@@ -763,7 +799,9 @@ def test_discover_recipes_schema_invalid_file_does_not_propagate_exception(
 
 
 @pytest.mark.unit
-def test_discover_recipes_broken_json_is_skipped_returns_valid_files(tmp_path: Path) -> None:
+def test_discover_recipes_broken_json_is_skipped_returns_valid_files(
+    tmp_path: Path,
+) -> None:
     """A broken-JSON file is skipped; valid files are still returned."""
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")
     (tmp_path / "broken.json").write_text('{"recipe_id": "r_broken",', encoding="utf-8")
@@ -775,7 +813,9 @@ def test_discover_recipes_broken_json_is_skipped_returns_valid_files(tmp_path: P
 
 
 @pytest.mark.unit
-def test_discover_recipes_broken_json_does_not_propagate_exception(tmp_path: Path) -> None:
+def test_discover_recipes_broken_json_does_not_propagate_exception(
+    tmp_path: Path,
+) -> None:
     """discover_recipes does not raise even when a broken-JSON file is present."""
     (tmp_path / "broken.json").write_text("{bad json", encoding="utf-8")
 
@@ -792,7 +832,9 @@ def test_discover_recipes_broken_json_does_not_propagate_exception(tmp_path: Pat
 
 
 @pytest.mark.unit
-def test_discover_recipes_broken_yaml_is_skipped_returns_valid_files(tmp_path: Path) -> None:
+def test_discover_recipes_broken_yaml_is_skipped_returns_valid_files(
+    tmp_path: Path,
+) -> None:
     """A broken-YAML file is skipped; valid files are still returned."""
     (tmp_path / "recipe_a.yaml").write_text(
         yaml.dump(_RECIPE_A, allow_unicode=True), encoding="utf-8"
@@ -810,7 +852,9 @@ def test_discover_recipes_broken_yaml_is_skipped_returns_valid_files(tmp_path: P
 
 
 @pytest.mark.unit
-def test_discover_recipes_broken_yaml_does_not_propagate_exception(tmp_path: Path) -> None:
+def test_discover_recipes_broken_yaml_does_not_propagate_exception(
+    tmp_path: Path,
+) -> None:
     """discover_recipes does not raise even when a broken-YAML file is present."""
     (tmp_path / "broken.yml").write_text(
         "recipe_id: ok\nstyle_params:\n\tmodel: flux\n",
@@ -830,7 +874,9 @@ def test_discover_recipes_broken_yaml_does_not_propagate_exception(tmp_path: Pat
 
 
 @pytest.mark.unit
-def test_discover_recipes_multiple_invalid_files_returns_only_valid(tmp_path: Path) -> None:
+def test_discover_recipes_multiple_invalid_files_returns_only_valid(
+    tmp_path: Path,
+) -> None:
     """Only valid files are returned when multiple invalid files are mixed in."""
     # Two valid files.
     (tmp_path / "recipe_a.json").write_text(json.dumps(_RECIPE_A), encoding="utf-8")

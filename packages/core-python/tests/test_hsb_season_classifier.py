@@ -67,34 +67,34 @@ from personal_color.hsb_season_classifier import (
 _REPRESENTATIVE_VECTORS = [
     # (hue, saturation, brightness, warm_cool_score, expected_season)
     pytest.param(
-        25.0,    # warm orange-gold hue
-        0.45,    # moderate saturation
-        0.78,    # HIGH brightness → 봄
-        0.15,    # clearly warm
+        25.0,  # warm orange-gold hue
+        0.45,  # moderate saturation
+        0.78,  # HIGH brightness → 봄
+        0.15,  # clearly warm
         "spring",
         id="spring_봄_warm_bright",
     ),
     pytest.param(
-        20.0,    # warm amber hue
-        0.55,    # moderate-high saturation
-        0.32,    # LOW brightness → 가을
-        0.22,    # clearly warm
+        20.0,  # warm amber hue
+        0.55,  # moderate-high saturation
+        0.32,  # LOW brightness → 가을
+        0.22,  # clearly warm
         "autumn",
         id="autumn_가을_warm_dark",
     ),
     pytest.param(
-        220.0,   # cool blue-violet hue
-        0.35,    # low-moderate saturation
-        0.82,    # HIGH brightness → 겨울
-        -0.12,   # clearly cool
+        220.0,  # cool blue-violet hue
+        0.35,  # low-moderate saturation
+        0.82,  # HIGH brightness → 겨울
+        -0.12,  # clearly cool
         "winter",
         id="winter_겨울_cool_bright",
     ),
     pytest.param(
-        200.0,   # cool blue-cyan hue
-        0.30,    # low saturation (muted)
-        0.42,    # LOW brightness → 여름
-        -0.08,   # clearly cool
+        200.0,  # cool blue-cyan hue
+        0.30,  # low saturation (muted)
+        0.42,  # LOW brightness → 여름
+        -0.08,  # clearly cool
         "summer",
         id="summer_여름_cool_dark",
     ),
@@ -133,9 +133,12 @@ def test_four_season_representatives_are_all_distinct() -> None:
             param.values for param in _REPRESENTATIVE_VECTORS  # type: ignore[attr-defined]
         ]
     }
-    assert results == {"spring", "summer", "autumn", "winter"}, (
-        f"Expected all four seasons; got {sorted(results)}"
-    )
+    assert results == {
+        "spring",
+        "summer",
+        "autumn",
+        "winter",
+    }, f"Expected all four seasons; got {sorted(results)}"
 
 
 # ---------------------------------------------------------------------------
@@ -147,10 +150,10 @@ def test_four_season_representatives_are_all_distinct() -> None:
 @pytest.mark.parametrize(
     ("warm_cool_score", "brightness", "expected"),
     [
-        (0.5,  0.8, "spring"),   # strongly warm + bright
-        (0.5,  0.2, "autumn"),   # strongly warm + dark
-        (-0.5, 0.8, "winter"),   # strongly cool + bright
-        (-0.5, 0.2, "summer"),   # strongly cool + dark
+        (0.5, 0.8, "spring"),  # strongly warm + bright
+        (0.5, 0.2, "autumn"),  # strongly warm + dark
+        (-0.5, 0.8, "winter"),  # strongly cool + bright
+        (-0.5, 0.2, "summer"),  # strongly cool + dark
     ],
     ids=["strong_spring", "strong_autumn", "strong_winter", "strong_summer"],
 )
@@ -161,7 +164,7 @@ def test_primary_warm_cool_score_axis(
 ) -> None:
     """warm_cool_score far from neutral zone → season determined without hue."""
     result = classify_season_from_hsb_features(
-        hue=30.0,          # hue irrelevant when score is unambiguous
+        hue=30.0,  # hue irrelevant when score is unambiguous
         saturation=0.4,
         brightness=brightness,
         warm_cool_score=warm_cool_score,
@@ -179,7 +182,7 @@ def test_primary_warm_cool_score_axis(
     ("warm_cool_score", "expected_at_midpoint"),
     [
         (0.15, "autumn"),  # warm + brightness == 0.5 → LOW → 가을
-        (-0.15, "summer"), # cool + brightness == 0.5 → LOW → 여름
+        (-0.15, "summer"),  # cool + brightness == 0.5 → LOW → 여름
     ],
     ids=["autumn_at_midpoint", "summer_at_midpoint"],
 )
@@ -223,19 +226,22 @@ _WCS_NEUTRAL = 0.0  # exactly in the centre of the neutral zone
     ("hue", "brightness", "expected"),
     [
         # Warm hue band: 0–60°
-        (30.0,  0.8, "spring"),   # warm hue + bright → 봄
-        (30.0,  0.2, "autumn"),   # warm hue + dark  → 가을
+        (30.0, 0.8, "spring"),  # warm hue + bright → 봄
+        (30.0, 0.2, "autumn"),  # warm hue + dark  → 가을
         # Warm hue wrap band: >300°
-        (320.0, 0.8, "spring"),   # pink/magenta + bright → 봄
-        (320.0, 0.2, "autumn"),   # pink/magenta + dark  → 가을
+        (320.0, 0.8, "spring"),  # pink/magenta + bright → 봄
+        (320.0, 0.2, "autumn"),  # pink/magenta + dark  → 가을
         # Cool hue band: 180–270°
-        (240.0, 0.8, "winter"),   # blue + bright → 겨울
-        (240.0, 0.2, "summer"),   # blue + dark   → 여름
+        (240.0, 0.8, "winter"),  # blue + bright → 겨울
+        (240.0, 0.2, "summer"),  # blue + dark   → 여름
     ],
     ids=[
-        "warm_hue_bright", "warm_hue_dark",
-        "warm_wrap_bright", "warm_wrap_dark",
-        "cool_hue_bright", "cool_hue_dark",
+        "warm_hue_bright",
+        "warm_hue_dark",
+        "warm_wrap_bright",
+        "warm_wrap_dark",
+        "cool_hue_bright",
+        "cool_hue_dark",
     ],
 )
 def test_neutral_zone_resolved_by_hue(
@@ -246,7 +252,7 @@ def test_neutral_zone_resolved_by_hue(
     """warm_cool_score in neutral zone, sufficient saturation: hue tiebreaker."""
     result = classify_season_from_hsb_features(
         hue=hue,
-        saturation=0.4,     # well above saturation_floor=0.08
+        saturation=0.4,  # well above saturation_floor=0.08
         brightness=brightness,
         warm_cool_score=_WCS_NEUTRAL,
     )
@@ -264,7 +270,7 @@ def test_neutral_zone_achromatic_raises_value_error() -> None:
     with pytest.raises(ValueError, match="achromatic"):
         classify_season_from_hsb_features(
             hue=30.0,
-            saturation=0.01,   # well below floor=0.08
+            saturation=0.01,  # well below floor=0.08
             brightness=0.7,
             warm_cool_score=0.0,
         )
@@ -306,7 +312,7 @@ def test_just_above_warm_threshold_is_warm_direct() -> None:
     """warm_cool_score marginally above threshold → resolved to warm directly."""
     threshold = DEFAULT_HSB_THRESHOLDS.warm_threshold
     result = classify_season_from_hsb_features(
-        hue=240.0,   # cool hue — would give winter if score were neutral
+        hue=240.0,  # cool hue — would give winter if score were neutral
         saturation=0.4,
         brightness=0.8,
         warm_cool_score=threshold + 1e-9,  # fractionally above threshold → warm
@@ -324,20 +330,24 @@ def test_just_above_warm_threshold_is_warm_direct() -> None:
 @pytest.mark.parametrize(
     ("hue", "sat", "bri", "wcs"),
     [
-        (-0.1, 0.4, 0.7, 0.1),    # hue below 0
-        (361.0, 0.4, 0.7, 0.1),   # hue above 360
-        (30.0, -0.1, 0.7, 0.1),   # saturation below 0
-        (30.0, 1.1, 0.7, 0.1),    # saturation above 1
-        (30.0, 0.4, -0.1, 0.1),   # brightness below 0
-        (30.0, 0.4, 1.1, 0.1),    # brightness above 1
-        (30.0, 0.4, 0.7, -1.1),   # warm_cool_score below -1
-        (30.0, 0.4, 0.7, 1.1),    # warm_cool_score above 1
+        (-0.1, 0.4, 0.7, 0.1),  # hue below 0
+        (361.0, 0.4, 0.7, 0.1),  # hue above 360
+        (30.0, -0.1, 0.7, 0.1),  # saturation below 0
+        (30.0, 1.1, 0.7, 0.1),  # saturation above 1
+        (30.0, 0.4, -0.1, 0.1),  # brightness below 0
+        (30.0, 0.4, 1.1, 0.1),  # brightness above 1
+        (30.0, 0.4, 0.7, -1.1),  # warm_cool_score below -1
+        (30.0, 0.4, 0.7, 1.1),  # warm_cool_score above 1
     ],
     ids=[
-        "hue_neg", "hue_over360",
-        "sat_neg", "sat_over1",
-        "bri_neg", "bri_over1",
-        "wcs_neg", "wcs_over1",
+        "hue_neg",
+        "hue_over360",
+        "sat_neg",
+        "sat_over1",
+        "bri_neg",
+        "bri_over1",
+        "wcs_neg",
+        "wcs_over1",
     ],
 )
 def test_out_of_range_scalars_raise_value_error(
@@ -353,7 +363,9 @@ def test_bool_hue_raises_type_error() -> None:
     with pytest.raises(TypeError, match="hue"):
         classify_season_from_hsb_features(
             True,  # type: ignore[arg-type]
-            0.4, 0.7, 0.1,
+            0.4,
+            0.7,
+            0.1,
         )
 
 
@@ -363,7 +375,9 @@ def test_string_input_raises_type_error() -> None:
     with pytest.raises(TypeError):
         classify_season_from_hsb_features(
             "30",  # type: ignore[arg-type]
-            0.4, 0.7, 0.1,
+            0.4,
+            0.7,
+            0.1,
         )
 
 
@@ -372,7 +386,10 @@ def test_wrong_thresholds_type_raises_type_error() -> None:
     """Passing a plain dict instead of HSBClassifierThresholds raises TypeError."""
     with pytest.raises(TypeError, match="HSBClassifierThresholds"):
         classify_season_from_hsb_features(
-            30.0, 0.4, 0.7, 0.15,
+            30.0,
+            0.4,
+            0.7,
+            0.15,
             thresholds={"warm_threshold": 0.02},  # type: ignore[arg-type]
         )
 
@@ -399,7 +416,9 @@ def test_custom_brightness_midpoint_shifts_contrast_boundary() -> None:
     """With brightness_midpoint=0.7, brightness=0.6 maps to LOW → autumn."""
     high_midpoint = HSBClassifierThresholds(brightness_midpoint=0.7)
     result = classify_season_from_hsb_features(
-        30.0, 0.4, 0.6,  # 0.6 > 0.5 (default) but 0.6 < 0.7 (custom)
+        30.0,
+        0.4,
+        0.6,  # 0.6 > 0.5 (default) but 0.6 < 0.7 (custom)
         warm_cool_score=0.15,
         thresholds=high_midpoint,
     )
@@ -415,10 +434,10 @@ def test_custom_saturation_floor_allows_lower_saturation_tiebreaker() -> None:
         hue=30.0,
         saturation=0.02,
         brightness=0.8,
-        warm_cool_score=0.0,   # neutral score
+        warm_cool_score=0.0,  # neutral score
         thresholds=low_floor,
     )
-    assert result == "spring"   # resolved via warm hue (30°) + bright
+    assert result == "spring"  # resolved via warm hue (30°) + bright
 
 
 # ---------------------------------------------------------------------------
@@ -438,10 +457,10 @@ def test_return_value_is_string() -> None:
 def test_return_values_are_lowercase_ascii_slugs() -> None:
     """All four return values are lowercase ASCII, matching DB-safe slug contract."""
     vectors = [
-        (25.0, 0.45, 0.78, 0.15),   # spring
-        (20.0, 0.55, 0.32, 0.22),   # autumn
-        (220.0, 0.35, 0.82, -0.12), # winter
-        (200.0, 0.30, 0.42, -0.08), # summer
+        (25.0, 0.45, 0.78, 0.15),  # spring
+        (20.0, 0.55, 0.32, 0.22),  # autumn
+        (220.0, 0.35, 0.82, -0.12),  # winter
+        (200.0, 0.30, 0.42, -0.08),  # summer
     ]
     for hue, sat, bri, wcs in vectors:
         result = classify_season_from_hsb_features(hue, sat, bri, wcs)

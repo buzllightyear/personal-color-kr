@@ -247,7 +247,9 @@ export class MockGateway implements PaymentGateway {
   }
 
   async charge(request: ChargeRequest): Promise<ChargeResult> {
-    this._calls.push(Object.freeze({ method: 'charge', request: Object.freeze({ ...request }) }));
+    this._calls.push(
+      Object.freeze({ method: 'charge', request: Object.freeze({ ...request }) }),
+    );
 
     if (this._forceChargeFailure) {
       return Object.freeze({
@@ -283,7 +285,9 @@ export class MockGateway implements PaymentGateway {
   }
 
   async cancel(request: CancelRequest): Promise<CancelResult> {
-    this._calls.push(Object.freeze({ method: 'cancel', request: Object.freeze({ ...request }) }));
+    this._calls.push(
+      Object.freeze({ method: 'cancel', request: Object.freeze({ ...request }) }),
+    );
 
     if (this._forceCancelFailure) {
       return Object.freeze({
@@ -314,7 +318,9 @@ export class MockGateway implements PaymentGateway {
   }
 
   async status(request: StatusRequest): Promise<StatusResult> {
-    this._calls.push(Object.freeze({ method: 'status', request: Object.freeze({ ...request }) }));
+    this._calls.push(
+      Object.freeze({ method: 'status', request: Object.freeze({ ...request }) }),
+    );
 
     if (this._forceStatusFailure) {
       return Object.freeze({

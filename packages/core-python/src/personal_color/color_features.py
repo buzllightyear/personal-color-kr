@@ -64,7 +64,6 @@ from dataclasses import dataclass
 
 from personal_color.region_extractor import RGB
 
-
 # ---------------------------------------------------------------------------
 # Output type
 # ---------------------------------------------------------------------------
@@ -226,8 +225,7 @@ def _validate_pixels(pixels: object) -> None:
 
     if isinstance(pixels, (str, bytes)) or not isinstance(pixels, Sequence):
         raise TypeError(
-            f"pixels must be a Sequence of RGB tuples, "
-            f"got {type(pixels).__name__}",
+            f"pixels must be a Sequence of RGB tuples, " f"got {type(pixels).__name__}",
         )
     if len(pixels) == 0:
         raise ValueError("pixels must not be empty — at least one pixel required")
@@ -251,8 +249,7 @@ def _validate_single_pixel(pixel: object, *, idx: int) -> None:
             )
         if not 0 <= ch <= 255:
             raise ValueError(
-                f"pixels[{idx}] channel '{ch_name}' must be 0-255, "
-                f"got {ch}",
+                f"pixels[{idx}] channel '{ch_name}' must be 0-255, " f"got {ch}",
             )
 
 

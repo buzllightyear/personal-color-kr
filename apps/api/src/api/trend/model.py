@@ -14,11 +14,9 @@ FK connections:
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Literal
-
 
 # ---------------------------------------------------------------------------
 # Trend status enum
@@ -335,7 +333,8 @@ class InMemoryTrendCallLogRepository:
         Computed on-demand (not stored as a snapshot).
         """
         preempt_logs = [
-            log for log in self._store.values()
+            log
+            for log in self._store.values()
             if log.preempt_or_follow_tag == PreemptOrFollowTag.PREEMPT
         ]
         if not preempt_logs:

@@ -127,9 +127,7 @@ describe('getSelectionPrompt — voice-config injection (Sub-AC 3b)', () => {
   });
 
   it('stub result differs from production config output (no hardcoded string)', () => {
-    expect(getSelectionPrompt(STUB_CONFIG)).not.toBe(
-      getSelectionPrompt(VOICE_CONFIG),
-    );
+    expect(getSelectionPrompt(STUB_CONFIG)).not.toBe(getSelectionPrompt(VOICE_CONFIG));
   });
 
   it('stub result does not contain any Korean characters (pure sentinel)', () => {

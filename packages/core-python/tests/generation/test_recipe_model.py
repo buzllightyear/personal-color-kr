@@ -119,8 +119,7 @@ def test_validate_recipe_raises_validation_error_on_missing_required_field(
     # The error should mention the missing field name.
     error_str = str(exc_info.value)
     assert missing_field in error_str, (
-        f"ValidationError should mention '{missing_field}'; "
-        f"got: {error_str[:300]}"
+        f"ValidationError should mention '{missing_field}'; " f"got: {error_str[:300]}"
     )
 
 

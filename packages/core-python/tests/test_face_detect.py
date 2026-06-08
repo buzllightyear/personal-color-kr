@@ -31,7 +31,6 @@ Fixture images (in ``tests/fixtures/``):
 
 from __future__ import annotations
 
-import io
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -277,9 +276,9 @@ def test_face_detect_face_fixture_returns_face_bounding_box(
 
     result = face_detect(face_image)
 
-    assert isinstance(result, FaceBoundingBox), (
-        f"face_detect must return FaceBoundingBox, got {type(result).__name__}"
-    )
+    assert isinstance(
+        result, FaceBoundingBox
+    ), f"face_detect must return FaceBoundingBox, got {type(result).__name__}"
     assert result.x == 32
     assert result.y == 13
     assert result.width == 64
@@ -301,14 +300,18 @@ def test_face_detect_face_fixture_bounding_box_fields_are_non_negative_integers(
 
     box = face_detect(_make_face_selfie_fixture())
 
-    assert isinstance(box.x, int) and box.x >= 0, f"box.x must be int >= 0, got {box.x!r}"
-    assert isinstance(box.y, int) and box.y >= 0, f"box.y must be int >= 0, got {box.y!r}"
-    assert isinstance(box.width, int) and box.width >= 1, (
-        f"box.width must be int >= 1, got {box.width!r}"
-    )
-    assert isinstance(box.height, int) and box.height >= 1, (
-        f"box.height must be int >= 1, got {box.height!r}"
-    )
+    assert (
+        isinstance(box.x, int) and box.x >= 0
+    ), f"box.x must be int >= 0, got {box.x!r}"
+    assert (
+        isinstance(box.y, int) and box.y >= 0
+    ), f"box.y must be int >= 0, got {box.y!r}"
+    assert (
+        isinstance(box.width, int) and box.width >= 1
+    ), f"box.width must be int >= 1, got {box.width!r}"
+    assert (
+        isinstance(box.height, int) and box.height >= 1
+    ), f"box.height must be int >= 1, got {box.height!r}"
 
 
 @pytest.mark.unit
@@ -409,9 +412,9 @@ def test_face_detect_returns_bounding_box_not_face_regions(
 
     result = face_detect(_make_face_selfie_fixture())
 
-    assert not isinstance(result, FaceRegions), (
-        "face_detect must NOT return FaceRegions — use detect_face_regions for that"
-    )
+    assert not isinstance(
+        result, FaceRegions
+    ), "face_detect must NOT return FaceRegions — use detect_face_regions for that"
     assert isinstance(result, FaceBoundingBox)
 
 
@@ -428,9 +431,9 @@ def test_face_detect_empty_image_raises_value_error_not_face_not_detected(
     with pytest.raises(ValueError) as exc_info:
         face_detect([])
 
-    assert not isinstance(exc_info.value, FaceNotDetectedError), (
-        "Empty image must raise plain ValueError, not FaceNotDetectedError"
-    )
+    assert not isinstance(
+        exc_info.value, FaceNotDetectedError
+    ), "Empty image must raise plain ValueError, not FaceNotDetectedError"
 
 
 @pytest.mark.unit
@@ -441,9 +444,9 @@ def test_face_detect_zero_width_image_raises_value_error(
     with pytest.raises(ValueError) as exc_info:
         face_detect([[]])
 
-    assert not isinstance(exc_info.value, FaceNotDetectedError), (
-        "Zero-column image must raise plain ValueError, not FaceNotDetectedError"
-    )
+    assert not isinstance(
+        exc_info.value, FaceNotDetectedError
+    ), "Zero-column image must raise plain ValueError, not FaceNotDetectedError"
 
 
 # ===========================================================================

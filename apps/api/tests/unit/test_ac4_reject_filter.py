@@ -61,9 +61,7 @@ def test_all_scores_above_threshold_pass() -> None:
 @pytest.mark.unit
 def test_scores_exactly_at_threshold_pass() -> None:
     """score == threshold is >= threshold, so candidate passes (boundary case)."""
-    candidates = [
-        _candidate(0, identity=0.6, artifact=0.6, uncanny=0.5)
-    ]
+    candidates = [_candidate(0, identity=0.6, artifact=0.6, uncanny=0.5)]
     survivors = apply_reject_filter(candidates, _CONFIG)
     assert len(survivors) == 1
 
@@ -149,7 +147,9 @@ def test_all_three_dimensions_use_same_gte_operator() -> None:
     # Exactly at threshold → passes (>= not >)
     at_threshold = _candidate(0, identity=0.5, artifact=0.5, uncanny=0.5)
     survivors = apply_reject_filter([at_threshold], config)
-    assert len(survivors) == 1, "Exactly-at-threshold candidate must survive (>= semantics)"
+    assert (
+        len(survivors) == 1
+    ), "Exactly-at-threshold candidate must survive (>= semantics)"
     assert survivors[0].candidate_index == at_threshold.candidate_index
     assert survivors[0].reject_filter_passed is True
 

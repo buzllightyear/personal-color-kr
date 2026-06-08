@@ -75,9 +75,7 @@ import { VOICE_CONFIG, type VoiceConfig } from '../voice/config.js';
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getPaymentStepHeadline(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getPaymentStepHeadline(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.payment_step_headline;
 }
 
@@ -112,9 +110,7 @@ export function getPaymentStepSubhead(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getPaymentStepBody(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getPaymentStepBody(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.payment_step_body;
 }
 
@@ -130,9 +126,7 @@ export function getPaymentStepBody(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getPaymentAnnualPlanCta(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getPaymentAnnualPlanCta(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.payment_annual_plan_cta;
 }
 
@@ -173,9 +167,7 @@ export function getPaymentMonthlyPlanCta(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getPaymentUpsellPrompt(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getPaymentUpsellPrompt(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.payment_upsell_prompt;
 }
 
@@ -206,8 +198,6 @@ export function getPaymentConfirmedHeadline(
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getPaymentConfirmedSubhead(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getPaymentConfirmedSubhead(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.payment_confirmed_subhead;
 }

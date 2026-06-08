@@ -232,7 +232,10 @@ describe('MockGateway.cancel() — unknown transaction', () => {
 
 describe('MockGateway.cancel() — forceCancelFailure', () => {
   it('returns ok:false CancelFailure when forceCancelFailure is set', async () => {
-    const gateway = new MockGateway({ forceCancelFailure: true, now: () => FIXED_NOW_1 });
+    const gateway = new MockGateway({
+      forceCancelFailure: true,
+      now: () => FIXED_NOW_1,
+    });
     const { transactionId } = (await gateway.charge(BASE_REQUEST)) as ChargeSuccess;
 
     const result = await gateway.cancel({ transactionId, reason: 'test' });
@@ -241,7 +244,10 @@ describe('MockGateway.cancel() — forceCancelFailure', () => {
   });
 
   it('does NOT transition status to cancelled when cancel is forced-failed', async () => {
-    const gateway = new MockGateway({ forceCancelFailure: true, now: () => FIXED_NOW_1 });
+    const gateway = new MockGateway({
+      forceCancelFailure: true,
+      now: () => FIXED_NOW_1,
+    });
     const { transactionId } = (await gateway.charge(BASE_REQUEST)) as ChargeSuccess;
     await gateway.cancel({ transactionId, reason: 'test' });
 
@@ -314,10 +320,13 @@ describe('MockGateway.status() — unknown transaction', () => {
 
 describe('MockGateway.status() — forceStatusFailure', () => {
   it('returns ok:false StatusFailure when forceStatusFailure is set', async () => {
-    const gateway = new MockGateway({ forceStatusFailure: true, now: () => FIXED_NOW_1 });
-    const { transactionId } = (
-      await new MockGateway({ now: () => FIXED_NOW_1 }).charge(BASE_REQUEST)
-    ) as ChargeSuccess;
+    const gateway = new MockGateway({
+      forceStatusFailure: true,
+      now: () => FIXED_NOW_1,
+    });
+    const { transactionId } = (await new MockGateway({ now: () => FIXED_NOW_1 }).charge(
+      BASE_REQUEST,
+    )) as ChargeSuccess;
 
     // Use a fresh gateway with forced failure and query a valid txn id
     const result = await gateway.status({ transactionId });
@@ -433,8 +442,12 @@ describe('MockGateway — multiple charges', () => {
     const r2 = (await gateway.charge(ANNUAL_REQUEST)) as ChargeSuccess;
     expect(gateway.storedCount).toBe(2);
 
-    const s1 = (await gateway.status({ transactionId: r1.transactionId })) as StatusSuccess;
-    const s2 = (await gateway.status({ transactionId: r2.transactionId })) as StatusSuccess;
+    const s1 = (await gateway.status({
+      transactionId: r1.transactionId,
+    })) as StatusSuccess;
+    const s2 = (await gateway.status({
+      transactionId: r2.transactionId,
+    })) as StatusSuccess;
     expect(s1.amountMinorUnits).toBe(BASE_REQUEST.amountMinorUnits);
     expect(s2.amountMinorUnits).toBe(ANNUAL_REQUEST.amountMinorUnits);
   });
@@ -447,7 +460,9 @@ describe('MockGateway — multiple charges', () => {
 
     await gateway.cancel({ transactionId: r1.transactionId, reason: 'test' });
 
-    const s2 = (await gateway.status({ transactionId: r2.transactionId })) as StatusSuccess;
+    const s2 = (await gateway.status({
+      transactionId: r2.transactionId,
+    })) as StatusSuccess;
     expect(s2.status).toBe('pending');
   });
 });

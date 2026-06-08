@@ -54,10 +54,10 @@ from api.voice.repository import (
     get_voice_config,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared sample input helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_input(suffix: str = "") -> VoiceConfigCreateInput:
     """Return a minimal valid VoiceConfigCreateInput (optionally suffixed)."""
@@ -90,30 +90,28 @@ def test_get_voice_config_returns_exact_record_when_found() -> None:
         f"Sub-AC 13c-2: get_voice_config returned None for existing id "
         f"{created.voice_id!r}; expected a VoiceConfigRecord."
     )
-    assert isinstance(result, VoiceConfigRecord), (
-        f"Sub-AC 13c-2: expected VoiceConfigRecord, got {type(result)!r}."
-    )
+    assert isinstance(
+        result, VoiceConfigRecord
+    ), f"Sub-AC 13c-2: expected VoiceConfigRecord, got {type(result)!r}."
     # All fields must match exactly — no field corruption in the service wrapper.
-    assert result.voice_id == created.voice_id, (
-        f"voice_id mismatch: expected {created.voice_id!r}, got {result.voice_id!r}."
-    )
+    assert (
+        result.voice_id == created.voice_id
+    ), f"voice_id mismatch: expected {created.voice_id!r}, got {result.voice_id!r}."
     assert result.tone_descriptor == created.tone_descriptor, (
         f"tone_descriptor mismatch: expected {created.tone_descriptor!r}, "
         f"got {result.tone_descriptor!r}."
     )
-    assert result.trend_timing_voice == created.trend_timing_voice, (
-        f"trend_timing_voice mismatch."
-    )
-    assert result.photo_sense_voice == created.photo_sense_voice, (
-        f"photo_sense_voice mismatch."
-    )
+    assert (
+        result.trend_timing_voice == created.trend_timing_voice
+    ), "trend_timing_voice mismatch."
+    assert (
+        result.photo_sense_voice == created.photo_sense_voice
+    ), "photo_sense_voice mismatch."
     assert result.cta_templates == created.cta_templates, (
         f"cta_templates mismatch: expected {created.cta_templates!r}, "
         f"got {result.cta_templates!r}."
     )
-    assert result.updated_at == created.updated_at, (
-        f"updated_at mismatch."
-    )
+    assert result.updated_at == created.updated_at, "updated_at mismatch."
 
 
 # ---------------------------------------------------------------------------
@@ -206,12 +204,10 @@ def test_get_voice_config_returns_none_on_empty_repository() -> None:
 
     result = get_voice_config(uuid.uuid4(), repo=repo)
 
-    assert result is None, (
-        f"Empty repository must return None for any lookup; got {result!r}."
-    )
-    assert len(repo) == 0, (
-        f"Empty repository must have 0 records; got {len(repo)}."
-    )
+    assert (
+        result is None
+    ), f"Empty repository must return None for any lookup; got {result!r}."
+    assert len(repo) == 0, f"Empty repository must have 0 records; got {len(repo)}."
 
 
 # ---------------------------------------------------------------------------
@@ -231,19 +227,19 @@ def test_get_voice_config_returns_correct_record_among_multiple() -> None:
     first: VoiceConfigRecord = repo.create(_make_input(suffix="_first"))
     second: VoiceConfigRecord = repo.create(_make_input(suffix="_second"))
 
-    assert first.voice_id != second.voice_id, (
-        "Prerequisite: the two created records must have distinct voice_ids."
-    )
+    assert (
+        first.voice_id != second.voice_id
+    ), "Prerequisite: the two created records must have distinct voice_ids."
 
     fetched_first = get_voice_config(first.voice_id, repo=repo)
     fetched_second = get_voice_config(second.voice_id, repo=repo)
 
-    assert fetched_first is not None, (
-        f"get_voice_config returned None for first.voice_id {first.voice_id!r}."
-    )
-    assert fetched_second is not None, (
-        f"get_voice_config returned None for second.voice_id {second.voice_id!r}."
-    )
+    assert (
+        fetched_first is not None
+    ), f"get_voice_config returned None for first.voice_id {first.voice_id!r}."
+    assert (
+        fetched_second is not None
+    ), f"get_voice_config returned None for second.voice_id {second.voice_id!r}."
 
     assert fetched_first.tone_descriptor == first.tone_descriptor, (
         f"Expected tone_descriptor {first.tone_descriptor!r} for first record, "
@@ -254,9 +250,9 @@ def test_get_voice_config_returns_correct_record_among_multiple() -> None:
         f"got {fetched_second.tone_descriptor!r}."
     )
     # Cross-check: first id should NOT return second record
-    assert fetched_first != fetched_second, (
-        "Fetching first.voice_id and second.voice_id must return distinct records."
-    )
+    assert (
+        fetched_first != fetched_second
+    ), "Fetching first.voice_id and second.voice_id must return distinct records."
 
 
 # ---------------------------------------------------------------------------
@@ -284,14 +280,14 @@ def test_create_then_get_via_service_functions_round_trip() -> None:
     created: VoiceConfigRecord = create_voice_config(input_, repo=repo)
     retrieved = get_voice_config(created.voice_id, repo=repo)
 
-    assert retrieved is not None, (
-        "get_voice_config must return a record for the just-created voice_id."
-    )
-    assert retrieved == created, (
-        f"Round-trip mismatch:\n  created:   {created!r}\n  retrieved: {retrieved!r}"
-    )
+    assert (
+        retrieved is not None
+    ), "get_voice_config must return a record for the just-created voice_id."
+    assert (
+        retrieved == created
+    ), f"Round-trip mismatch:\n  created:   {created!r}\n  retrieved: {retrieved!r}"
     # Confirm not-found still works for a different UUID after create
     phantom = uuid.uuid4()
-    assert get_voice_config(phantom, repo=repo) is None, (
-        "get_voice_config must still return None for an id that was never created."
-    )
+    assert (
+        get_voice_config(phantom, repo=repo) is None
+    ), "get_voice_config must still return None for an id that was never created."

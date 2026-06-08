@@ -113,9 +113,7 @@ describe('getPaymentStepHeadline — voice-config injection (Sub-AC 3d)', () => 
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
-    expect(getPaymentStepHeadline()).toBe(
-      VOICE_CONFIG.slots.payment_step_headline,
-    );
+    expect(getPaymentStepHeadline()).toBe(VOICE_CONFIG.slots.payment_step_headline);
   });
 
   it('production output is a non-empty Korean string', () => {
@@ -148,9 +146,7 @@ describe('getPaymentStepSubhead — voice-config injection (Sub-AC 3d)', () => {
   });
 
   it('produces the fully-substituted stub sentinel', () => {
-    expect(getPaymentStepSubhead(12, 59, STUB_CONFIG)).toBe(
-      'STUB_SUBHEAD:12:59:END',
-    );
+    expect(getPaymentStepSubhead(12, 59, STUB_CONFIG)).toBe('STUB_SUBHEAD:12:59:END');
   });
 
   it('stub result differs from production config output (no hardcoded string)', () => {
@@ -160,9 +156,7 @@ describe('getPaymentStepSubhead — voice-config injection (Sub-AC 3d)', () => {
   });
 
   it('stub result does not contain any Korean characters (pure sentinel)', () => {
-    expect(/[가-힣]/.test(getPaymentStepSubhead(12, 59, STUB_CONFIG))).toBe(
-      false,
-    );
+    expect(/[가-힣]/.test(getPaymentStepSubhead(12, 59, STUB_CONFIG))).toBe(false);
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
@@ -195,9 +189,7 @@ describe('getPaymentStepBody — voice-config injection (Sub-AC 3d)', () => {
   });
 
   it('stub result differs from production config output (no hardcoded string)', () => {
-    expect(getPaymentStepBody(STUB_CONFIG)).not.toBe(
-      getPaymentStepBody(VOICE_CONFIG),
-    );
+    expect(getPaymentStepBody(STUB_CONFIG)).not.toBe(getPaymentStepBody(VOICE_CONFIG));
   });
 
   it('stub result does not contain any Korean characters (pure sentinel)', () => {
@@ -235,9 +227,7 @@ describe('getPaymentAnnualPlanCta — voice-config injection (Sub-AC 3d)', () =>
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
-    expect(getPaymentAnnualPlanCta()).toBe(
-      VOICE_CONFIG.slots.payment_annual_plan_cta,
-    );
+    expect(getPaymentAnnualPlanCta()).toBe(VOICE_CONFIG.slots.payment_annual_plan_cta);
   });
 
   it('production output is a non-empty Korean string', () => {
@@ -258,12 +248,8 @@ describe('getPaymentMonthlyPlanCta — voice-config injection (Sub-AC 3d)', () =
   });
 
   it('substitutes {{monthly_price}} with the monthly price integer', () => {
-    expect(getPaymentMonthlyPlanCta(12, STUB_CONFIG)).toBe(
-      'STUB_MONTHLY_CTA:12:END',
-    );
-    expect(getPaymentMonthlyPlanCta(15, STUB_CONFIG)).toBe(
-      'STUB_MONTHLY_CTA:15:END',
-    );
+    expect(getPaymentMonthlyPlanCta(12, STUB_CONFIG)).toBe('STUB_MONTHLY_CTA:12:END');
+    expect(getPaymentMonthlyPlanCta(15, STUB_CONFIG)).toBe('STUB_MONTHLY_CTA:15:END');
   });
 
   it('does not leave raw {{monthly_price}} placeholder in output', () => {
@@ -279,9 +265,7 @@ describe('getPaymentMonthlyPlanCta — voice-config injection (Sub-AC 3d)', () =
   });
 
   it('stub result does not contain any Korean characters (pure sentinel)', () => {
-    expect(/[가-힣]/.test(getPaymentMonthlyPlanCta(12, STUB_CONFIG))).toBe(
-      false,
-    );
+    expect(/[가-힣]/.test(getPaymentMonthlyPlanCta(12, STUB_CONFIG))).toBe(false);
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
@@ -321,9 +305,7 @@ describe('getPaymentUpsellPrompt — voice-config injection (Sub-AC 3d)', () => 
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
-    expect(getPaymentUpsellPrompt()).toBe(
-      VOICE_CONFIG.slots.payment_upsell_prompt,
-    );
+    expect(getPaymentUpsellPrompt()).toBe(VOICE_CONFIG.slots.payment_upsell_prompt);
   });
 
   it('production output is a non-empty Korean string', () => {
@@ -466,76 +448,63 @@ describe('no hardcoded legacy tone strings in any payment funnel output', () => 
 // (core Sub-AC 3d assertion: no hardcoded string bypass)
 // ---------------------------------------------------------------------------
 
-describe(
-  'all payment-funnel strings reflect the stubbed voice config (Sub-AC 3d)',
-  () => {
-    it('getPaymentStepHeadline returns exactly the stub slot value', () => {
-      expect(getPaymentStepHeadline(STUB_CONFIG)).toBe(
-        STUB_PAYMENT_STEP_HEADLINE,
-      );
-      expect(getPaymentStepHeadline(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_step_headline,
-      );
-    });
-
-    it(
-      'getPaymentStepSubhead returns the stub template sentinel with prices substituted',
-      () => {
-        const result = getPaymentStepSubhead(12, 59, STUB_CONFIG);
-        expect(result).toBe('STUB_SUBHEAD:12:59:END');
-        expect(result).not.toContain('{{monthly_price}}');
-        expect(result).not.toContain('{{annual_price}}');
-      },
+describe('all payment-funnel strings reflect the stubbed voice config (Sub-AC 3d)', () => {
+  it('getPaymentStepHeadline returns exactly the stub slot value', () => {
+    expect(getPaymentStepHeadline(STUB_CONFIG)).toBe(STUB_PAYMENT_STEP_HEADLINE);
+    expect(getPaymentStepHeadline(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_step_headline,
     );
+  });
 
-    it('getPaymentStepBody returns exactly the stub slot value', () => {
-      expect(getPaymentStepBody(STUB_CONFIG)).toBe(STUB_PAYMENT_STEP_BODY);
-      expect(getPaymentStepBody(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_step_body,
-      );
-    });
+  it('getPaymentStepSubhead returns the stub template sentinel with prices substituted', () => {
+    const result = getPaymentStepSubhead(12, 59, STUB_CONFIG);
+    expect(result).toBe('STUB_SUBHEAD:12:59:END');
+    expect(result).not.toContain('{{monthly_price}}');
+    expect(result).not.toContain('{{annual_price}}');
+  });
 
-    it('getPaymentAnnualPlanCta returns exactly the stub slot value', () => {
-      expect(getPaymentAnnualPlanCta(STUB_CONFIG)).toBe(STUB_PAYMENT_ANNUAL_CTA);
-      expect(getPaymentAnnualPlanCta(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_annual_plan_cta,
-      );
-    });
-
-    it(
-      'getPaymentMonthlyPlanCta returns the stub template sentinel with price substituted',
-      () => {
-        const result = getPaymentMonthlyPlanCta(12, STUB_CONFIG);
-        expect(result).toBe('STUB_MONTHLY_CTA:12:END');
-        expect(result).not.toContain('{{monthly_price}}');
-      },
+  it('getPaymentStepBody returns exactly the stub slot value', () => {
+    expect(getPaymentStepBody(STUB_CONFIG)).toBe(STUB_PAYMENT_STEP_BODY);
+    expect(getPaymentStepBody(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_step_body,
     );
+  });
 
-    it('getPaymentUpsellPrompt returns exactly the stub slot value', () => {
-      expect(getPaymentUpsellPrompt(STUB_CONFIG)).toBe(
-        STUB_PAYMENT_UPSELL_PROMPT,
-      );
-      expect(getPaymentUpsellPrompt(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_upsell_prompt,
-      );
-    });
+  it('getPaymentAnnualPlanCta returns exactly the stub slot value', () => {
+    expect(getPaymentAnnualPlanCta(STUB_CONFIG)).toBe(STUB_PAYMENT_ANNUAL_CTA);
+    expect(getPaymentAnnualPlanCta(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_annual_plan_cta,
+    );
+  });
 
-    it('getPaymentConfirmedHeadline returns exactly the stub slot value', () => {
-      expect(getPaymentConfirmedHeadline(STUB_CONFIG)).toBe(
-        STUB_PAYMENT_CONFIRMED_HEADLINE,
-      );
-      expect(getPaymentConfirmedHeadline(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_confirmed_headline,
-      );
-    });
+  it('getPaymentMonthlyPlanCta returns the stub template sentinel with price substituted', () => {
+    const result = getPaymentMonthlyPlanCta(12, STUB_CONFIG);
+    expect(result).toBe('STUB_MONTHLY_CTA:12:END');
+    expect(result).not.toContain('{{monthly_price}}');
+  });
 
-    it('getPaymentConfirmedSubhead returns exactly the stub slot value', () => {
-      expect(getPaymentConfirmedSubhead(STUB_CONFIG)).toBe(
-        STUB_PAYMENT_CONFIRMED_SUBHEAD,
-      );
-      expect(getPaymentConfirmedSubhead(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.payment_confirmed_subhead,
-      );
-    });
-  },
-);
+  it('getPaymentUpsellPrompt returns exactly the stub slot value', () => {
+    expect(getPaymentUpsellPrompt(STUB_CONFIG)).toBe(STUB_PAYMENT_UPSELL_PROMPT);
+    expect(getPaymentUpsellPrompt(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_upsell_prompt,
+    );
+  });
+
+  it('getPaymentConfirmedHeadline returns exactly the stub slot value', () => {
+    expect(getPaymentConfirmedHeadline(STUB_CONFIG)).toBe(
+      STUB_PAYMENT_CONFIRMED_HEADLINE,
+    );
+    expect(getPaymentConfirmedHeadline(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_confirmed_headline,
+    );
+  });
+
+  it('getPaymentConfirmedSubhead returns exactly the stub slot value', () => {
+    expect(getPaymentConfirmedSubhead(STUB_CONFIG)).toBe(
+      STUB_PAYMENT_CONFIRMED_SUBHEAD,
+    );
+    expect(getPaymentConfirmedSubhead(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.payment_confirmed_subhead,
+    );
+  });
+});

@@ -27,7 +27,7 @@ import tempfile
 import zlib
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -59,6 +59,7 @@ _WINTER_FEATURES = SkinToneFeature(
 )
 
 _VALID_SLUGS = frozenset({"spring", "summer", "autumn", "winter"})
+
 
 # Minimal valid PNG bytes (4×4 warm skin, no Pillow needed for unit tests
 # because we inject stub _extract_fn; bytes are passed through only).
@@ -120,9 +121,10 @@ def test_pipeline_calls_extract_then_classify() -> None:
         _classify_fn=ordered_classify,
     )
 
-    assert call_log == ["extract", "classify"], (
-        f"Expected extract→classify order, got {call_log}"
-    )
+    assert call_log == [
+        "extract",
+        "classify",
+    ], f"Expected extract→classify order, got {call_log}"
     assert result == "spring"
 
 
@@ -203,6 +205,7 @@ def test_face_not_detected_error_propagates() -> None:
 
     AC 검증: 에러(얼굴 미검출) 처리 검증.
     """
+
     def face_not_found_extract(b: bytes) -> SkinToneFeature:
         raise FaceNotDetectedError("no face detected in selfie")
 
@@ -242,6 +245,7 @@ def test_face_not_detected_error_is_value_error_subclass() -> None:
 
     AC 검증: 에러 분류가 Phase 4 HTTP 422 매핑에 적합한지 확인.
     """
+
     def face_not_found_extract(b: bytes) -> SkinToneFeature:
         raise FaceNotDetectedError("no face detected in selfie")
 
@@ -445,6 +449,7 @@ def test_nonexistent_path_extract_fn_not_called() -> None:
 @pytest.mark.unit
 def test_extract_fn_value_error_propagates() -> None:
     """_extract_fn의 ValueError(중립 영역 등)가 그대로 전파된다."""
+
     def raising_extract(b: bytes) -> SkinToneFeature:
         raise ValueError("skin pixels not found")
 
@@ -459,6 +464,7 @@ def test_extract_fn_value_error_propagates() -> None:
 @pytest.mark.unit
 def test_classify_fn_value_error_propagates() -> None:
     """_classify_fn의 ValueError(중립 영역 미해소)가 그대로 전파된다."""
+
     def raising_classify(f: SkinToneFeature) -> str:
         raise ValueError("undertone is ambiguous; retake or blend additional samples.")
 
@@ -473,6 +479,7 @@ def test_classify_fn_value_error_propagates() -> None:
 @pytest.mark.unit
 def test_extract_fn_runtime_error_propagates() -> None:
     """_extract_fn의 RuntimeError(mediapipe 미설치 등)가 그대로 전파된다."""
+
     def raising_extract(b: bytes) -> SkinToneFeature:
         raise RuntimeError("mediapipe is not installed")
 
@@ -511,9 +518,9 @@ def test_extract_completes_before_classify_is_called() -> None:
         _classify_fn=ordered_classify,
     )
 
-    assert call_order.index("extract") < call_order.index("classify"), (
-        f"extract must precede classify; got order {call_order}"
-    )
+    assert call_order.index("extract") < call_order.index(
+        "classify"
+    ), f"extract must precede classify; got order {call_order}"
 
 
 @pytest.mark.unit

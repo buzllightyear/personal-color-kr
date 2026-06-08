@@ -60,7 +60,6 @@ from api.voice.repository import (
     get_voice_config,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared sample input helper
 # ---------------------------------------------------------------------------
@@ -93,9 +92,9 @@ def test_delete_voice_config_then_get_returns_none() -> None:
     created: VoiceConfigRecord = repo.create(_make_input())
 
     # Pre-condition: record is retrievable before deletion
-    assert get_voice_config(created.voice_id, repo=repo) is not None, (
-        "Prerequisite: record must be retrievable before deletion."
-    )
+    assert (
+        get_voice_config(created.voice_id, repo=repo) is not None
+    ), "Prerequisite: record must be retrievable before deletion."
 
     delete_voice_config(created.voice_id, repo=repo)
 
@@ -192,15 +191,15 @@ def test_delete_voice_config_removes_only_targeted_record() -> None:
     delete_voice_config(first.voice_id, repo=repo)
 
     # First record must be gone
-    assert get_voice_config(first.voice_id, repo=repo) is None, (
-        f"First record must be unretrievable after deletion."
-    )
+    assert (
+        get_voice_config(first.voice_id, repo=repo) is None
+    ), "First record must be unretrievable after deletion."
 
     # Second record must still be intact
     remaining = get_voice_config(second.voice_id, repo=repo)
-    assert remaining is not None, (
-        f"Second record must still be retrievable after first was deleted."
-    )
+    assert (
+        remaining is not None
+    ), "Second record must still be retrievable after first was deleted."
     assert remaining == second, (
         f"Second record must be unchanged after deleting the first:\n"
         f"  expected: {second!r}\n"
@@ -224,13 +223,11 @@ def test_delete_decrements_repo_length() -> None:
 
     delete_voice_config(first.voice_id, repo=repo)
 
-    assert len(repo) == 1, (
-        f"Expected len(repo)==1 after one delete, got {len(repo)}."
-    )
+    assert len(repo) == 1, f"Expected len(repo)==1 after one delete, got {len(repo)}."
     # The remaining record must be the second one
-    assert repo.find_by_id(second.voice_id) is not None, (
-        "The surviving record must be the second one."
-    )
+    assert (
+        repo.find_by_id(second.voice_id) is not None
+    ), "The surviving record must be the second one."
 
 
 # ---------------------------------------------------------------------------
@@ -247,16 +244,14 @@ def test_double_delete_is_idempotent() -> None:
     first_delete = delete_voice_config(created.voice_id, repo=repo)
     second_delete = delete_voice_config(created.voice_id, repo=repo)
 
-    assert first_delete is True, (
-        f"First delete must return True; got {first_delete!r}."
-    )
-    assert second_delete is False, (
-        f"Second delete (idempotent) must return False; got {second_delete!r}."
-    )
+    assert first_delete is True, f"First delete must return True; got {first_delete!r}."
+    assert (
+        second_delete is False
+    ), f"Second delete (idempotent) must return False; got {second_delete!r}."
     # Record must still be absent after double-delete
-    assert get_voice_config(created.voice_id, repo=repo) is None, (
-        "Record must remain absent after double-delete."
-    )
+    assert (
+        get_voice_config(created.voice_id, repo=repo) is None
+    ), "Record must remain absent after double-delete."
 
 
 # ---------------------------------------------------------------------------
@@ -272,12 +267,12 @@ def test_delete_on_empty_repo_returns_false_without_error() -> None:
 
     result = repo.delete(phantom_id)
 
-    assert result is False, (
-        f"Deleting from an empty repo must return False; got {result!r}."
-    )
-    assert len(repo) == 0, (
-        f"Empty repo must remain at length 0 after failed delete; got {len(repo)}."
-    )
+    assert (
+        result is False
+    ), f"Deleting from an empty repo must return False; got {result!r}."
+    assert (
+        len(repo) == 0
+    ), f"Empty repo must remain at length 0 after failed delete; got {len(repo)}."
 
 
 # ---------------------------------------------------------------------------
@@ -308,18 +303,18 @@ def test_service_layer_create_delete_get_round_trip() -> None:
 
     # Step 2: confirm it is retrievable
     before_delete = get_voice_config(created.voice_id, repo=repo)
-    assert before_delete is not None, (
-        "Record must be retrievable immediately after creation."
-    )
+    assert (
+        before_delete is not None
+    ), "Record must be retrievable immediately after creation."
 
     # Step 3: delete
     was_deleted = delete_voice_config(created.voice_id, repo=repo)
-    assert was_deleted is True, (
-        f"delete_voice_config must return True for a record that was just created."
-    )
-    assert len(repo) == 0, (
-        f"repo must be empty after deleting the only record; len={len(repo)}."
-    )
+    assert (
+        was_deleted is True
+    ), "delete_voice_config must return True for a record that was just created."
+    assert (
+        len(repo) == 0
+    ), f"repo must be empty after deleting the only record; len={len(repo)}."
 
     # Step 4: not-found — the AC assertion
     after_delete = get_voice_config(created.voice_id, repo=repo)

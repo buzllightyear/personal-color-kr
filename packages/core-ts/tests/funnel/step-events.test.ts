@@ -86,7 +86,11 @@ describe('이벤트 이름 상수 계약', () => {
 describe('trackStepEnter — eventName', () => {
   it('publishEvent에 eventName="funnel_step_enter"를 전달한다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'welcome_hook' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'welcome_hook' },
+      { now: () => FIXED_NOW },
+    );
 
     expect(adapter.received).toHaveLength(1);
     expect(adapter.received[0]?.eventName).toBe(FUNNEL_STEP_ENTER_EVENT);
@@ -101,7 +105,11 @@ describe('trackStepEnter — eventName', () => {
 describe('trackStepEnter — stepId', () => {
   it('입력 stepId가 페이로드의 stepId 필드로 전달된다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'value_props' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'value_props' },
+      { now: () => FIXED_NOW },
+    );
 
     expect(adapter.received[0]?.stepId).toBe('value_props');
   });
@@ -140,15 +148,23 @@ describe('trackStepEnter — previousStep', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['previousStep']).toBe('welcome_hook');
   });
 
   it('previousStep이 없으면 properties에 previousStep 키가 없다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'welcome_hook' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'welcome_hook' },
+      { now: () => FIXED_NOW },
+    );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['previousStep']).toBeUndefined();
   });
 
@@ -164,7 +180,9 @@ describe('trackStepEnter — previousStep', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['previousStep']).toBe('referral_gate');
   });
 });
@@ -187,15 +205,23 @@ describe('trackStepEnter — durationMs', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBe(3500);
   });
 
   it('durationMs가 없으면 properties에 durationMs 키가 없다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'welcome_hook' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'welcome_hook' },
+      { now: () => FIXED_NOW },
+    );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBeUndefined();
   });
 
@@ -203,11 +229,18 @@ describe('trackStepEnter — durationMs', () => {
     const adapter = makeRecordingAdapter();
     trackStepEnter(
       adapter,
-      { userId: USER_ID, stepId: 'value_props', previousStep: 'welcome_hook', durationMs: 0 },
+      {
+        userId: USER_ID,
+        stepId: 'value_props',
+        previousStep: 'welcome_hook',
+        durationMs: 0,
+      },
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBe(0);
   });
 });
@@ -248,7 +281,11 @@ describe('trackStepEnter — 완전한 페이로드', () => {
 
   it('어댑터에 이벤트가 정확히 1회 전달된다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'welcome_hook' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'welcome_hook' },
+      { now: () => FIXED_NOW },
+    );
     expect(adapter.received).toHaveLength(1);
   });
 });
@@ -303,7 +340,11 @@ describe('trackStepEnter — 불변성', () => {
 
   it('어댑터에 전달된 페이로드도 freeze되어 있다', () => {
     const adapter = makeRecordingAdapter();
-    trackStepEnter(adapter, { userId: USER_ID, stepId: 'welcome_hook' }, { now: () => FIXED_NOW });
+    trackStepEnter(
+      adapter,
+      { userId: USER_ID, stepId: 'welcome_hook' },
+      { now: () => FIXED_NOW },
+    );
     expect(Object.isFrozen(adapter.received[0])).toBe(true);
   });
 });
@@ -366,7 +407,9 @@ describe('trackStepAbandon — durationMs (필수 필드)', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBe(8500);
   });
 
@@ -378,7 +421,9 @@ describe('trackStepAbandon — durationMs (필수 필드)', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBe(0);
   });
 
@@ -391,7 +436,9 @@ describe('trackStepAbandon — durationMs (필수 필드)', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['durationMs']).toBe(ONE_HOUR_MS);
   });
 
@@ -403,7 +450,9 @@ describe('trackStepAbandon — durationMs (필수 필드)', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props).toBeDefined();
     expect(Object.prototype.hasOwnProperty.call(props, 'durationMs')).toBe(true);
   });
@@ -427,7 +476,9 @@ describe('trackStepAbandon — previousStep', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['previousStep']).toBe('fake_scan_animation');
   });
 
@@ -439,7 +490,9 @@ describe('trackStepAbandon — previousStep', () => {
       { now: () => FIXED_NOW },
     );
 
-    const props = adapter.received[0]?.properties as Record<string, unknown> | undefined;
+    const props = adapter.received[0]?.properties as
+      | Record<string, unknown>
+      | undefined;
     expect(props?.['previousStep']).toBeUndefined();
   });
 });

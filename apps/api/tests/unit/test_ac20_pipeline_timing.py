@@ -21,11 +21,8 @@ from api.generation.pipeline_timing import (
     STAGE_RAW_GENERATION,
     STAGE_REJECT_FILTER,
     STAGE_USER_PICK_PRESENTATION,
-    PipelineTiming,
-    StageTimingEntry,
     create_pipeline_timing,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -154,12 +151,18 @@ def test_total_elapsed_partial_stages() -> None:
 def test_total_below_30s_threshold() -> None:
     """A full 4-stage run with realistic durations stays below 30s threshold."""
     # Representative durations (raw=10s, enhancer=5s, filter=1s, pick=0.1s)
-    times = iter([
-        0.0, 10.0,   # raw_generation: 10s
-        10.0, 15.0,  # enhancer: 5s
-        15.0, 16.0,  # reject_filter: 1s
-        16.0, 16.1,  # user_pick_presentation: 0.1s
-    ])
+    times = iter(
+        [
+            0.0,
+            10.0,  # raw_generation: 10s
+            10.0,
+            15.0,  # enhancer: 5s
+            15.0,
+            16.0,  # reject_filter: 1s
+            16.0,
+            16.1,  # user_pick_presentation: 0.1s
+        ]
+    )
 
     def seq_clock() -> float:
         return next(times)
@@ -176,9 +179,9 @@ def test_total_below_30s_threshold() -> None:
 
     total = timing.total_elapsed_seconds()
     P95_BUDGET_SECONDS = 30.0
-    assert total < P95_BUDGET_SECONDS, (
-        f"Pipeline total {total:.2f}s exceeds p95 budget {P95_BUDGET_SECONDS}s"
-    )
+    assert (
+        total < P95_BUDGET_SECONDS
+    ), f"Pipeline total {total:.2f}s exceeds p95 budget {P95_BUDGET_SECONDS}s"
 
 
 @pytest.mark.unit

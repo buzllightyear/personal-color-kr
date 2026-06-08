@@ -32,7 +32,6 @@ The helper also accepts PNG format for testing multi-format input acceptance.
 from __future__ import annotations
 
 import io
-from typing import Any
 
 import pytest
 from PIL import Image
@@ -100,9 +99,9 @@ def test_apply_enhancer_returns_list_same_length_as_input() -> None:
     raw = [_make_jpeg(), _make_jpeg(color=(100, 80, 60))]
     results = apply_enhancer(raw)
 
-    assert len(results) == len(raw), (
-        f"Expected {len(raw)} enhanced images, got {len(results)}"
-    )
+    assert len(results) == len(
+        raw
+    ), f"Expected {len(raw)} enhanced images, got {len(results)}"
 
 
 @pytest.mark.unit
@@ -112,9 +111,9 @@ def test_apply_enhancer_returns_enhanced_image_instances() -> None:
     results = apply_enhancer(raw)
 
     for i, result in enumerate(results):
-        assert isinstance(result, EnhancedImage), (
-            f"results[{i}] should be EnhancedImage, got {type(result).__name__}"
-        )
+        assert isinstance(
+            result, EnhancedImage
+        ), f"results[{i}] should be EnhancedImage, got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -124,9 +123,9 @@ def test_apply_enhancer_output_bytes_are_non_empty() -> None:
     results = apply_enhancer(raw)
 
     for i, result in enumerate(results):
-        assert result.image_bytes, (
-            f"results[{i}].image_bytes must not be empty after enhancement"
-        )
+        assert (
+            result.image_bytes
+        ), f"results[{i}].image_bytes must not be empty after enhancement"
 
 
 @pytest.mark.unit
@@ -143,9 +142,9 @@ def test_apply_enhancer_output_bytes_differ_from_raw_input() -> None:
     # The output is re-encoded JPEG with enhancement applied; it should
     # differ from the input (different enhancement params and JPEG encoding).
     # We assert on byte-inequality — any enhancement produces different bytes.
-    assert results[0].image_bytes != raw_jpeg, (
-        "apply_enhancer must modify the image bytes; raw passthrough detected"
-    )
+    assert (
+        results[0].image_bytes != raw_jpeg
+    ), "apply_enhancer must modify the image bytes; raw passthrough detected"
 
 
 @pytest.mark.unit

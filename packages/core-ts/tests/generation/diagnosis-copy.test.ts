@@ -137,9 +137,7 @@ describe('getDiagnosisWedgeSubhead — voice-config injection (Sub-AC 3c)', () =
   });
 
   it('defaults to VOICE_CONFIG when no config arg is supplied', () => {
-    expect(getDiagnosisWedgeSubhead()).toBe(
-      VOICE_CONFIG.slots.diagnosis_wedge_subhead,
-    );
+    expect(getDiagnosisWedgeSubhead()).toBe(VOICE_CONFIG.slots.diagnosis_wedge_subhead);
   });
 
   it('production output is a non-empty Korean string', () => {
@@ -266,9 +264,7 @@ describe('getResultRevealCta — voice-config injection (Sub-AC 3c)', () => {
   });
 
   it('stub result differs from production config output (no hardcoded string)', () => {
-    expect(getResultRevealCta(STUB_CONFIG)).not.toBe(
-      getResultRevealCta(VOICE_CONFIG),
-    );
+    expect(getResultRevealCta(STUB_CONFIG)).not.toBe(getResultRevealCta(VOICE_CONFIG));
   });
 
   it('stub result does not contain any Korean characters (pure sentinel)', () => {
@@ -347,52 +343,46 @@ describe('no hardcoded legacy tone strings in any diagnosis/onboarding output', 
 // the stubbed voice config (no hardcoded string bypass)
 // ---------------------------------------------------------------------------
 
-describe(
-  'all diagnosis/onboarding strings reflect the stubbed voice config (Sub-AC 3c)',
-  () => {
-    it('getDiagnosisWedgeHeadline returns exactly the stub slot value', () => {
-      expect(getDiagnosisWedgeHeadline(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_HEADLINE);
-      expect(getDiagnosisWedgeHeadline(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.diagnosis_wedge_headline,
-      );
-    });
-
-    it('getDiagnosisWedgeSubhead returns exactly the stub slot value', () => {
-      expect(getDiagnosisWedgeSubhead(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_SUBHEAD);
-      expect(getDiagnosisWedgeSubhead(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.diagnosis_wedge_subhead,
-      );
-    });
-
-    it('getDiagnosisWedgeCta returns exactly the stub slot value', () => {
-      expect(getDiagnosisWedgeCta(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_CTA);
-      expect(getDiagnosisWedgeCta(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.diagnosis_wedge_cta,
-      );
-    });
-
-    it(
-      'getResultRevealHeadline returns the stub template sentinel with {{season}} substituted',
-      () => {
-        const result = getResultRevealHeadline('가을', STUB_CONFIG);
-        expect(result).toBe('STUB_RESULT_HEADLINE:가을:END');
-        // Must not contain the raw placeholder token
-        expect(result).not.toContain('{{season}}');
-      },
+describe('all diagnosis/onboarding strings reflect the stubbed voice config (Sub-AC 3c)', () => {
+  it('getDiagnosisWedgeHeadline returns exactly the stub slot value', () => {
+    expect(getDiagnosisWedgeHeadline(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_HEADLINE);
+    expect(getDiagnosisWedgeHeadline(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.diagnosis_wedge_headline,
     );
+  });
 
-    it('getResultRevealSubhead returns exactly the stub slot value', () => {
-      expect(getResultRevealSubhead(STUB_CONFIG)).toBe(STUB_RESULT_REVEAL_SUBHEAD);
-      expect(getResultRevealSubhead(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.result_reveal_subhead,
-      );
-    });
+  it('getDiagnosisWedgeSubhead returns exactly the stub slot value', () => {
+    expect(getDiagnosisWedgeSubhead(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_SUBHEAD);
+    expect(getDiagnosisWedgeSubhead(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.diagnosis_wedge_subhead,
+    );
+  });
 
-    it('getResultRevealCta returns exactly the stub slot value', () => {
-      expect(getResultRevealCta(STUB_CONFIG)).toBe(STUB_RESULT_REVEAL_CTA);
-      expect(getResultRevealCta(STUB_CONFIG)).not.toBe(
-        VOICE_CONFIG.slots.result_reveal_cta,
-      );
-    });
-  },
-);
+  it('getDiagnosisWedgeCta returns exactly the stub slot value', () => {
+    expect(getDiagnosisWedgeCta(STUB_CONFIG)).toBe(STUB_DIAGNOSIS_WEDGE_CTA);
+    expect(getDiagnosisWedgeCta(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.diagnosis_wedge_cta,
+    );
+  });
+
+  it('getResultRevealHeadline returns the stub template sentinel with {{season}} substituted', () => {
+    const result = getResultRevealHeadline('가을', STUB_CONFIG);
+    expect(result).toBe('STUB_RESULT_HEADLINE:가을:END');
+    // Must not contain the raw placeholder token
+    expect(result).not.toContain('{{season}}');
+  });
+
+  it('getResultRevealSubhead returns exactly the stub slot value', () => {
+    expect(getResultRevealSubhead(STUB_CONFIG)).toBe(STUB_RESULT_REVEAL_SUBHEAD);
+    expect(getResultRevealSubhead(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.result_reveal_subhead,
+    );
+  });
+
+  it('getResultRevealCta returns exactly the stub slot value', () => {
+    expect(getResultRevealCta(STUB_CONFIG)).toBe(STUB_RESULT_REVEAL_CTA);
+    expect(getResultRevealCta(STUB_CONFIG)).not.toBe(
+      VOICE_CONFIG.slots.result_reveal_cta,
+    );
+  });
+});

@@ -19,10 +19,8 @@ from api.trend.model import (
     PreemptOrFollowTag,
     TrendCallLogCreateInput,
     TrendCreateInput,
-    TrendRecord,
     TrendStatus,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -127,7 +125,9 @@ def test_transition_predicted_to_active() -> None:
     trend = repo.create(_make_trend_input())
     assert trend.status == TrendStatus.PREDICTED
 
-    updated = repo.transition_status(trend.trend_id, TrendStatus.ACTIVE, "operator_singleton")
+    updated = repo.transition_status(
+        trend.trend_id, TrendStatus.ACTIVE, "operator_singleton"
+    )
 
     assert updated is not None
     assert updated.status == TrendStatus.ACTIVE
@@ -142,7 +142,9 @@ def test_transition_active_to_expired() -> None:
     repo = InMemoryTrendRepository()
     trend = repo.create(_make_trend_input())
     repo.transition_status(trend.trend_id, TrendStatus.ACTIVE, "operator_singleton")
-    updated = repo.transition_status(trend.trend_id, TrendStatus.EXPIRED, "operator_singleton")
+    updated = repo.transition_status(
+        trend.trend_id, TrendStatus.EXPIRED, "operator_singleton"
+    )
 
     assert updated.status == TrendStatus.EXPIRED
     assert len(updated.status_transitions) == 2
@@ -155,7 +157,9 @@ def test_invalid_transition_raises_value_error() -> None:
     trend = repo.create(_make_trend_input())
 
     with pytest.raises(ValueError, match="Invalid trend status transition"):
-        repo.transition_status(trend.trend_id, TrendStatus.EXPIRED, "operator_singleton")
+        repo.transition_status(
+            trend.trend_id, TrendStatus.EXPIRED, "operator_singleton"
+        )
 
 
 # ---------------------------------------------------------------------------

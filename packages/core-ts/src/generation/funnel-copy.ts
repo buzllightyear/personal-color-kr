@@ -81,8 +81,6 @@ export function getSelectionPrompt(config: VoiceConfig = VOICE_CONFIG): string {
  *
  * @param config Optional voice config to use; defaults to `VOICE_CONFIG`.
  */
-export function getEnhancerStatusMessage(
-  config: VoiceConfig = VOICE_CONFIG,
-): string {
+export function getEnhancerStatusMessage(config: VoiceConfig = VOICE_CONFIG): string {
   return config.slots.generation_enhancing_label;
 }

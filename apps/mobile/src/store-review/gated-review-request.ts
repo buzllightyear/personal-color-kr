@@ -97,7 +97,9 @@ export interface ReviewRequestSkipRecord {
 /**
  * 진행 경로 결과.  `skipped: false`이며 네이티브 요청이 완료됨.
  */
-export interface ReviewRequestProceedRecord<T extends ReviewableOutcome = ReviewableOutcome> {
+export interface ReviewRequestProceedRecord<
+  T extends ReviewableOutcome = ReviewableOutcome,
+> {
   /** 스킵 여부 판별자. 항상 false. */
   readonly skipped: false;
   /** requestReview() 반환 결과. */
@@ -127,7 +129,9 @@ export type GatedReviewRequestResult<T extends ReviewableOutcome = ReviewableOut
  * const result = await gatedReviewRequest(input, { requestReview: requestStoreReview });
  * ```
  */
-export interface GatedReviewRequestOptions<T extends ReviewableOutcome = ReviewableOutcome> {
+export interface GatedReviewRequestOptions<
+  T extends ReviewableOutcome = ReviewableOutcome,
+> {
   /**
    * 실제 네이티브 리뷰 요청 함수 (필수).
    * 프로덕션: `requestStoreReview` (expo-store-review 래퍼)
@@ -164,7 +168,9 @@ function defaultNow(): string {
  * @returns 동결된(frozen) {@link GatedReviewRequestResult}
  * @throws {ReviewRequestGateError} 입력이 유효하지 않을 때 (shouldRequestReview에서 throw)
  */
-export async function gatedReviewRequest<T extends ReviewableOutcome = ReviewableOutcome>(
+export async function gatedReviewRequest<
+  T extends ReviewableOutcome = ReviewableOutcome,
+>(
   input: ShouldRequestReviewInput,
   options: GatedReviewRequestOptions<T>,
 ): Promise<GatedReviewRequestResult<T>> {

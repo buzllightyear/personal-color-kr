@@ -37,7 +37,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { gatedReviewRequest } from '../src/store-review/gated-review-request';
-import type { GatedReviewRequestResult, ReviewRequestSkipRecord } from '../src/store-review/gated-review-request';
+import type {
+  GatedReviewRequestResult,
+  ReviewRequestSkipRecord,
+} from '../src/store-review/gated-review-request';
 
 // ---------------------------------------------------------------------------
 // 헬퍼
@@ -62,7 +65,11 @@ function makeValidInput(overrides: Record<string, unknown> = {}): {
 }
 
 /** available=true인 성공 outcome mock. */
-function makeAvailableOutcome(): Promise<{ attempted: boolean; available: boolean; platform: string }> {
+function makeAvailableOutcome(): Promise<{
+  attempted: boolean;
+  available: boolean;
+  platform: string;
+}> {
   return Promise.resolve({
     attempted: true,
     available: true,
@@ -71,7 +78,11 @@ function makeAvailableOutcome(): Promise<{ attempted: boolean; available: boolea
 }
 
 /** available=false인 rate-limited outcome mock (Apple 연간 횟수 초과). */
-function makeUnavailableOutcome(): Promise<{ attempted: boolean; available: boolean; platform: string }> {
+function makeUnavailableOutcome(): Promise<{
+  attempted: boolean;
+  available: boolean;
+  platform: string;
+}> {
   return Promise.resolve({
     attempted: false,
     available: false,
@@ -101,10 +112,10 @@ describe('gatedReviewRequest — 스킵 경로 1: 이미 요청됨 (already_requ
   it('2. already_requested 스킵 시 requestReview()가 호출되지 않음 (네이티브 호출 없음)', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    await gatedReviewRequest(
-      makeValidInput({ hasPreviouslyRequested: true }),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    await gatedReviewRequest(makeValidInput({ hasPreviouslyRequested: true }), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(requestReview).not.toHaveBeenCalled();
   });
@@ -172,10 +183,10 @@ describe('gatedReviewRequest — 스킵 경로 2: 조건 미충족 (conditions_n
   it('7. conditions_not_met 스킵 시 requestReview()가 호출되지 않음 (네이티브 호출 없음)', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    await gatedReviewRequest(
-      makeValidInput({ paymentCompleted: false }),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    await gatedReviewRequest(makeValidInput({ paymentCompleted: false }), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(requestReview).not.toHaveBeenCalled();
   });
@@ -189,10 +200,10 @@ describe('gatedReviewRequest — 스킵 경로 3: Apple 연간 횟수 초과 (ap
   it('8. outcome.available=false → skipped=true, reason=apple_annual_limit', async () => {
     const requestReview = vi.fn(() => makeUnavailableOutcome());
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(result.skipped).toBe(true);
     if (result.skipped) {
@@ -205,10 +216,7 @@ describe('gatedReviewRequest — 스킵 경로 3: Apple 연간 횟수 초과 (ap
     // requestReview()가 한 번 호출되는 것이 올바른 동작임.
     const requestReview = vi.fn(() => makeUnavailableOutcome());
 
-    await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    await gatedReviewRequest(makeValidInput(), { requestReview, now: () => FIXED_NOW });
 
     expect(requestReview).toHaveBeenCalledTimes(1);
   });
@@ -218,10 +226,10 @@ describe('gatedReviewRequest — 스킵 경로 3: Apple 연간 횟수 초과 (ap
     // decision.shouldRequest === true임을 확인 (조건 자체는 충족).
     const requestReview = vi.fn(() => makeUnavailableOutcome());
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     // 순수 함수 레벨에서는 요청 조건 충족 (shouldRequest=true)
     expect(result.decision.shouldRequest).toBe(true);
@@ -236,10 +244,10 @@ describe('gatedReviewRequest — 진행 경로 (proceed path)', () => {
   it('11. 모든 조건 충족 + available=true → skipped=false', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(result.skipped).toBe(false);
   });
@@ -247,10 +255,7 @@ describe('gatedReviewRequest — 진행 경로 (proceed path)', () => {
   it('12. 진행 경로에서 requestReview()가 정확히 1회 호출됨', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    await gatedReviewRequest(makeValidInput(), { requestReview, now: () => FIXED_NOW });
 
     expect(requestReview).toHaveBeenCalledTimes(1);
   });
@@ -258,10 +263,10 @@ describe('gatedReviewRequest — 진행 경로 (proceed path)', () => {
   it('13. 진행 결과에 outcome과 decision이 포함됨', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(result.skipped).toBe(false);
     if (!result.skipped) {
@@ -293,10 +298,10 @@ describe('gatedReviewRequest — 결과 불변성 (frozen output)', () => {
   it('15. 진행 결과는 Object.freeze되어 있다', async () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
 
     expect(Object.isFrozen(result)).toBe(true);
   });
@@ -326,10 +331,10 @@ describe('gatedReviewRequest — skippedAt 타임스탬프', () => {
     const requestReview = vi.fn(() => makeAvailableOutcome());
     const nowSpy = vi.fn(() => FIXED_NOW);
 
-    const result = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: nowSpy },
-    );
+    const result = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: nowSpy,
+    });
 
     // 진행 경로에서 now()가 호출되지 않아야 함
     expect(nowSpy).not.toHaveBeenCalled();
@@ -415,7 +420,7 @@ describe('gatedReviewRequest — 통합 시나리오: 순서대로 3 스킵 + 1 
     requestReview = vi
       .fn<[], ReturnType<typeof makeAvailableOutcome>>()
       .mockImplementationOnce(() => makeUnavailableOutcome()) // 3번째: apple_annual_limit
-      .mockImplementationOnce(() => makeAvailableOutcome());  // 4번째: proceed
+      .mockImplementationOnce(() => makeAvailableOutcome()); // 4번째: proceed
   });
 
   it('이미 요청됨 → 조건 미충족 → Apple 연간 초과 → 진행 순서로 올바른 결과 반환', async () => {
@@ -428,10 +433,10 @@ describe('gatedReviewRequest — 통합 시나리오: 순서대로 3 스킵 + 1 
     if (r1.skipped) expect(r1.reason).toBe('already_requested');
 
     // 2. 조건 미충족 (결제 미완료)
-    const r2 = await gatedReviewRequest(
-      makeValidInput({ paymentCompleted: false }),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const r2 = await gatedReviewRequest(makeValidInput({ paymentCompleted: false }), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
     expect(r2.skipped).toBe(true);
     if (r2.skipped) expect(r2.reason).toBe('conditions_not_met');
 
@@ -439,19 +444,19 @@ describe('gatedReviewRequest — 통합 시나리오: 순서대로 3 스킵 + 1 
     expect(requestReview).toHaveBeenCalledTimes(0);
 
     // 3. Apple 연간 횟수 초과
-    const r3 = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const r3 = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
     expect(r3.skipped).toBe(true);
     if (r3.skipped) expect(r3.reason).toBe('apple_annual_limit');
     expect(requestReview).toHaveBeenCalledTimes(1);
 
     // 4. 진행
-    const r4 = await gatedReviewRequest(
-      makeValidInput(),
-      { requestReview, now: () => FIXED_NOW },
-    );
+    const r4 = await gatedReviewRequest(makeValidInput(), {
+      requestReview,
+      now: () => FIXED_NOW,
+    });
     expect(r4.skipped).toBe(false);
     expect(requestReview).toHaveBeenCalledTimes(2);
   });

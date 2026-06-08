@@ -214,9 +214,7 @@ def _enhance_single(idx: int, image_bytes: bytes) -> EnhancedImage:
         img: Image.Image = Image.open(io.BytesIO(image_bytes))
         img.load()  # force full decode; surfaces truncated / corrupt images early
     except Exception as exc:
-        raise ValueError(
-            f"raw_images[{idx}] could not be decoded by Pillow"
-        ) from exc
+        raise ValueError(f"raw_images[{idx}] could not be decoded by Pillow") from exc
 
     # Normalise to RGB: handles RGBA (strip alpha), palette (P), greyscale (L).
     # All downstream Pillow operations and the JPEG re-encoder require RGB.

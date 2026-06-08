@@ -123,8 +123,7 @@ class VoiceConfig(BaseModel):
         ...,
         min_length=1,
         description=(
-            "First-person personality framing "
-            "(e.g. '독립 큐레이터 1인칭 시점')."
+            "First-person personality framing " "(e.g. '독립 큐레이터 1인칭 시점')."
         ),
     )
     platform: str = Field(
@@ -146,8 +145,7 @@ class VoiceConfig(BaseModel):
         ...,
         min_length=1,
         description=(
-            "Copy-tone description for photo-aesthetic language "
-            "(구도·빛·보정 감각)."
+            "Copy-tone description for photo-aesthetic language " "(구도·빛·보정 감각)."
         ),
     )
     cta_templates: dict[str, str] = Field(

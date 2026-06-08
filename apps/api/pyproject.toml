@@ -131,6 +131,14 @@ module = ["retention.*"]
 ignore_missing_imports = true
 follow_imports = "silent"
 
+# `yaml` (PyYAML) is used by the generation recipe / reject-filter config
+# loaders (moat v0.3.0). PyYAML ships no inline types and we don't vendor
+# `types-PyYAML`, so under mypy --strict the import is untyped. Trust the
+# loader's own validation/annotations rather than adding a stub dep.
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
+
 [tool.ruff]
 # Match the Phase 0.x / Phase 4.x `target-version = "py312"` so ruff lints
 # against the same Python the CI runner uses (see `.github/workflows/ci.yml`).

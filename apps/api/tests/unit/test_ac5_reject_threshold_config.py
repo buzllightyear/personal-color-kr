@@ -17,10 +17,10 @@ import pytest
 from api.generation.reject_filter import RejectConfig, RejectThresholds
 from api.generation.reject_filter_config_loader import load_reject_config
 
-
 # ---------------------------------------------------------------------------
 # Helper: write a temp config YAML
 # ---------------------------------------------------------------------------
+
 
 def _write_config(tmp_path: Path, content: str) -> Path:
     p = tmp_path / "reject_filter_defaults.yaml"
@@ -128,7 +128,7 @@ def test_partial_override_falls_back_to_global_for_missing_keys(tmp_path: Path) 
 
     assert config.identity_threshold == 0.60  # global
     assert config.artifact_threshold == 0.60  # global
-    assert config.uncanny_threshold == 0.80   # override
+    assert config.uncanny_threshold == 0.80  # override
 
 
 # ---------------------------------------------------------------------------
@@ -154,7 +154,11 @@ def test_from_override_with_none_uses_all_global_defaults() -> None:
 def test_from_override_with_dict_overrides_all_three() -> None:
     """RejectConfig.from_override with a full override dict."""
     defaults = RejectThresholds(0.6, 0.6, 0.5)
-    overrides = {"identity_threshold": 0.8, "artifact_threshold": 0.7, "uncanny_threshold": 0.6}
+    overrides = {
+        "identity_threshold": 0.8,
+        "artifact_threshold": 0.7,
+        "uncanny_threshold": 0.6,
+    }
     config = RejectConfig.from_override(defaults, overrides)
     assert config.identity_threshold == 0.8
     assert config.artifact_threshold == 0.7
@@ -168,6 +172,7 @@ def test_missing_config_file_falls_back_to_code_defaults(tmp_path: Path) -> None
     config = load_reject_config(recipe_id=None, config_path=nonexistent)
     # Code-level defaults
     from api.generation.reject_filter import DEFAULT_THRESHOLDS
+
     assert config.identity_threshold == DEFAULT_THRESHOLDS.identity_threshold
     assert config.artifact_threshold == DEFAULT_THRESHOLDS.artifact_threshold
     assert config.uncanny_threshold == DEFAULT_THRESHOLDS.uncanny_threshold

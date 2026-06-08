@@ -25,9 +25,8 @@ so operators can tune thresholds per trend without touching code.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Threshold config value object
@@ -185,7 +184,9 @@ class ScoredCandidate:
     """
 
     candidate_index: int
-    enhanced_image_ref: str | None  # None = not yet enhanced; non-None = structural proof
+    enhanced_image_ref: (
+        str | None
+    )  # None = not yet enhanced; non-None = structural proof
     identity_similarity_score: float
     artifact_score: float
     uncanny_score: float

@@ -12,11 +12,9 @@ import pytest
 
 from api.generation.reject_filter import ScoredCandidate
 from api.generation.user_pick import (
-    UserPickResult,
     get_surviving_candidates,
     pick_candidate,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

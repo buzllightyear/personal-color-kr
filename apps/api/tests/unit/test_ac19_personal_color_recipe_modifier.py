@@ -17,7 +17,6 @@ from api.generation.personal_color_modifier import (
     resolve_modifier_from_recipe,
 )
 
-
 # ---------------------------------------------------------------------------
 # Sample recipe modifiers (mirroring recipe YAML structure)
 # ---------------------------------------------------------------------------
@@ -62,9 +61,9 @@ def test_each_category_produces_different_modifier() -> None:
         for cat in ["봄", "여름", "가을", "겨울"]
     }
     # All 4 modifiers must be distinct
-    assert len(set(results.values())) == 4, (
-        f"Expected 4 distinct modifiers, got: {results}"
-    )
+    assert (
+        len(set(results.values())) == 4
+    ), f"Expected 4 distinct modifiers, got: {results}"
 
 
 # ---------------------------------------------------------------------------

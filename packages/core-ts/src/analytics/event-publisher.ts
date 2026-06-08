@@ -134,7 +134,7 @@ function buildPayload(
     payload.properties = Object.freeze({ ...input.properties });
   }
 
-  return Object.freeze(payload) as AnalyticsEventPayload;
+  return Object.freeze(payload);
 }
 
 // ---------------------------------------------------------------------------

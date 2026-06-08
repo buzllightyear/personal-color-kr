@@ -97,12 +97,12 @@ def test_sample_skin_pixels_only_pixels_inside_face_region_returned() -> None:
     face_region = FaceBoundingBox(x=2, y=1, width=4, height=3)
     result = sample_skin_pixels(image, face_region)
 
-    assert all(p == _SPRING_WARM for p in result), (
-        f"Expected all pixels to be {_SPRING_WARM}, got {result!r}"
-    )
-    assert _BLUE_SKY not in result, (
-        f"Background pixel {_BLUE_SKY} must not appear in result"
-    )
+    assert all(
+        p == _SPRING_WARM for p in result
+    ), f"Expected all pixels to be {_SPRING_WARM}, got {result!r}"
+    assert (
+        _BLUE_SKY not in result
+    ), f"Background pixel {_BLUE_SKY} must not appear in result"
 
 
 @pytest.mark.unit
@@ -132,9 +132,9 @@ def test_sample_skin_pixels_non_skin_outside_region_is_excluded() -> None:
         f"Result must contain only skin pixels from inside face_region, "
         f"got {result!r}"
     )
-    assert _DARK_BG not in result, (
-        f"Pixel from outside face_region ({_DARK_BG}) must not appear in result"
-    )
+    assert (
+        _DARK_BG not in result
+    ), f"Pixel from outside face_region ({_DARK_BG}) must not appear in result"
 
 
 @pytest.mark.unit
@@ -150,12 +150,12 @@ def test_sample_skin_pixels_face_region_at_image_bottom_right_edge() -> None:
     face_region = FaceBoundingBox(x=2, y=3, width=3, height=2)
     result = sample_skin_pixels(image, face_region)
 
-    assert all(p == _SPRING_WARM for p in result), (
-        f"Expected only spring_warm from bottom-right corner, got {result!r}"
-    )
-    assert _WHITE not in result, (
-        f"White pixel outside face_region must not appear in result"
-    )
+    assert all(
+        p == _SPRING_WARM for p in result
+    ), f"Expected only spring_warm from bottom-right corner, got {result!r}"
+    assert (
+        _WHITE not in result
+    ), "White pixel outside face_region must not appear in result"
 
 
 @pytest.mark.unit
@@ -171,9 +171,9 @@ def test_sample_skin_pixels_face_region_at_image_top_left_origin() -> None:
     face_region = FaceBoundingBox(x=0, y=0, width=2, height=2)
     result = sample_skin_pixels(image, face_region)
 
-    assert all(p == _SUMMER_COOL for p in result), (
-        f"Expected only summer_cool pixels at origin, got {result!r}"
-    )
+    assert all(
+        p == _SUMMER_COOL for p in result
+    ), f"Expected only summer_cool pixels at origin, got {result!r}"
     assert _BLUE_SKY not in result
 
 
@@ -214,9 +214,9 @@ def test_sample_skin_pixels_sufficient_skin_pixels_meet_minimum() -> None:
     face_region = FaceBoundingBox(x=0, y=0, width=4, height=4)
     result = sample_skin_pixels(image, face_region, min_samples=10)
 
-    assert len(result) >= 10, (
-        f"Expected >= 10 samples (min_samples=10), got {len(result)}"
-    )
+    assert (
+        len(result) >= 10
+    ), f"Expected >= 10 samples (min_samples=10), got {len(result)}"
 
 
 @pytest.mark.unit
@@ -231,12 +231,12 @@ def test_sample_skin_pixels_no_skin_triggers_fallback_to_all_region_pixels() -> 
     result = sample_skin_pixels(image, face_region, min_samples=1)
 
     region_area = face_region.width * face_region.height  # 6
-    assert len(result) == region_area, (
-        f"Fallback must return all {region_area} region pixels, got {len(result)}"
-    )
-    assert all(p == _BLUE_SKY for p in result), (
-        f"All fallback pixels must be blue_sky, got {result!r}"
-    )
+    assert (
+        len(result) == region_area
+    ), f"Fallback must return all {region_area} region pixels, got {len(result)}"
+    assert all(
+        p == _BLUE_SKY for p in result
+    ), f"All fallback pixels must be blue_sky, got {result!r}"
 
 
 @pytest.mark.unit
@@ -253,9 +253,9 @@ def test_sample_skin_pixels_partial_skin_below_minimum_triggers_fallback() -> No
     result = sample_skin_pixels(image, face_region, min_samples=5)
 
     region_area = face_region.width * face_region.height  # 16
-    assert len(result) == region_area, (
-        f"Fallback must return all {region_area} region pixels, got {len(result)}"
-    )
+    assert (
+        len(result) == region_area
+    ), f"Fallback must return all {region_area} region pixels, got {len(result)}"
 
 
 @pytest.mark.unit
@@ -269,9 +269,9 @@ def test_sample_skin_pixels_skin_exactly_at_minimum_satisfies_guarantee() -> Non
     face_region = FaceBoundingBox(x=0, y=0, width=5, height=1)
     result = sample_skin_pixels(image, face_region, min_samples=5)
 
-    assert len(result) == 5, (
-        f"Expected exactly 5 skin pixels (count == min_samples), got {len(result)}"
-    )
+    assert (
+        len(result) == 5
+    ), f"Expected exactly 5 skin pixels (count == min_samples), got {len(result)}"
     assert all(p == _SPRING_WARM for p in result)
 
 
@@ -283,9 +283,9 @@ def test_sample_skin_pixels_zero_min_samples_returns_empty_when_no_skin() -> Non
     result = sample_skin_pixels(image, face_region, min_samples=0)
 
     # 0 skin pixels >= min_samples 0 → skin-only path → empty list.
-    assert result == [], (
-        f"Expected empty list for no-skin image with min_samples=0, got {result!r}"
-    )
+    assert (
+        result == []
+    ), f"Expected empty list for no-skin image with min_samples=0, got {result!r}"
 
 
 @pytest.mark.unit
@@ -321,9 +321,9 @@ def test_sample_skin_pixels_mixed_region_skin_enough_returns_skin_only() -> None
     result = sample_skin_pixels(image, face_region, min_samples=5)
 
     assert len(result) >= 5, f"Expected >= 5 skin samples, got {len(result)}"
-    assert all(p == _SPRING_WARM for p in result), (
-        f"Result must contain only skin pixels, got {result!r}"
-    )
+    assert all(
+        p == _SPRING_WARM for p in result
+    ), f"Result must contain only skin pixels, got {result!r}"
 
 
 @pytest.mark.unit
@@ -337,9 +337,9 @@ def test_sample_skin_pixels_large_region_guarantees_minimum() -> None:
     face_region = FaceBoundingBox(x=0, y=0, width=20, height=20)
     result = sample_skin_pixels(image, face_region, min_samples=10)
 
-    assert len(result) >= 10, (
-        f"Large all-skin region must return >= 10 samples, got {len(result)}"
-    )
+    assert (
+        len(result) >= 10
+    ), f"Large all-skin region must return >= 10 samples, got {len(result)}"
 
 
 # ===========================================================================
@@ -354,9 +354,7 @@ def test_sample_skin_pixels_returns_list() -> None:
     face_region = FaceBoundingBox(x=0, y=0, width=2, height=2)
     result = sample_skin_pixels(image, face_region)
 
-    assert isinstance(result, list), (
-        f"Expected list, got {type(result).__name__}"
-    )
+    assert isinstance(result, list), f"Expected list, got {type(result).__name__}"
 
 
 @pytest.mark.unit
@@ -367,13 +365,13 @@ def test_sample_skin_pixels_elements_are_rgb_tuples() -> None:
     result = sample_skin_pixels(image, face_region)
 
     for idx, pixel in enumerate(result):
-        assert isinstance(pixel, tuple) and len(pixel) == 3, (
-            f"result[{idx}] must be a 3-tuple, got {pixel!r}"
-        )
+        assert (
+            isinstance(pixel, tuple) and len(pixel) == 3
+        ), f"result[{idx}] must be a 3-tuple, got {pixel!r}"
         for ch in pixel:
-            assert isinstance(ch, int) and 0 <= ch <= 255, (
-                f"Channel must be int in 0-255, got {ch!r}"
-            )
+            assert (
+                isinstance(ch, int) and 0 <= ch <= 255
+            ), f"Channel must be int in 0-255, got {ch!r}"
 
 
 @pytest.mark.unit
@@ -401,9 +399,10 @@ def test_sample_skin_pixels_row_major_order_preserved_in_skin_path() -> None:
     result = sample_skin_pixels(image, face_region, min_samples=1)
 
     # autumn_warm and spring_warm are skin ✓; blue_sky is NOT skin.
-    assert result == [_AUTUMN_WARM, _SPRING_WARM], (
-        f"Expected row-major order [autumn_warm, spring_warm], got {result!r}"
-    )
+    assert result == [
+        _AUTUMN_WARM,
+        _SPRING_WARM,
+    ], f"Expected row-major order [autumn_warm, spring_warm], got {result!r}"
 
 
 # ===========================================================================

@@ -198,7 +198,7 @@ def require_enhanced_candidates(
         )
     for item in outputs:
         require_enhanced_output(item)
-    return outputs  # type: ignore[return-value]
+    return outputs
 
 
 def require_enhanced_scored_candidate(candidate: object) -> ScoredCandidate:

@@ -107,20 +107,26 @@ function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
 
 describe('ValuePropositionScreen — headline (Sub-AC 14a-1 헤드라인)', () => {
   it('renders the Korean headline "오늘의 트렌드, 내 얼굴에 맞춘 편집"', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     const headline = findHostByTestId(tree, 'value-proposition-headline');
     expect(headline?.props.children).toBe('오늘의 트렌드, 내 얼굴에 맞춘 편집');
   });
 
   it('renders the Korean subhead from FUNNEL_SCREENS.value_props', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     const subhead = findHostByTestId(tree, 'value-proposition-subhead');
     expect(subhead?.props.children).toBeTruthy();
     expect(typeof subhead?.props.children).toBe('string');
   });
 
   it('renders the headline group container', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(findHostByTestId(tree, 'value-proposition-headline-group')).toBeTruthy();
   });
 });
@@ -131,12 +137,16 @@ describe('ValuePropositionScreen — headline (Sub-AC 14a-1 헤드라인)', () =
 
 describe('ValuePropositionScreen — benefit list (Sub-AC 14a-1 혜택 목록)', () => {
   it('renders the benefit list ScrollView container', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(findHostByTestId(tree, 'value-proposition-benefit-list')).toBeTruthy();
   });
 
   it('renders exactly 3 benefit cards', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     // Cards have testID: value-proposition-benefit-<key> (with a suffix after 'benefit-')
     const cards = findAllHostByTestId(
       tree,
@@ -146,28 +156,36 @@ describe('ValuePropositionScreen — benefit list (Sub-AC 14a-1 혜택 목록)',
   });
 
   it('renders the trend_matched_generation benefit card (core moat)', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(
       findHostByTestId(tree, 'value-proposition-benefit-trend-matched-generation'),
     ).toBeTruthy();
   });
 
   it('renders the trend_drop_freshness benefit card (retention engine)', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(
       findHostByTestId(tree, 'value-proposition-benefit-trend-drop-freshness'),
     ).toBeTruthy();
   });
 
   it('renders the personal_color_recipe benefit card (wedge hook)', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(
       findHostByTestId(tree, 'value-proposition-benefit-personal-color-recipe'),
     ).toBeTruthy();
   });
 
   it('does NOT render a monthly_curated_magazine card (Seed: 월간 매거진 포맷 금지)', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     // The old direction card must be completely absent — if it appears the moat
     // rework is incomplete.
     expect(
@@ -185,24 +203,32 @@ describe('ValuePropositionScreen — benefit list (Sub-AC 14a-1 혜택 목록)',
 
 describe('ValuePropositionScreen — CTA button (Sub-AC 14a-1 CTA 버튼)', () => {
   it('renders the primary CTA button', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     expect(findHostByTestId(tree, 'value-proposition-cta')).toBeTruthy();
   });
 
   it('CTA has accessibilityRole="button"', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     const cta = findHostByTestId(tree, 'value-proposition-cta');
     expect(cta?.props.accessibilityRole).toBe('button');
   });
 
   it('CTA has accessibilityLabel="다음"', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     const cta = findHostByTestId(tree, 'value-proposition-cta');
     expect(cta?.props.accessibilityLabel).toBe('다음');
   });
 
   it('CTA label text matches FUNNEL_SCREENS.value_props CTA label ("다음")', () => {
-    const tree = render(React.createElement(ValuePropositionScreen, { onNext: vi.fn() }));
+    const tree = render(
+      React.createElement(ValuePropositionScreen, { onNext: vi.fn() }),
+    );
     // The FunnelPrimaryButton renders a Text child with the label string.
     // Walk one level down from the Pressable to find the Text child.
     const ctaNode = tree.root.findAll(
