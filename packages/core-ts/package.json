@@ -13,7 +13,8 @@
     "./scan_option": "./src/scan_option/index.ts",
     "./referral": "./src/referral/index.ts",
     "./posthog": "./src/posthog/index.ts",
-    "./superwall": "./src/superwall/index.ts"
+    "./superwall": "./src/superwall/index.ts",
+    "./analytics": "./src/analytics/event-publisher.ts"
   },
   "files": [
     "src"

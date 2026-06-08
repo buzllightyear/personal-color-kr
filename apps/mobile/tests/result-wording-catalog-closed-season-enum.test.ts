@@ -4,7 +4,7 @@
  * The catalog must expose exactly the 4 Korean personal-color season
  * slugs (spring-warm / summer-cool / autumn-warm / winter-cool) — same
  * set Phase 3.1 `_PRESET_TO_PROMPT` bijection, Phase 3.2 diagnose
- * runtime, and Phase 3.3 ToneStateProvider track. Any drift (extra key,
+ * runtime, and Phase 3.3 content hook track. Any drift (extra key,
  * missing key, renamed slug) is a compile-time error AND a runtime
  * assertion failure.
  */

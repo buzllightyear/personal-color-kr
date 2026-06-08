@@ -30,12 +30,11 @@
  *   events.
  *
  * Why DI of the PostHog client + graceful undefined no-op:
- *   Identical to the three sibling track-*.ts modules in this PR
- *   (track-post-payment-revealed, track-post-payment-tab-viewed,
- *   track-tone-switched). The provider degrades to undefined when
- *   POSTHOG_API_KEY is absent — the optional chain silently produces
- *   capture-count 0 without throwing, matching the precedent set by
- *   `track-referral-shared.ts`.
+ *   Identical to the sibling track-*.ts modules
+ *   (track-post-payment-revealed, track-post-payment-tab-viewed).
+ *   The provider degrades to undefined when POSTHOG_API_KEY is absent —
+ *   the optional chain silently produces capture-count 0 without throwing,
+ *   matching the precedent set by `track-referral-shared.ts`.
  */
 import type { PostHog } from 'posthog-react-native';
 

@@ -85,6 +85,42 @@ if TYPE_CHECKING:  # pragma: no cover - import guard for type hints only
 
 
 # ---------------------------------------------------------------------------
+# Public types — exported as part of the boundary contract.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FaceBoundingBox:
+    """Absolute-pixel bounding box for a detected face.
+
+    Returned by :func:`face_detect` — the lower-level entry point that
+    exposes the raw detection geometry before any sub-region derivation.
+
+    Coordinates use a top-left origin (x grows right, y grows down).
+    The face rectangle spans pixels ``[x, x+width) × [y, y+height)``.
+
+    Usage contexts in the generation pipeline:
+
+      * **Identity-similarity scoring**: rule-based face-landmark comparison
+        (ontology's ``identity_similarity_score``) crops the candidate
+        image to this box before computing the similarity metric.
+      * **Reject filter**: confirms face presence in the generated candidate
+        before the enhancer de-slop layer applies.
+      * **Upstream recipe wiring**: the generation recipe (``generation_recipe``)
+        may use the selfie's face geometry to tune the composition prompt.
+
+    All fields are non-negative integers. ``width`` and ``height`` are
+    guaranteed to be ≥ 1 (the detector and clamping logic in
+    :func:`_detection_to_pixel_box` enforce this).
+    """
+
+    x: int
+    y: int
+    width: int
+    height: int
+
+
+# ---------------------------------------------------------------------------
 # Error types — exported as part of the public boundary contract.
 # ---------------------------------------------------------------------------
 
@@ -192,6 +228,134 @@ def detect_face_regions(image: Image) -> FaceRegions:
         chosen,
         image_width=width,
         image_height=height,
+    )
+
+
+def detect_face_region(image: Image) -> FaceBoundingBox | None:
+    """Detect the primary face in ``image`` and return its pixel bounding box.
+
+    Soft-failure variant of :func:`face_detect`. Returns ``None`` instead of
+    raising :class:`FaceNotDetectedError` when no face is found. Useful as
+    the first gate in the generation-pipeline reject filter where the caller
+    wants a branch on presence/absence rather than exception handling.
+
+    Pipeline placement (generation_pipeline ontology):
+        raw_generation → enhancer_application → **reject_filtering** → user_pick
+
+    The reject filter calls this function to confirm face presence in the
+    generated candidate *after* the enhancer de-slop layer has run. A ``None``
+    result causes the candidate to be marked ``rejected=True`` with
+    ``rejected_by="face_region_absent"``.
+
+    The tie-breaking rule for multi-face images is identical to
+    :func:`detect_face_regions`:
+
+        1. Largest bounding-box area wins.
+        2. On exact area tie, topmost (smallest y-coordinate) wins.
+        3. On further tie, leftmost (smallest x-coordinate) wins.
+
+    Args:
+        image: Decoded pixel data as a rows-first ``Sequence[Sequence[RGB]]``
+            (the ``Image`` type from :mod:`personal_color.region_extractor`).
+            Top-left origin. Identical shape contract to
+            :func:`detect_face_regions`.
+
+    Returns:
+        ``FaceBoundingBox`` in absolute pixel coordinates for the primary
+        detected face, or ``None`` if MediaPipe found zero faces. All
+        coordinate fields are non-negative integers; ``width`` and ``height``
+        are guaranteed ≥ 1 when the result is not ``None``.
+
+    Raises:
+        ValueError: The image is empty (zero rows or zero columns) or
+            otherwise structurally invalid. This is a structural input error,
+            not a "no face" case — Phase 4 maps to **400 Bad Request**.
+        RuntimeError: The ``mediapipe`` package is not installed in the
+            current environment. A deployment error, not a per-request error.
+    """
+    width, height = _validate_image_shape(image)
+
+    detector = _get_or_build_detector()
+
+    np = _import_numpy()
+    frame = np.array(image, dtype=np.uint8)
+
+    results = detector.process(frame)
+    detections = list(getattr(results, "detections", None) or ())
+
+    if len(detections) == 0:
+        return None
+
+    chosen = _select_face(detections, image_width=width, image_height=height)
+    return FaceBoundingBox(
+        x=chosen.x,
+        y=chosen.y,
+        width=chosen.width,
+        height=chosen.height,
+    )
+
+
+def face_detect(image: Image) -> FaceBoundingBox:
+    """Detect the primary face in ``image`` and return its pixel bounding box.
+
+    Lower-level companion to :func:`detect_face_regions`. Returns the raw
+    bounding box without deriving skin / eyes / hair sub-regions. Useful as
+    the first gate in the generation funnel reject filter (confirm face
+    presence before applying the enhancer de-slop layer) and for rule-based
+    identity-similarity scoring in the automatic candidate filter.
+
+    The tie-breaking rule is identical to :func:`detect_face_regions`:
+
+        1. Largest bounding-box area wins.
+        2. On exact area tie, topmost (smallest y-coordinate) wins.
+        3. On further tie, leftmost (smallest x-coordinate) wins.
+
+    This function shares the same lazy MediaPipe lifecycle and
+    module-scope detector cache as :func:`detect_face_regions` — the two
+    entry points are co-located intentionally so only **one** detector
+    instance is ever live per interpreter process.
+
+    Args:
+        image: Decoded pixel data as a rows-first ``Sequence[Sequence[RGB]]``
+            (the ``Image`` type from :mod:`personal_color.region_extractor`).
+            Top-left origin. Identical shape contract to
+            :func:`detect_face_regions`.
+
+    Returns:
+        ``FaceBoundingBox`` in absolute pixel coordinates for the primary
+        detected face. All coordinate fields are non-negative integers;
+        ``width`` and ``height`` are guaranteed ≥ 1.
+
+    Raises:
+        FaceNotDetectedError: MediaPipe ran cleanly but found zero faces.
+            Permanent input failure — Phase 4 HTTP server maps to **422
+            Unprocessable Entity**.
+        ValueError: The image is empty (zero rows or zero columns) or
+            otherwise structurally invalid. Phase 4 maps to **400 Bad
+            Request**.
+        RuntimeError: The ``mediapipe`` package is not installed in the
+            current environment. A deployment error, not a per-request
+            error — production servers always run the full requirements set.
+    """
+    width, height = _validate_image_shape(image)
+
+    detector = _get_or_build_detector()
+
+    np = _import_numpy()
+    frame = np.array(image, dtype=np.uint8)
+
+    results = detector.process(frame)
+    detections = list(getattr(results, "detections", None) or ())
+
+    if len(detections) == 0:
+        raise FaceNotDetectedError("no face detected in selfie")
+
+    chosen = _select_face(detections, image_width=width, image_height=height)
+    return FaceBoundingBox(
+        x=chosen.x,
+        y=chosen.y,
+        width=chosen.width,
+        height=chosen.height,
     )
 
 

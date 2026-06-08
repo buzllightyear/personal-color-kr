@@ -202,3 +202,90 @@ export {
   type AnalyzingLoaderStageStatus,
   type MountAnalyzingLoaderComponentOptions,
 } from './analyzing-loader-component.js';
+export {
+  advance,
+  createFunnelState,
+  reset,
+  retreat,
+  type FunnelStateObject,
+  type FunnelStatusValue,
+} from './funnel-state.js';
+export {
+  MockGateway,
+  type CancelFailure,
+  type CancelRequest,
+  type CancelResult,
+  type CancelSuccess,
+  type ChargeFailure,
+  type ChargeRequest,
+  type ChargeResult,
+  type ChargeSuccess,
+  type MockGatewayCall,
+  type MockGatewayOptions,
+  type PaymentGateway as UnifiedPaymentGateway,
+  type PaymentMethod,
+  type StatusFailure,
+  type StatusRequest,
+  type StatusResult,
+  type StatusSuccess,
+  type TransactionId,
+  type TransactionStatus,
+} from './payment-gateway.js';
+export {
+  getMissingFields,
+  isStepInputSatisfied,
+  PRIOR_DIAGNOSIS_VALUES,
+  SELFIE_EDIT_STYLE_VALUES,
+  type PriorDiagnosis,
+  type SelfieEditStyle,
+  type StepInputs,
+} from './step-input-gate.js';
+export {
+  ALL_CONSENT_ITEM_IDS,
+  checkConsentStatus,
+  getUncheckedRequired,
+  isConsentGatePassed,
+  REQUIRED_CONSENT_ITEM_IDS,
+  type ConsentCheckStatus,
+  type ConsentItemId,
+} from './consent-gate.js';
+export {
+  FUNNEL_STEP_ABANDON_EVENT,
+  FUNNEL_STEP_ENTER_EVENT,
+  trackStepAbandon,
+  trackStepEnter,
+  type FunnelStepMilestoneEventName,
+  type TrackStepAbandonInput,
+  type TrackStepEnterInput,
+} from './step-events.js';
+export {
+  PAYMENT_ATTEMPT_EVENT,
+  PAYMENT_COMPLETE_EVENT,
+  trackPaymentAttempt,
+  trackPaymentComplete,
+  type PaymentMilestoneEventName,
+  type TrackPaymentAttemptInput,
+  type TrackPaymentCompleteInput,
+} from './payment-events.js';
+export {
+  MAX_FUNNEL_STEP,
+  MIN_FUNNEL_STEP,
+  StepRangeError,
+  enterNextStep,
+  retreatToPrevStep,
+  validateStepRange,
+} from './step-transition.js';
+export {
+  DEFAULT_MINIMUM_USAGE_COUNT,
+  ReviewRequestGateError,
+  shouldRequestReview,
+  type ReviewRequestDecision,
+  type ReviewRequestGateErrorReason,
+  type ShouldRequestReviewInput,
+} from './review-request-gate.js';
+export {
+  AUTO_ADVANCE_STEPS,
+  EXPIRY_MAX_STEP,
+  applyExpiryTransition,
+  type PaymentFunnelExpiryState,
+} from './expiry-transition.js';

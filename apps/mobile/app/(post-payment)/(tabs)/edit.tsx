@@ -1,9 +1,9 @@
 /**
- * (post-payment)/(tabs)/edit — Phase 3.3 edit tab (primary, Sub-AC 3).
+ * (post-payment)/(tabs)/edit — edit tab (primary, Sub-AC 3).
  *
  * Reads the EditView via the independent `useEditContent` hook keyed
- * on the global ToneState. Exhaustively handles the 3 DataHook states
- * (loading=Skeleton, error=ErrorRetry, ready=content) per Sub-AC 10.
+ * on the user's diagnosed season. Exhaustively handles the 3 DataHook
+ * states (loading=Skeleton, error=ErrorRetry, ready=content) per Sub-AC 10.
  *
  * Phase 4 swap site: `useEditContent` internal switches from
  * `useDummy<EditView>` to `usePython<EditView>` — zero changes here.
@@ -17,14 +17,12 @@ import { trackPostPaymentContentEngaged } from '../../../src/analytics/track-pos
 import { trackPostPaymentTabViewed } from '../../../src/analytics/track-post-payment-tab-viewed';
 import { ErrorRetry } from '../../../src/components/ErrorRetry';
 import { Skeleton } from '../../../src/components/Skeleton';
-import { ToneSwitcher } from '../../../src/components/ToneSwitcher';
+import { DEFAULT_DIAGNOSIS } from '../../../src/fixtures/post-payment-default-diagnosis';
 import { useEditContent } from '../../../src/hooks/use-edit-content';
-import { useToneState } from '../../../src/providers/ToneStateProvider';
 
 export default function EditTab(): React.ReactElement {
   const posthog = usePostHog();
-  const { current } = useToneState();
-  const { state, data } = useEditContent(current);
+  const { state, data } = useEditContent(DEFAULT_DIAGNOSIS.season);
 
   useEffect(() => {
     trackPostPaymentTabViewed(posthog, { tab: 'edit' });
@@ -39,7 +37,6 @@ export default function EditTab(): React.ReactElement {
 
   return (
     <View style={styles.container} testID="post-payment-tab-edit">
-      <ToneSwitcher />
       <Text style={styles.categoryLine} testID="post-payment-tab-edit-category-line">
         {data.categoryLine}
       </Text>

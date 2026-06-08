@@ -26,11 +26,11 @@ import type { DiagnosisView } from '../contracts/post-payment-views';
 import { RESULT_WORDING_CATALOG } from '../wording/result-wording-catalog';
 
 /**
- * Default diagnosis used on first-install. Used both:
- *   - as the diagnosis-reveal screen body until persistence lands; and
- *   - as the default tone source for the global ToneState atom (the
- *     `current` field is seeded from `defaultDiagnosis.season` on first
- *     install).
+ * Default diagnosis used on first-install. Used as the diagnosis-reveal
+ * screen body until Phase 4 server-derived diagnosis lands.
+ *
+ * The `season` field is also consumed by the tab screens as the fallback
+ * season until the real per-user diagnosis is available from the server.
  *
  * Phase 3.4 — gains `categoryLine` from the wording catalog so the
  * first-install reveal carries the 분류 verdict line.
