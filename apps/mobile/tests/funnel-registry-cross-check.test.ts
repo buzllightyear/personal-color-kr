@@ -86,15 +86,18 @@ describe('funnel registry — 4중 정합 cross-check (AC 2 + AC 4)', () => {
     expect(legacy).toEqual([]);
   });
 
-  it('_layout.tsx applies presentation:"modal" to the rating-gate Stack.Screen (Phase 2.2)', () => {
+  it('_layout.tsx registers every funnel step with the default card presentation (no modal)', () => {
     const layoutPath = path.resolve(FUNNEL_ROUTE_DIR, '_layout.tsx');
     const source = fs.readFileSync(layoutPath, 'utf8');
-    // The layout must register rating-gate with modal presentation; other
-    // 11 screens use the default card presentation. We assert both invariants
-    // via source-level checks since react-test-renderer can't observe the
-    // Stack.Screen options at runtime in a unit-test environment.
-    expect(source).toMatch(/RATING_GATE_KEBAB_SLUG/);
-    expect(source).toMatch(/presentation:\s*'modal'/);
-    expect(source).toMatch(/toKebabSlug\(['"]rating_gate['"]\)/);
+    // rating_gate was originally registered with `presentation: 'modal'`, but
+    // on iOS that presented it as a separate modal view controller — pushing
+    // the next funnel card (`fake_loader`) placed it BENEATH the still-presented
+    // sheet, so tapping either rating CTA left the screen visibly stuck (no
+    // forward transition). Every step now uses the default card presentation so
+    // `router.push` advances uniformly. Guard against the regression by
+    // asserting no `presentation: 'modal'` option survives in the layout.
+    expect(source).not.toMatch(/presentation:\s*'modal'/);
+    // The Stack.Screen registry is still derived from the ordered slug list.
+    expect(source).toMatch(/FUNNEL_KEBAB_SLUGS_ORDERED/);
   });
 });
