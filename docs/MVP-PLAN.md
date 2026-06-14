@@ -52,11 +52,11 @@
 ### Phase 4 — Backend & persistence
 | ID | 작업 | 비고 |
 |----|------|------|
-| 4.1 | FastAPI 서버 + Postgres 셋업 | Py |
-| 4.2 | 사용자/이벤트 schema + migration | SQL |
-| 4.3 | 인증 (Apple Sign In + Supabase or Firebase) | TS+Py |
-| 4.4 | retention API 호스팅 + PostHog cohort 연동 | Py |
-| 4.5 | 친구 추천 게이트 실서버 wiring (영속화 + friend-used callback) | Py+TS |
+| 4.1 | ✅ FastAPI 서버 + Postgres 셋업 (apps/api + 3 `/v1` endpoints) | Py — 완료 (`db188c0`) |
+| 4.2 | ✅ 사용자/이벤트 schema + migration (events table + 첫 alembic) | SQL — 완료 (`0aad534`) |
+| 4.3 | ✅ 인증 — **self-managed Apple Sign In** (users table + events.user_id FK; ~~Supabase/Firebase 아님~~ PyJWT 자체 발급) | TS+Py — 완료 (`f87cf76`) |
+| 4.4 | ✅ retention API 호스팅 + `POST /v1/events` + PostHog Cohort pull | Py — 완료 (PR #29) |
+| 4.5 | ✅ 친구 추천 게이트 실서버 wiring (영속화 + friend-used callback) | Py+TS — 완료 (PR #31) |
 
 ### Phase 5 — Retention layer (트렌드 드롭 · ~~월간 매거진~~ v0.3.0으로 대체)
 > **(v0.3.0)** 월간 매거진/주기 기반 retention **폐기**. retention vehicle =
@@ -74,10 +74,10 @@
 ### Phase 6 — Polish (UX 게이트·관측)
 | ID | 작업 | 비고 |
 |----|------|------|
-| 6.1 | iOS native `SKStoreReviewController` 실연결 | iOS |
-| 6.2 | fake loader + scan animation RN 컴포넌트로 mount | TS/RN |
-| 6.3 | Latency 모니터링 + alert | infra |
-| 6.4 | Lint (ruff/black/eslint/mypy) + 코드 품질 | tooling |
+| 6.1 | ✅ iOS native `SKStoreReviewController` 실연결 (expo-store-review → rating-gate 퍼널, fire-and-forget + 14 테스트) | iOS — 완료 (PR #33) |
+| 6.2 | ✅ fake loader + scan animation RN 컴포넌트로 mount (`StageLadder` + `use-stage-ladder` core-ts view-model 배선) | TS/RN — 완료 (PR #35) |
+| 6.3 | ✅ Latency 모니터링 + P95 alert (api `metrics`) | infra — 완료 (PR #37) |
+| 6.4 | ✅ Lint/코드 품질 — ESLint 9 + Prettier 3 (TS), ruff/black/mypy (api) | tooling — 완료 (PR #39) |
 
 ### Phase 7 — Launch
 | ID | 작업 | 비고 |
