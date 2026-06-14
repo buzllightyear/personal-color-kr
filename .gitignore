@@ -33,6 +33,11 @@ credentials/
 *.pem
 *.mobileprovision
 
+# Stray repo-root app.json: `eas` commands run from the repo root (instead of
+# apps/mobile) create a bare app.json stub here. The real Expo config is
+# apps/mobile/app.json — a root-level one must never be committed.
+/app.json
+
 # Local tool state
 .openchrome/
 .ouroboros/

@@ -506,6 +506,15 @@ export default function defineExpoConfig({
     plugins: ['expo-router', 'expo-dev-client', buildSentryPluginEntry()],
     runtimeVersion: EXPO_RUNTIME_VERSION,
     ios: {
+      // MERGE the static app.json `ios` block (NOT replace it). app.json owns
+      // ios.config.usesNonExemptEncryption, ios.infoPlist (camera/photo usage
+      // strings + CFBundleDisplayName), buildNumber, and appleTeamId. A bare
+      // `ios: { ... }` here would clobber all of those — EAS Build then fails
+      // reading `ITSAppUsesNonExemptEncryption`, and a build that did proceed
+      // would ship without the required permission strings (App Store reject).
+      ...(typeof config.ios === 'object' && config.ios !== null
+        ? (config.ios as Record<string, unknown>)
+        : {}),
       bundleIdentifier: IOS_BUNDLE_IDENTIFIER,
       // StoreKit subscription products are exercised in the iOS sandbox
       // environment when running on a real device (simulator does not
