@@ -45,13 +45,12 @@
     }
   },
   "submit": {
+    "_comments": {
+      "credentials_source": "Phase 7.4 — ASC submit credentials are NOT hardcoded here (they were TODO_ placeholders that would fail a real submit). EAS Submit reads them from environment variables at submit time so no secret lands in the repo: EXPO_ASC_API_KEY_PATH (path to the gitignored ./credentials/*.p8), EXPO_ASC_KEY_ID, EXPO_ASC_ISSUER_ID, EXPO_APPLE_TEAM_ID. Alternatively run `eas credentials` once to upload the .p8 into EAS-managed credentials and skip the env vars. See docs/deploy-api-fly.md > 'iOS submit credentials'.",
+      "non_secret_fields": "appleTeamId is semi-public and is set via app.json ios.appleTeamId; the API key id/issuer + the .p8 file are the sensitive parts and stay out of version control (see .gitignore: credentials/, *.p8)."
+    },
     "production": {
-      "ios": {
-        "ascApiKeyPath": "./credentials/asc-api-key.p8",
-        "ascApiKeyId": "TODO_ASC_API_KEY_ID",
-        "ascApiKeyIssuerId": "TODO_ASC_API_KEY_ISSUER_ID",
-        "appleTeamId": "TODO_APPLE_TEAM_ID"
-      }
+      "ios": {}
     }
   }
 }

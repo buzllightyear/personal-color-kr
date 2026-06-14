@@ -1,0 +1,54 @@
+# Fly.io deployment for the personal-color-kr FastAPI backend (apps/api).
+#
+# This file pairs with the repo-root Dockerfile (build context = repo root).
+# See docs/deploy-api-fly.md for the full first-deploy runbook (app creation,
+# Postgres attach, secret wiring, submit-credential setup).
+#
+# `app` is a GLOBALLY UNIQUE name — change it (or let `fly launch` set it) if
+# `personal-color-kr-api` is already taken on your Fly org.
+
+app = "personal-color-kr-api"
+
+# Tokyo. Fly has no Seoul region; nrt is the lowest-latency option for Korean
+# users. Co-locate the Postgres app in the same region (see runbook).
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Run `alembic upgrade head` ONCE per deploy in an ephemeral release machine
+# (with secrets injected) before the new app machines start. This avoids the
+# multi-machine race that an in-CMD migration would create. cwd must be
+# apps/api because alembic.ini's `script_location` is the relative path
+# `src/api/db/migrations`.
+[deploy]
+  release_command = "sh -c 'cd /app/apps/api && alembic upgrade head'"
+
+[env]
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Scale to zero when idle (cost control for a pre-launch beta). Fly cold-
+  # starts a machine on the next request; the /v1/health check gates routing.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # Liveness probe: /v1/health is pure (no DB, no env reads), so a 200 here
+  # means the Python process booted and the ASGI app mounted — exactly the
+  # signal Fly needs to start routing traffic to a machine.
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/v1/health"
+
+[[vm]]
+  # mediapipe + its OpenCV/numpy stack are memory-hungry on first face-detect;
+  # 256MB OOM-kills the worker. 1GB is the safe floor — raise if you see OOM in
+  # `fly logs`. shared-cpu-1x is fine for a beta; bump to dedicated for launch.
+  size = "shared-cpu-1x"
+  memory = "1gb"
