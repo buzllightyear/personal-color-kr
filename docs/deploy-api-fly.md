@@ -155,6 +155,26 @@ eas submit --platform ios --profile production --latest
 #    metadata from docs/app-store/ko-KR/, submit for review.
 ```
 
+### EAS build profiles (eas.json)
+
+> ⚠️ `eas.json` is strict JSON validated against EAS's schema — it does NOT
+> allow arbitrary keys (a `_comments` block fails with "is not allowed" and
+> blocks every `eas` command). Keep profile docs HERE, not in eas.json.
+
+- **`development-simulator`** — unsigned iOS Simulator `.app` (dev client).
+  Needs **no Apple credentials / Team ID**, so it builds before the Apple
+  membership activates. Use it to validate the app + live API on the
+  simulator (funnel / diagnosis / generation). IAP can't be tested here.
+- **`development`** — signed dev-client `.ipa` for a physical device (ASC
+  sandbox subscription testing). Needs Apple credentials.
+- **`preview`** — internal-distribution build (ad-hoc / TestFlight-style).
+- **`production`** — App Store build, `autoIncrement` bumps `buildNumber`.
+
+First `eas build`/`eas config` run prompts to create the EAS project
+(`@<owner>/personal-color-kr`) — run it in a real terminal (interactive)
+and accept, or run `eas init` first. Android profiles are intentionally
+absent: the app is iOS-only (no Play Billing).
+
 ---
 
 ## Pre-submit checklist
