@@ -488,7 +488,7 @@ export default function defineExpoConfig({
     ...config,
     name: 'personal-color-kr',
     slug: 'personal-color-kr',
-    version: '0.1.0',
+    version: '1.0.0',
     orientation: 'portrait',
     scheme: 'personal-color-kr',
     platforms: ['ios', 'android', 'web'],

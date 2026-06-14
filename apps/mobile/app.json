@@ -2,6 +2,7 @@
   "expo": {
     "name": "personal-color-kr",
     "slug": "personal-color-kr",
+    "owner": "ooptee",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "personal-color-kr",
@@ -9,6 +10,11 @@
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "534c9536-36e3-4df7-ac31-88d95971d330"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.personalcolorkr.app",
