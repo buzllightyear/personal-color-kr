@@ -1,7 +1,7 @@
 import { Stack, Redirect } from 'expo-router';
 import { useState } from 'react';
 
-import { FUNNEL_KEBAB_SLUGS_ORDERED, toKebabSlug } from '../../src/linking.config';
+import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../../src/linking.config';
 import { FunnelStateProvider } from '../../src/providers/FunnelStateProvider';
 import { shouldSkipFunnelSubscribed } from './_guards';
 
@@ -22,11 +22,18 @@ import { shouldSkipFunnelSubscribed } from './_guards';
  *     answers via React Context.  The provider is scoped to this layout
  *     (NOT the root layout) so the post-payment surface and magazine
  *     reader do not subscribe to funnel-only state.
- *   - The `rating-gate` Stack.Screen carries `presentation: 'modal'` so it
- *     overlays the previous screen as a native sheet on iOS and a dialog
- *     on Android, matching its dismissable: true semantic from
- *     FUNNEL_SCREENS.rating_gate.metadata.  All other 11 screens retain the
- *     default (`card`) presentation.
+ *
+ * Presentation — all 12 funnel steps use the default `card` presentation:
+ *   `rating_gate` was originally registered with a `modal` presentation option
+ *   to echo its `dismissable: true` metadata. That broke forward navigation:
+ *   rating_gate is a pass-through step that `router.push`es to `fake_loader`,
+ *   but on iOS a `modal` screen is presented as a separate modal view
+ *   controller — pushing the next card placed it BENEATH the still-presented
+ *   modal sheet, so tapping either CTA ("별점 남기기" / "나중에") left the
+ *   rating screen visibly stuck on top (no forward transition). The
+ *   `dismissable: true` semantic is satisfied by the always-available skip
+ *   CTA, NOT by a modal sheet, so every step now uses the default card
+ *   presentation and `router.push` advances uniformly across the funnel.
  *
  * Conditional redirect scaffold:
  * - Resume gate: if the funnel state machine has a persisted current step,
@@ -42,8 +49,6 @@ import { shouldSkipFunnelSubscribed } from './_guards';
  * `false` so the default Stack renders all 12 kebab routes without
  * redirection.
  */
-const RATING_GATE_KEBAB_SLUG = toKebabSlug('rating_gate');
-
 export default function FunnelLayout(): JSX.Element {
   // Placeholder gate state — real implementations will read from
   // packages/core-ts/funnel state machines and async data hooks (DataHook<T>).
@@ -67,21 +72,12 @@ export default function FunnelLayout(): JSX.Element {
           headerShown: false,
         }}
       >
-        {FUNNEL_KEBAB_SLUGS_ORDERED.map((slug) => {
-          // rating-gate uses the modal presentation per FUNNEL_SCREENS
-          // metadata (dismissable: true). All other screens use the default
-          // card presentation.
-          if (slug === RATING_GATE_KEBAB_SLUG) {
-            return (
-              <Stack.Screen
-                key={slug}
-                name={slug}
-                options={{ presentation: 'modal' }}
-              />
-            );
-          }
-          return <Stack.Screen key={slug} name={slug} />;
-        })}
+        {FUNNEL_KEBAB_SLUGS_ORDERED.map((slug) => (
+          // Every funnel step uses the default `card` presentation. (See the
+          // module header: rating_gate's former `modal` presentation trapped
+          // forward navigation under the modal sheet on iOS.)
+          <Stack.Screen key={slug} name={slug} />
+        ))}
       </Stack>
     </FunnelStateProvider>
   );
