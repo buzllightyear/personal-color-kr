@@ -6,12 +6,6 @@
     "requireCommit": false
   },
   "build": {
-    "_comments": {
-      "purpose": "Phase 2.5 — Superwall + StoreKit iOS subscription integration requires a custom Expo dev client (NOT Expo Go) because @superwall/react-native-superwall ships native iOS code (SuperwallKit-Pod) that Expo Go cannot dynamically link.",
-      "development_simulator": "The 'development-simulator' profile produces an unsigned iOS Simulator build (.app bundle, not .ipa) that loads the Expo dev menu and can hot-reload JS. This is the canonical local dev loop for Phase 2.5: build once with EAS or `expo run:ios`, then iterate JS via `expo start --dev-client`.",
-      "development_device": "The 'development' profile produces a signed development-client .ipa for installation on physical iOS devices via TestFlight or ad-hoc distribution. Used for ASC sandbox subscription testing where the simulator's StoreKit configuration would not exercise the real receipt validation surface.",
-      "android_out_of_scope": "Android billing is explicitly OUT OF SCOPE for Phase 2.5 per the Seed contract (iOS-only). The Android entries below are placeholders so EAS Build does not reject the file shape; they are not invoked by any package.json script in this phase."
-    },
     "development-simulator": {
       "developmentClient": true,
       "distribution": "internal",
@@ -45,10 +39,6 @@
     }
   },
   "submit": {
-    "_comments": {
-      "credentials_source": "Phase 7.4 — ASC submit credentials are NOT hardcoded here (they were TODO_ placeholders that would fail a real submit). EAS Submit reads them from environment variables at submit time so no secret lands in the repo: EXPO_ASC_API_KEY_PATH (path to the gitignored ./credentials/*.p8), EXPO_ASC_KEY_ID, EXPO_ASC_ISSUER_ID, EXPO_APPLE_TEAM_ID. Alternatively run `eas credentials` once to upload the .p8 into EAS-managed credentials and skip the env vars. See docs/deploy-api-fly.md > 'iOS submit credentials'.",
-      "non_secret_fields": "appleTeamId is semi-public and is set via app.json ios.appleTeamId; the API key id/issuer + the .p8 file are the sensitive parts and stay out of version control (see .gitignore: credentials/, *.p8)."
-    },
     "production": {
       "ios": {}
     }
