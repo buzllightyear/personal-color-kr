@@ -38,6 +38,13 @@ credentials/
 # apps/mobile/app.json — a root-level one must never be committed.
 /app.json
 
+# This is a pnpm workspace — npm lockfiles must never exist. A committed
+# package-lock.json makes Expo/EAS pick npm, which then chokes on pnpm's
+# `workspace:*` protocol (EUNSUPPORTEDPROTOCOL). pnpm-lock.yaml is the only lock.
+package-lock.json
+**/package-lock.json
+yarn.lock
+
 # Local tool state
 .openchrome/
 .ouroboros/
