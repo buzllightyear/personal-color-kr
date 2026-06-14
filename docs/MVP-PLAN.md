@@ -4,6 +4,15 @@
 > 후의 MVP launch까지 작업 분해. 각 work unit은 `/ouroboros:interview` 한
 > 번에 들어가는 적정 크기 (5~8 ACs / 1~2 stack).
 
+> ⚠️ **방향 전환 (Seed v0.3.0 moat rework · 2026-06, PR #49 머지 → main)**
+> v0.2.0의 구 방향(*생짜 출력·4톤·월간 매거진·전환율 north star*)은 2026-06-07
+> moat 결정으로 **대체**됨: *숨긴 enhancer de-slop · 생성 퍼널 · 트렌드 드롭 ·
+> 트렌드 콜 적중률 north star*. 제품 본질이 "진단+큐레이션 콘텐츠"에서 **"트렌드
+> 맞춤 셀카 *생성*"** 으로 이동. taste는 상류 config(트렌드별 생성 recipe + reject
+> 임계값) 한 곳에만 박히고, 사람이 출력물을 직접 큐레이션하지 않음(대역폭 천장 회피).
+> 아래 표에서 v0.3.0으로 의미가 바뀐 항목은 **(v0.3.0)** 으로 표기. 12단계 결제
+> 퍼널·결제·퍼스널 컬러 진단은 보존(brownfield). 스펙: 볼트 `seed-v0.3.0.md`.
+
 ## 현재까지 진행된 것
 
 - **Seed v0.2.0** (QA PASS 0.92) — 13개 AC, 11개 constraints, ontology, evaluation_principles
@@ -49,12 +58,18 @@
 | 4.4 | retention API 호스팅 + PostHog cohort 연동 | Py |
 | 4.5 | 친구 추천 게이트 실서버 wiring (영속화 + friend-used callback) | Py+TS |
 
-### Phase 5 — Retention layer (월간 매거진)
+### Phase 5 — Retention layer (트렌드 드롭 · ~~월간 매거진~~ v0.3.0으로 대체)
+> **(v0.3.0)** 월간 매거진/주기 기반 retention **폐기**. retention vehicle =
+> **트렌드 드롭**(신규 트렌드 recipe push → "방금 떴어, 네 셀카 restyle") —
+> 이벤트 트리거, 주기 발행 아님. 콘텐츠 단위 = "사람이 쓰는 글"이 아니라
+> **트렌드 생성 recipe(YAML)**: `apps/api/config/recipes/*.yaml` 한 장 추가 =
+> 트렌드 드롭 1개 발사(코드 변경 불필요). 대역폭 = O(트렌드 shift), O(매 출력) 아님.
+
 | ID | 작업 | 비고 |
 |----|------|------|
-| 5.1 | CMS 선정 + magazine 영속화 모델 | Py |
-| 5.2 | 매월 발행 cron + 푸시 통보 | Py+iOS |
-| 5.3 | **본인 시그니처 콘텐츠 작성** (16 가이드 + 4 큐레이션 + 매거진 1-3개월치) | 콘텐츠 |
+| 5.1 | ~~CMS + magazine 영속화~~ → **트렌드 드롭 인프라** (`generation_recipe` config 분리 + `recipe_loader` + `trend_drop` 모델) | Py — ✅ v0.3.0 rework (PR #49) |
+| 5.2 | ~~매월 발행 cron~~ → **트렌드 드롭 push** (이벤트 트리거 = 신규 recipe 발행, 구독 segment 타겟) | Py+iOS — ⏳ push 실연결 잔여 |
+| 5.3 | ~~본인 시그니처 콘텐츠(16 가이드+4 큐레이션+매거진)~~ → **런치용 트렌드 생성 recipe 작성 + reject 임계값 튜닝 + 트렌드 콜 로그 운영** (현재 `config/recipes/`에 데모 `trend_aurora_v1.yaml` 1개뿐 — 실 트렌드 recipe 한 줌 필요; 콜 로그는 seed대로 출시 *전부터* 운영) | 콘텐츠(config) |
 
 ### Phase 6 — Polish (UX 게이트·관측)
 | ID | 작업 | 비고 |
@@ -71,7 +86,7 @@
 | 7.2 | Sentry or 유사 모니터링 | infra — ✅ 완료 (2026-06-04, PR #41) |
 | 7.2c | Sentry tracing + user_id correlation (api) | infra — ✅ 완료 (2026-06-06, PR #45) |
 | 7.3 | TestFlight beta + 모바일 Sentry (@sentry/react-native 흡수) | iOS — ✅ 완료 (2026-06-06, PR #47) |
-| 7.4 | Production 배포 (실 EAS build + submit + 베타 → 정식 출시) | iOS |
+| 7.4 | Production 배포 (실 EAS build + submit + 베타 → 정식 출시) | iOS — 🔧 배포 스캐폴드 완료 (PR #50: Fly.io `Dockerfile`/`fly.toml`, 버전 1.0.0, `docs/deploy-api-fly.md` 런북; 빌드+`/v1/health` 검증). 잔여 = Apple/Fly 계정 게이트(자격증명·`fly deploy`·`eas build/submit`·TestFlight·심사) |
 
 ## 의존 그래프
 
@@ -83,8 +98,8 @@
 4.4 ←─ (depends on 1.3)                              │
 4.5 ←─ (depends on 2.4 referral screen + 4.3 auth)   │
                                                       ├→ 6.1 → 6.2
-5.1 → 5.2 ←──────────────────────────────────────────┘
-5.3 (병행 가능, 코드 무관)
+5.1 → 5.2 ←──────────────────────────────────────────┘   (v0.3.0: 트렌드 드롭, 5.1 ✅ rework)
+5.3 (병행 가능 — v0.3.0: 트렌드 recipe config 작성, recipe_loader 위에 얹힘)
 6.3, 6.4 (병행 가능)
 7.x (모든 Phase 1-6 완료 후)
 ```
