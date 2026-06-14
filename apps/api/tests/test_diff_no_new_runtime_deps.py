@@ -151,7 +151,10 @@ PYPROJECT_PATH: Path = Path(__file__).resolve().parents[1] / "pyproject.toml"
 # pydantic) is caught immediately.
 AC1_RUNTIME_DEP_ALLOWLIST: frozenset[str] = frozenset(
     {
-        "fastapi",
+        # Pinned <0.137 (0.137.0 broke route-graph introspection tests + is a
+        # live-redeploy risk). Same dep, tightened specifier — not a new dep,
+        # so the allowlist entry tracks the exact pyproject string verbatim.
+        "fastapi>=0.136,<0.137",
         "uvicorn[standard]",
         "sqlalchemy[asyncio]>=2.0",
         "asyncpg",

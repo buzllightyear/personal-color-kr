@@ -5,7 +5,13 @@ description = "FastAPI HTTP surface for personal-color-kr (Phase 4.1 — three /
 requires-python = ">=3.12"
 dependencies = [
     # FastAPI is the HTTP framework; constructed once in apps/api/src/api/main.py.
-    "fastapi",
+    # Pinned <0.137: FastAPI 0.137.0 reworked route dependant introspection,
+    # breaking the route-graph tests (test_sentry_unauthenticated_routes_no_user,
+    # test_latency_aggregator_app_state, test_metrics_latency_endpoint) which read
+    # `route.dependant`. The dep was previously unpinned, so CI and image rebuilds
+    # floated to 0.137.0 (live API risk on redeploy). Pin to the known-good 0.136
+    # line; revisit (adapt the route-graph asserts to 0.137's internals) when bumping.
+    "fastapi>=0.136,<0.137",
     # Uvicorn[standard] is the ASGI server used by the local dev command and the
     # docker-compose smoke (`uvicorn api.main:app --host 127.0.0.1 --port 8000`).
     "uvicorn[standard]",
