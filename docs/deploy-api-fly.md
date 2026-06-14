@@ -39,11 +39,11 @@ Users and Access › Integrations › App Store Connect API.
 ```bash
 # From repo root (where fly.toml lives). Do NOT run `fly launch` (it would
 # overwrite our tuned fly.toml) — create the app explicitly instead.
-fly apps create personal-color-kr-api      # match `app` in fly.toml, or edit it
+fly apps create pov-api      # match `app` in fly.toml, or edit it
 
 # Provision a managed Postgres 16 in the SAME region for low latency.
 fly postgres create --name personal-color-kr-db --region nrt
-fly postgres attach personal-color-kr-db --app personal-color-kr-api
+fly postgres attach personal-color-kr-db --app pov-api
 #   ^ this sets the DATABASE_URL secret on the app automatically, BUT it uses
 #     the postgresql:// scheme. asyncpg needs postgresql+asyncpg:// — see §2.
 ```
@@ -66,7 +66,7 @@ fly secrets set \
   APPLE_BUNDLE_ID='com.personalcolorkr.app' \
   FAL_API_KEY='...' \
   SENTRY_DSN_API='https://...ingest.sentry.io/...' \
-  --app personal-color-kr-api
+  --app pov-api
 ```
 
 - If you used `fly postgres attach`, **overwrite** the auto-set `DATABASE_URL`
@@ -79,7 +79,7 @@ fly secrets set \
 ## 3. Deploy
 
 ```bash
-fly deploy --app personal-color-kr-api
+fly deploy --app pov-api
 ```
 
 What happens: image builds from `Dockerfile` → Fly runs the `release_command`
@@ -89,10 +89,10 @@ machine boots `uvicorn api.main:app` → `/v1/health` goes green → traffic rou
 ### Smoke-test the live API
 
 ```bash
-APP=https://personal-color-kr-api.fly.dev
+APP=https://pov-api.fly.dev
 curl -fsS $APP/v1/health      # {"status":"ok"} — pure liveness
 curl -fsS $APP/v1/db-health   # confirms Postgres connectivity + migrations
-fly logs --app personal-color-kr-api   # watch for OOM (raise vm.memory if seen)
+fly logs --app pov-api   # watch for OOM (raise vm.memory if seen)
 ```
 
 ---
@@ -105,7 +105,7 @@ must be set in the build environment for `preview`/`production` EAS builds:
 ```bash
 eas secret:create --scope project \
   --name EXPO_PUBLIC_API_BASE_URL \
-  --value https://personal-color-kr-api.fly.dev
+  --value https://pov-api.fly.dev
 ```
 
 (No trailing slash. Local simulator dev keeps `http://127.0.0.1:8000` via the

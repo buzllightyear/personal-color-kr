@@ -7,7 +7,7 @@
 # `app` is a GLOBALLY UNIQUE name — change it (or let `fly launch` set it) if
 # `personal-color-kr-api` is already taken on your Fly org.
 
-app = "personal-color-kr-api"
+app = "pov-api"
 
 # Tokyo. Fly has no Seoul region; nrt is the lowest-latency option for Korean
 # users. Co-locate the Postgres app in the same region (see runbook).
