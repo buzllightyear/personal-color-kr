@@ -24,6 +24,15 @@ coverage/
 .env.local
 .env.*.local
 
+# Apple / App Store Connect submit credentials (Phase 7.4 launch).
+# The ASC API key (.p8) is the secret EAS Submit uses to upload builds; it
+# must never be committed. Provide it at deploy time via the gitignored
+# credentials/ dir or the EXPO_ASC_API_KEY_PATH env var (see docs/deploy-api-fly.md).
+credentials/
+*.p8
+*.pem
+*.mobileprovision
+
 # Local tool state
 .openchrome/
 .ouroboros/

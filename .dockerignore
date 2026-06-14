@@ -1,0 +1,47 @@
+# Keep the build context (monorepo root) small + secret-free.
+# The Dockerfile only COPYs packages/core-python and apps/api, but a lean
+# context still speeds uploads and prevents accidental secret/cache leakage.
+
+# --- Secrets (NEVER ship into an image) ---
+.env
+.env.*
+!.env.example
+**/credentials/
+*.p8
+*.pem
+*.key
+
+# --- VCS / CI ---
+.git
+.github
+.gitignore
+
+# --- Node / mobile (not part of the API image) ---
+node_modules
+**/node_modules
+apps/mobile
+packages/core-ts
+pnpm-lock.yaml
+.pnpm-store
+
+# --- Python caches / virtualenvs ---
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+
+# --- Tests are not needed at runtime ---
+apps/api/tests
+packages/core-python/tests
+
+# --- Editor / OS noise ---
+.vscode
+.idea
+.DS_Store
+
+# --- Docs / local infra ---
+docs
+docker-compose.yml
