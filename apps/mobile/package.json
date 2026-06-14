@@ -20,6 +20,7 @@
     "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@babel/runtime": "^7.20.0",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@sentry/cli": "2.31.2",
     "@sentry/react-native": "~5.24.3",
