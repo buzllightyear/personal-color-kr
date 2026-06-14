@@ -94,7 +94,14 @@ jobs:
         # `apps/api/pyproject.toml` under `[tool.black]`.
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-asyncio mypy ruff black
+          # pytest is pinned <9.1: pytest 9.1.0 changed caplog so a log record
+          # that propagates to the root logger is captured TWICE, which breaks
+          # the apps/api Sentry fail-open tests that assert a structured
+          # warning (e.g. `sentry_set_user_failed`) is emitted exactly once.
+          # Pinning keeps CI reproducible against the toolchain main was green
+          # with; revisit (and make the single-warning assertions robust to the
+          # 9.1 double-capture) when bumping past 9.1.
+          python -m pip install 'pytest<9.1' pytest-asyncio mypy ruff black
           python -m pip install -e packages/core-python
           python -m pip install -e apps/api
 
