@@ -87,10 +87,17 @@
  *     screen test can pin the visible state without re-implementing the
  *     state branch.
  *
+ * Real capture wiring:
+ *   The capture source is now injectable via the `acquireSelfieUri` prop. The
+ *   diagnosis-input route injects the real `expo-image-picker`-backed
+ *   `pickSelfieUri` (yielding a `file://` URI, or `null` on permission-deny /
+ *   cancel); when the prop is omitted the component falls back to
+ *   {@link defaultAcquireSelfieUri} (the `stub://` minter) so un-wired surfaces
+ *   and unit tests keep the placeholder behaviour. The press handler is async
+ *   to accommodate the device-I/O round-trip.
+ *
  * Out of scope (deferred):
- *   - Real selfie capture via expo-image-picker (Phase 3.1).
  *   - Multi-shot retry UI / preview thumbnail (Phase 3).
- *   - FAL.ai diagnosis API integration (Phase 3.1).
  */
 import * as React from 'react';
 import {
@@ -138,6 +145,16 @@ export function buildStubSelfieUri(): string {
 }
 
 /**
+ * Default selfie acquirer — mints a `stub://selfie/<timestamp>` URI. Used when
+ * no `acquireSelfieUri` prop is supplied (unit tests, and any surface that has
+ * not yet been wired to the real device picker). The diagnosis-input route
+ * injects the real `expo-image-picker`-backed acquirer (`pickSelfieUri`), which
+ * yields a `file://` URI and resolves `null` on a permission-deny / cancel.
+ */
+export const defaultAcquireSelfieUri = (): Promise<string | null> =>
+  Promise.resolve(buildStubSelfieUri());
+
+/**
  * Props for {@link SelfieUploadPressable}.
  *
  * All fields are `readonly` — matches the Seed immutability convention
@@ -162,6 +179,15 @@ export interface SelfieUploadPressableProps {
    * timestamp-suffixed URI.
    */
   readonly onCapture: (uri: string) => void;
+  /**
+   * Async source of the captured selfie URI. Invoked on each tap; the
+   * component forwards a non-null result to {@link onCapture} and ignores a
+   * `null` (the user denied permission or cancelled the picker). Defaults to
+   * {@link defaultAcquireSelfieUri} (the `stub://` minter) so existing tests
+   * and un-wired surfaces keep the placeholder behaviour; the diagnosis-input
+   * route injects the real `expo-image-picker`-backed `pickSelfieUri`.
+   */
+  readonly acquireSelfieUri?: () => Promise<string | null>;
   /**
    * Optional stable testID for the wrapper Pressable. Defaults to
    * {@link SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID}. Callers SHOULD pass a
@@ -190,20 +216,26 @@ export function SelfieUploadPressable(
   const {
     selfieUri,
     onCapture,
+    acquireSelfieUri = defaultAcquireSelfieUri,
     testID = SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID,
   } = props;
   const hasCapturedSelfie = selfieUri !== null;
 
   const handlePress = React.useCallback(
     (_event: GestureResponderEvent): void => {
-      // Generate a fresh stub URI on every tap (even re-captures) so the
-      // parent's `setDiagnosisInput(...)` write produces a new string and
-      // any downstream consumer can observe the state churn during
-      // development. Phase 3.1 swaps the builder body for a real
-      // expo-image-picker call without changing this control flow.
-      onCapture(buildStubSelfieUri());
+      // Acquire the selfie URI asynchronously (the real picker is an async
+      // device-I/O call; the default stub resolves synchronously-ish via a
+      // resolved Promise). Forward a non-null result to the parent; a `null`
+      // means the user denied permission or cancelled, so we leave the idle
+      // state untouched. Fire-and-forget — the Pressable's onPress is `void`.
+      void (async (): Promise<void> => {
+        const uri = await acquireSelfieUri();
+        if (uri !== null) {
+          onCapture(uri);
+        }
+      })();
     },
-    [onCapture],
+    [onCapture, acquireSelfieUri],
   );
 
   // Function-form `style` so we can dip the opacity on press without
