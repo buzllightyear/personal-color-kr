@@ -18,7 +18,8 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 export interface RatingGateContentProps {
   readonly onSubmit: () => void;
@@ -90,7 +91,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   skipLabel: {
-    ...TYPOGRAPHY.button.medium,
-    color: COLORS.grayscale.disabled,
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    color: INK.muted,
   },
 });

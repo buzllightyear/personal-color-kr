@@ -17,7 +17,8 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 import type {
   FunnelOnboardingAnswers,
   PriorDiagnosis,
@@ -158,8 +159,10 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.lg,
   },
   questionLabel: {
-    ...TYPOGRAPHY.body.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    lineHeight: 22,
+    color: INK.primary,
     marginBottom: SPACING.sm,
   },
   optionRow: {
@@ -167,24 +170,28 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: SPACING.xs,
   },
+  // Editorial select chip: near-square, hairline outline, monochrome.
   optionPill: {
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    borderRadius: 999,
+    borderRadius: 2,
     borderWidth: 1,
-    borderColor: COLORS.grayscale.border,
-    backgroundColor: COLORS.grayscale.background,
+    borderColor: INK.line,
+    backgroundColor: INK.paper,
   },
+  // Selected = filled charcoal (no coral).
   optionPillSelected: {
-    backgroundColor: COLORS.base.coral,
-    borderColor: COLORS.base.coral,
+    backgroundColor: INK.primary,
+    borderColor: INK.primary,
   },
   optionLabel: {
-    ...TYPOGRAPHY.button.medium,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 14,
+    color: INK.primary,
   },
   optionLabelSelected: {
-    color: COLORS.grayscale.background,
+    fontFamily: FONT.medium,
+    color: INK.paper,
   },
   ctaWrapper: {
     paddingBottom: SPACING.xl,

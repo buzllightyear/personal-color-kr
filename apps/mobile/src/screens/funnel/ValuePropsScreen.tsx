@@ -1,10 +1,12 @@
 /**
  * Funnel step 2 — `value_props` presentational screen.
  *
- * 3 vertical-stack cards inside a ScrollView, sourced from
- * `FUNNEL_SCREENS.value_props.metadata.valueProps` (3 keys). Each card pairs
- * a Korean title + description with an emoji glyph and a season accent
- * border. CTA "다음" advances to step 3 (onboarding_priming).
+ * 3 value propositions sourced from
+ * `FUNNEL_SCREENS.value_props.metadata.valueProps` keys, rendered as an
+ * editorial/VSCO list: a tracked index numeral + Korean title + muted
+ * description per row, separated by hairlines. No card fills, season borders,
+ * or emoji (see docs/DESIGN.md — chrome is monochrome, icons are line/none).
+ * CTA "다음" advances to step 3 (onboarding_priming).
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -13,7 +15,8 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY, type SeasonKey } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 export interface ValuePropsScreenProps {
   readonly onNext: () => void;
@@ -33,41 +36,38 @@ const PRIMARY_CTA = requirePrimaryCta();
 
 interface CardConfig {
   readonly key: string;
-  readonly emoji: string;
   readonly title: string;
   readonly description: string;
-  readonly season: SeasonKey;
 }
 
 /**
- * Card content sourced from FUNNEL_SCREENS.value_props.metadata.valueProps
+ * Value-prop content sourced from FUNNEL_SCREENS.value_props.metadata.valueProps
  * keys ['trend_matched_editing', 'monthly_curated_magazine',
- * 'personal_color_preset_library'].  The Korean copy + emoji + season accent
- * are owned by this screen (the metadata only carries the identifier keys).
+ * 'personal_color_preset_library']. The Korean copy is owned by this screen
+ * (the metadata only carries the identifier keys).
  */
 const CARDS: readonly CardConfig[] = [
   {
     key: 'trend_matched_editing',
-    emoji: '🎨',
     title: '트렌드를 내 얼굴에',
     description: '퍼스널 컬러 기반 자동 편집 preset',
-    season: 'spring',
   },
   {
     key: 'monthly_curated_magazine',
-    emoji: '📖',
     title: '매월 새로운 스타일',
     description: '엄선된 컬러 매거진을 매월 업데이트',
-    season: 'summer',
   },
   {
     key: 'personal_color_preset_library',
-    emoji: '🎭',
     title: '내 컬러 preset 라이브러리',
     description: '저장하고 언제든 적용하는 맞춤 preset',
-    season: 'autumn',
   },
 ];
+
+/** Two-digit tracked index numeral, e.g. 0 → "01". */
+function indexLabel(i: number): string {
+  return String(i + 1).padStart(2, '0');
+}
 
 export function ValuePropsScreen(props: ValuePropsScreenProps): React.ReactElement {
   const { onNext } = props;
@@ -83,17 +83,17 @@ export function ValuePropsScreen(props: ValuePropsScreenProps): React.ReactEleme
         contentContainerStyle={styles.scrollContent}
         testID="value-props-card-list"
       >
-        {CARDS.map((card) => (
+        {CARDS.map((card, i) => (
           <View
             key={card.key}
-            style={[styles.card, { borderLeftColor: COLORS.season[card.season] }]}
+            style={styles.row}
             testID={`value-props-card-${card.key.replace(/_/g, '-')}`}
             accessibilityRole="text"
           >
-            <Text style={styles.emoji}>{card.emoji}</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>{card.title}</Text>
-              <Text style={styles.cardDescription}>{card.description}</Text>
+            <Text style={styles.index}>{indexLabel(i)}</Text>
+            <View style={styles.rowText}>
+              <Text style={styles.title}>{card.title}</Text>
+              <Text style={styles.description}>{card.description}</Text>
             </View>
           </View>
         ))}
@@ -113,38 +113,44 @@ export function ValuePropsScreen(props: ValuePropsScreenProps): React.ReactEleme
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   scrollContent: {
-    gap: SPACING.md,
     paddingBottom: SPACING.lg,
   },
-  card: {
+  row: {
     flexDirection: 'row',
     gap: SPACING.md,
-    padding: SPACING.md,
-    borderLeftWidth: 4,
-    borderRadius: SPACING.sm,
-    backgroundColor: COLORS.base.pink,
-    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    alignItems: 'flex-start',
+    // Hairline divider above each row — editorial table, not cards.
+    borderTopWidth: 1,
+    borderTopColor: INK.line,
   },
-  emoji: {
-    fontSize: 32,
+  index: {
+    fontFamily: FONT.regular,
+    fontSize: 13,
+    letterSpacing: 1,
+    lineHeight: 22,
+    color: INK.faint,
   },
-  cardText: {
+  rowText: {
     flex: 1,
     gap: SPACING.xxs,
   },
-  cardTitle: {
-    ...TYPOGRAPHY.body.bold,
-    color: COLORS.grayscale.text,
+  title: {
+    fontFamily: FONT.medium,
+    fontSize: 16,
+    lineHeight: 22,
+    color: INK.primary,
   },
-  cardDescription: {
-    ...TYPOGRAPHY.caption.regular,
-    color: COLORS.grayscale.text,
+  description: {
+    fontFamily: FONT.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: INK.muted,
   },
   ctaWrapper: {
     paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xl,
   },
 });
