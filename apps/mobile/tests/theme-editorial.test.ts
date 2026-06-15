@@ -12,7 +12,12 @@ const HEX_6_DIGIT_UPPERCASE = /^#[0-9A-F]{6}$/;
 
 describe('FONT — Pretendard family tokens', () => {
   it('exposes exactly the four registered Pretendard weights', () => {
-    expect(Object.keys(FONT).sort()).toEqual(['light', 'medium', 'regular', 'semibold']);
+    expect(Object.keys(FONT).sort()).toEqual([
+      'light',
+      'medium',
+      'regular',
+      'semibold',
+    ]);
   });
 
   it('each value is a Pretendard PostScript family name', () => {
@@ -34,9 +39,12 @@ describe('INK — monochrome ramp', () => {
     ]);
   });
 
-  it.each(Object.entries(INK))('INK.%s is a valid 6-digit uppercase hex (got %s)', (_key, value) => {
-    expect(value).toMatch(HEX_6_DIGIT_UPPERCASE);
-  });
+  it.each(Object.entries(INK))(
+    'INK.%s is a valid 6-digit uppercase hex (got %s)',
+    (_key, value) => {
+      expect(value).toMatch(HEX_6_DIGIT_UPPERCASE);
+    },
+  );
 
   it('primary ink is the near-black surface ink (agrees with legacy grayscale.text)', () => {
     expect(INK.primary).toBe('#1A1A1A');
