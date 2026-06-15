@@ -63,7 +63,7 @@ import { ResultRevealScreen } from '../../src/screens/funnel/ResultRevealScreen'
 export default function ResultRevealRoute(): JSX.Element {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { payment } = useFunnelState();
+  const { payment, diagnosis } = useFunnelState();
   const shareToken =
     typeof params['share_token'] === 'string' ? params['share_token'] : undefined;
   const isPreviewMode = shareToken !== undefined;
@@ -110,6 +110,7 @@ export default function ResultRevealRoute(): JSX.Element {
       isPreviewMode={isPreviewMode}
       isPremium={isPremium}
       onUnlock={() => router.push('/(funnel)/referral-gate')}
+      diagnosisResult={diagnosis.result}
     />
   );
 }

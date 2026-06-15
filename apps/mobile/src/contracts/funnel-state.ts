@@ -59,6 +59,7 @@
  * (created in a subsequent sub-AC) instantiates `React.createContext` using
  * `FunnelStateValue` as the generic parameter.
  */
+import type { DiagnosisErrorKind, DiagnosisResult } from '../request-diagnosis';
 
 // ---------------------------------------------------------------------------
 // Domain string-literal unions for the two onboarding questions
@@ -546,6 +547,84 @@ export type SetIsPremium = (isPremium: boolean) => void;
 export type SetSelectedPaymentMethod = (method: PaymentMethod | null) => void;
 
 // ---------------------------------------------------------------------------
+// Diagnosis-result slice (step 8 → 9 — the real POST /v1/diagnose round-trip)
+// ---------------------------------------------------------------------------
+
+/**
+ * Lifecycle of the real diagnosis network call fired during the step-8
+ * `fake_scan_animation` overlay:
+ *
+ *   - `idle`    — no call attempted yet (initial state).
+ *   - `pending` — the multipart `POST /v1/diagnose` is in flight.
+ *   - `success` — the server returned a {@link DiagnosisResult}; `result` is
+ *     non-null and `result_reveal` renders the diagnosed category.
+ *   - `error`   — the call failed; `errorKind` carries the discriminated
+ *     {@link DiagnosisErrorKind} so the funnel can branch on a recoverable
+ *     `face_not_detected` vs an unrecoverable `unauthorized` / `server_error`.
+ *
+ * The status is tracked alongside the result (rather than collapsing "no
+ * result yet" and "call failed" into a single `null`) so `result_reveal` can
+ * distinguish "still scanning" from "scan failed, offer a retry" without a
+ * second flag.
+ */
+export type DiagnosisStatus = 'idle' | 'pending' | 'success' | 'error';
+
+/**
+ * Immutable record of the real diagnosis round-trip, kept structurally
+ * parallel to the other funnel slices (own `INITIAL_*` frozen constant, own
+ * patch-shaped updater). Distinct from {@link FunnelDiagnosisInput} (step-7
+ * selfie *input*) — this slice holds the step-8 diagnosis *output*.
+ *
+ *   - `status`    — see {@link DiagnosisStatus}.
+ *   - `result`    — the diagnosed season/tone/contrast + derived category, or
+ *     `null` until a `success`. The funnel reads `result.season` / `result.tone`
+ *     to render the localized category headline on `result_reveal`.
+ *   - `errorKind` — the discriminated failure kind on `status === 'error'`,
+ *     else `null`.
+ *
+ * Why `| null` rather than `| undefined` for `result` / `errorKind`:
+ *   `exactOptionalPropertyTypes: true` is enabled at the workspace root —
+ *   using `| null` with always-present keys keeps "not yet" representable
+ *   without colliding with that rule, matching every other nullable field in
+ *   this contract.
+ */
+export type FunnelDiagnosis = {
+  readonly status: DiagnosisStatus;
+  readonly result: DiagnosisResult | null;
+  readonly errorKind: DiagnosisErrorKind | null;
+};
+
+/**
+ * Canonical "no diagnosis attempted yet" value. Suitable as the React Context
+ * default for the diagnosis slice and as the initial state for any synthetic
+ * test provider. Frozen so an accidental mutation fails loud rather than
+ * corrupting other tests via shared reference — same pattern as the sibling
+ * `INITIAL_*` constants.
+ */
+export const INITIAL_FUNNEL_DIAGNOSIS: FunnelDiagnosis = Object.freeze({
+  status: 'idle',
+  result: null,
+  errorKind: null,
+});
+
+/**
+ * Partial update accepted by `setDiagnosis`. Each field is optional (so a
+ * caller can flip `status` to `pending` without clearing a prior `result`)
+ * but still constrained to the same domain declared on {@link FunnelDiagnosis}.
+ */
+export type FunnelDiagnosisPatch = {
+  readonly [K in keyof FunnelDiagnosis]?: FunnelDiagnosis[K];
+};
+
+/**
+ * Updater function injected through the React Context for the diagnosis-result
+ * slice. Implementations MUST treat the previous `diagnosis` value as
+ * immutable and return (via `setState`) a fresh object that merges the patch —
+ * same contract as {@link SetOnboarding} and the other slice updaters.
+ */
+export type SetDiagnosis = (patch: FunnelDiagnosisPatch) => void;
+
+// ---------------------------------------------------------------------------
 // Public context value
 // ---------------------------------------------------------------------------
 
@@ -582,6 +661,19 @@ export type FunnelStateValue = {
   readonly setOnboarding: SetOnboarding;
   readonly diagnosisInput: FunnelDiagnosisInput;
   readonly setDiagnosisInput: SetDiagnosisInput;
+  /**
+   * Immutable snapshot of the real `POST /v1/diagnose` round-trip fired during
+   * the step-8 `fake_scan_animation` overlay. Distinct from `diagnosisInput`
+   * (the step-7 selfie input): this slice holds the diagnosis *output*
+   * (status + result + errorKind) the `result_reveal` screen reads to render
+   * the diagnosed category.
+   */
+  readonly diagnosis: FunnelDiagnosis;
+  /**
+   * Updater handle exposed to the step-8 call site that fires the diagnosis
+   * request and writes the `pending` → `success`/`error` transitions.
+   */
+  readonly setDiagnosis: SetDiagnosis;
   readonly referral: FunnelReferral;
   readonly setReferral: SetReferral;
   readonly payment: FunnelPayment;

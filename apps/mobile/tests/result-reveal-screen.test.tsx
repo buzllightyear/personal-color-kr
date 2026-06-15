@@ -118,6 +118,43 @@ describe('ResultRevealScreen — render', () => {
     expect(headline?.props.children).toBe('당신의 카테고리는 ✦ 가을 웜톤 ✦');
   });
 
+  it('renders the DYNAMIC headline from a live diagnosis result', () => {
+    const tree = render(
+      React.createElement(ResultRevealScreen, {
+        isPreviewMode: false,
+        isPremium: false,
+        onUnlock: NO_OP,
+        diagnosisResult: {
+          season: 'spring',
+          tone: 'warm',
+          contrast: 'high',
+          category: 'spring_warm',
+          confidence: 0.9,
+          toneConfidence: 0.9,
+          contrastConfidence: 0.9,
+          skinLuma: 0.6,
+          hairLuma: 0.2,
+          eyesLuma: 0.3,
+        },
+      }),
+    );
+    const headline = findHostByTestId(tree, 'result-reveal-headline');
+    expect(headline?.props.children).toBe('당신의 카테고리는 ✦ 봄 웜톤 ✦');
+  });
+
+  it('falls back to the static teaser headline when diagnosisResult is null', () => {
+    const tree = render(
+      React.createElement(ResultRevealScreen, {
+        isPreviewMode: false,
+        isPremium: false,
+        onUnlock: NO_OP,
+        diagnosisResult: null,
+      }),
+    );
+    const headline = findHostByTestId(tree, 'result-reveal-headline');
+    expect(headline?.props.children).toBe('당신의 카테고리는 ✦ 가을 웜톤 ✦');
+  });
+
   it('renders the Korean subhead from FUNNEL_SCREENS.result_reveal', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
