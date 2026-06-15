@@ -64,7 +64,7 @@ import {
   resolveItemState,
   type StageLadderItem,
 } from '../src/components/StageLadder';
-import { COLORS } from '../src/theme';
+import { FONT, INK } from '../src/theme/editorial';
 
 interface TestInstance {
   readonly type: unknown;
@@ -262,14 +262,12 @@ describe('StageLadder — token colours (zero new hex)', () => {
         testIDPrefix: 'ladder',
       }),
     );
-    // item-0 ('얼굴 인식') is `done` — a completed stage recedes into the muted
-    // grayscale.disabled tone so the active row remains the focal point.
-    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).color).toBe(
-      COLORS.grayscale.disabled,
-    );
+    // item-0 ('얼굴 인식') is `done` — a completed stage recedes into the faint
+    // ink tone so the active row remains the focal point.
+    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).color).toBe(INK.faint);
   });
 
-  it('colours the active label with base.coral in bold weight', () => {
+  it('colours the active label with primary ink in the medium cut', () => {
     const tree = render(
       React.createElement(StageLadder, {
         items: LOADER_ITEMS,
@@ -278,21 +276,25 @@ describe('StageLadder — token colours (zero new hex)', () => {
     );
     // item-1 ('피부 톤 측정') is `active` — the in-progress focal row.
     const activeLabel = flatStyle(getByTestId(tree, 'ladder-item-1-label'));
-    expect(activeLabel.color).toBe(COLORS.base.coral);
-    expect(activeLabel.fontWeight).toBe('700');
+    expect(activeLabel.color).toBe(INK.primary);
+    expect(activeLabel.fontFamily).toBe(FONT.medium);
   });
 
-  it('keeps non-active labels at the regular (400) weight', () => {
+  it('keeps non-active labels in the regular cut', () => {
     const tree = render(
       React.createElement(StageLadder, {
         items: LOADER_ITEMS,
         testIDPrefix: 'ladder',
       }),
     );
-    // done (item-0) and pending (item-2) inherit the body.regular weight,
-    // so only the active row is emphasised.
-    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).fontWeight).toBe('400');
-    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).fontWeight).toBe('400');
+    // done (item-0) and pending (item-2) inherit the regular family from the
+    // base label style, so only the active row is emphasised.
+    expect(flatStyle(getByTestId(tree, 'ladder-item-0-label')).fontFamily).toBe(
+      FONT.regular,
+    );
+    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).fontFamily).toBe(
+      FONT.regular,
+    );
   });
 
   it('drives active colour purely from item state (state vs status agree)', () => {
@@ -308,24 +310,18 @@ describe('StageLadder — token colours (zero new hex)', () => {
         testIDPrefix: 'b',
       }),
     );
-    expect(flatStyle(getByTestId(viaState, 'a-item-0-label')).color).toBe(
-      COLORS.base.coral,
-    );
-    expect(flatStyle(getByTestId(viaStatus, 'b-item-0-label')).color).toBe(
-      COLORS.base.coral,
-    );
+    expect(flatStyle(getByTestId(viaState, 'a-item-0-label')).color).toBe(INK.primary);
+    expect(flatStyle(getByTestId(viaStatus, 'b-item-0-label')).color).toBe(INK.primary);
   });
 
-  it('colours pending labels with grayscale.disabled', () => {
+  it('colours pending labels with faint ink', () => {
     const tree = render(
       React.createElement(StageLadder, {
         items: LOADER_ITEMS,
         testIDPrefix: 'ladder',
       }),
     );
-    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).color).toBe(
-      COLORS.grayscale.disabled,
-    );
+    expect(flatStyle(getByTestId(tree, 'ladder-item-2-label')).color).toBe(INK.faint);
   });
 });
 
@@ -352,14 +348,14 @@ describe('StageLadder — done-state checkmark marker', () => {
     expect(checks[0].props.children).toBe('✓ ');
   });
 
-  it('colours the done checkmark with grayscale.disabled', () => {
+  it('colours the done checkmark with faint ink', () => {
     const tree = render(
       React.createElement(StageLadder, {
         items: LOADER_ITEMS,
         testIDPrefix: 'ladder',
       }),
     );
-    expect(flatStyle(findCheckmarks(tree)[0]).color).toBe(COLORS.grayscale.disabled);
+    expect(flatStyle(findCheckmarks(tree)[0]).color).toBe(INK.faint);
   });
 
   it('hides the decorative checkmark from screen readers', () => {
@@ -481,7 +477,7 @@ describe('StageLadder — synthetic tri-state row contract (testID + label + sty
     );
   }
 
-  it('pending row: testID + accessibilityLabel + grayscale.disabled label', () => {
+  it('pending row: testID + accessibilityLabel + faint-ink label', () => {
     const tree = renderTriState();
     const row = getByTestId(tree, 'tri-item-0');
     const label = getByTestId(tree, 'tri-item-0-label');
@@ -489,30 +485,30 @@ describe('StageLadder — synthetic tri-state row contract (testID + label + sty
     expect(row.props.accessibilityLabel).toBe('대기 단계');
     expect(row.props.accessibilityState).toEqual({ selected: false });
     expect(label.props.children).toBe('대기 단계');
-    expect(flatStyle(label).color).toBe(COLORS.grayscale.disabled);
-    expect(flatStyle(label).fontWeight).toBe('400');
+    expect(flatStyle(label).color).toBe(INK.faint);
+    expect(flatStyle(label).fontFamily).toBe(FONT.regular);
   });
 
-  it('active row: testID + accessibilityLabel + base.coral bold label', () => {
+  it('active row: testID + accessibilityLabel + primary-ink medium label', () => {
     const tree = renderTriState();
     const row = getByTestId(tree, 'tri-item-1');
     const label = getByTestId(tree, 'tri-item-1-label');
     expect(row.props.accessibilityLabel).toBe('진행 단계');
     expect(row.props.accessibilityState).toEqual({ selected: true });
     expect(label.props.children).toBe('진행 단계');
-    expect(flatStyle(label).color).toBe(COLORS.base.coral);
-    expect(flatStyle(label).fontWeight).toBe('700');
+    expect(flatStyle(label).color).toBe(INK.primary);
+    expect(flatStyle(label).fontFamily).toBe(FONT.medium);
   });
 
-  it('done row: testID + accessibilityLabel + grayscale.disabled label', () => {
+  it('done row: testID + accessibilityLabel + faint-ink label', () => {
     const tree = renderTriState();
     const row = getByTestId(tree, 'tri-item-2');
     const label = getByTestId(tree, 'tri-item-2-label');
     expect(row.props.accessibilityLabel).toBe('완료 단계');
     expect(row.props.accessibilityState).toEqual({ selected: false });
     expect(label.props.children).toBe('완료 단계');
-    expect(flatStyle(label).color).toBe(COLORS.grayscale.disabled);
-    expect(flatStyle(label).fontWeight).toBe('400');
+    expect(flatStyle(label).color).toBe(INK.faint);
+    expect(flatStyle(label).fontFamily).toBe(FONT.regular);
   });
 
   it('keeps the three synthetic rows disjoint and in order under the prefix', () => {
@@ -531,7 +527,7 @@ describe('StageLadder — synthetic tri-state row contract (testID + label + sty
   });
 });
 
-describe('StageLadder — pending glyph colour (grayscale.border)', () => {
+describe('StageLadder — pending glyph colour (line ink)', () => {
   it('renders the pending row ○ marker in COLORS.grayscale.border', () => {
     const tree = render(
       React.createElement(StageLadder, {
@@ -550,10 +546,10 @@ describe('StageLadder — pending glyph colour (grayscale.border)', () => {
         node.props?.children === '\u25CB',
     ) as unknown as readonly TestInstance[];
     expect(glyphNodes).toHaveLength(1);
-    expect(flatStyle(glyphNodes[0]).color).toBe(COLORS.grayscale.border);
+    expect(flatStyle(glyphNodes[0]).color).toBe(INK.line);
   });
 
-  it('uses the border token (not disabled) for the pending glyph', () => {
+  it('uses the line token (not the faint label token) for the pending glyph', () => {
     const tree = render(
       React.createElement(StageLadder, {
         items: LOADER_ITEMS,
@@ -567,7 +563,7 @@ describe('StageLadder — pending glyph colour (grayscale.border)', () => {
         node.props?.children === '\u25CB',
     )[0] as unknown as TestInstance;
     const color = flatStyle(glyph).color;
-    expect(color).toBe(COLORS.grayscale.border);
-    expect(color).not.toBe(COLORS.grayscale.disabled);
+    expect(color).toBe(INK.line);
+    expect(color).not.toBe(INK.faint);
   });
 });

@@ -125,7 +125,7 @@ describe('SelfieUploadPressable — render', () => {
     expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeNull();
   });
 
-  it('renders the camera emoji glyph (no icon packages)', () => {
+  it('renders the editorial "+" upload affordance (no emoji, no icon packages)', () => {
     const tree = render(
       React.createElement(SelfieUploadPressable, {
         selfieUri: null,
@@ -134,7 +134,7 @@ describe('SelfieUploadPressable — render', () => {
     );
     const icon = findHostByTestId(tree, 'selfie-upload-icon');
     expect(icon).toBeTruthy();
-    expect(icon?.props.children).toBe('📷');
+    expect(icon?.props.children).toBe('+');
   });
 
   it('uses the default testID sentinel when none is supplied', () => {
