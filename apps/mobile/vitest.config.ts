@@ -82,6 +82,14 @@ export default defineConfig({
         find: 'react-native-svg',
         replacement: path.resolve(__dirname, 'tests/__stubs__/react-native-svg-stub.ts'),
       },
+      // `expo-image-picker` is a native module vite can't parse; `src/pick-selfie.ts`
+      // imports it for the default permission/launch fns + the MediaTypeOptions
+      // enum. Redirect to an inert stub so the module resolves — the picker flow
+      // itself is tested through `pickSelfie`'s injected deps.
+      {
+        find: 'expo-image-picker',
+        replacement: path.resolve(__dirname, 'tests/__stubs__/expo-image-picker-stub.ts'),
+      },
     ],
   },
 });

@@ -223,7 +223,7 @@ describe('DiagnosisInputScreen — submit gating', () => {
 });
 
 describe('DiagnosisInputScreen — capture callback', () => {
-  it('invokes onCaptureSelfie with a stub://selfie/<timestamp> URI when the capture surface is pressed', () => {
+  it('invokes onCaptureSelfie with a stub://selfie/<timestamp> URI when the capture surface is pressed', async () => {
     const onCapture = vi.fn();
     const tree = render(
       React.createElement(DiagnosisInputScreen, {
@@ -234,7 +234,10 @@ describe('DiagnosisInputScreen — capture callback', () => {
     );
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
     const onPress = surface?.props.onPress as () => void;
-    act(() => onPress());
+    // Capture is async (the default acquirer resolves a Promise).
+    await act(async () => {
+      onPress();
+    });
     expect(onCapture).toHaveBeenCalledTimes(1);
     const arg = onCapture.mock.calls[0]?.[0] as unknown;
     expect(typeof arg).toBe('string');
@@ -327,7 +330,7 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
     expect(findHostByTestId(tree, 'selfie-upload-icon')).toBeTruthy();
   });
 
-  it('writes the upload-control stub URI into context.diagnosisInput on tap (composition end-to-end)', () => {
+  it('writes the upload-control stub URI into context.diagnosisInput on tap (composition end-to-end)', async () => {
     // This is the Sub-AC 5.3 integration test: pressing the upload control
     // (SelfieUploadPressable) writes the freshly minted stub URI into
     // FunnelStateContext.diagnosisInput.selfieUri through the composed
@@ -356,7 +359,9 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
     expect(surface).toBeTruthy();
     const onPress = surface?.props.onPress as () => void;
     expect(typeof onPress).toBe('function');
-    act(() => onPress());
+    await act(async () => {
+      onPress();
+    });
 
     // Post-tap: the context slice now carries a stub URI matching the
     // documented shape — this is the AC's "writes the captured stub URI
@@ -373,7 +378,7 @@ describe('DiagnosisInputScreen — composition integration (Sub-AC 5.3)', () => 
 });
 
 describe('DiagnosisInputScreen — FunnelStateContext write integration', () => {
-  it('captures and writes a stub selfie URI into context.diagnosisInput when the capture surface is tapped', () => {
+  it('captures and writes a stub selfie URI into context.diagnosisInput when the capture surface is tapped', async () => {
     const capture: ContextCapture = { latest: null };
     let tree: TestRenderer.ReactTestRenderer | undefined;
     act(() => {
@@ -395,7 +400,9 @@ describe('DiagnosisInputScreen — FunnelStateContext write integration', () => 
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
     const onPress = surface?.props.onPress as () => void;
     expect(typeof onPress).toBe('function');
-    act(() => onPress());
+    await act(async () => {
+      onPress();
+    });
 
     // Post-tap: context now carries a stub URI.
     const captured = capture.latest?.diagnosisInput.selfieUri;
