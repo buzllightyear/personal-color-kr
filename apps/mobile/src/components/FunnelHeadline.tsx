@@ -117,7 +117,8 @@
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
+import { SPACING } from '../theme';
+import { FONT, INK } from '../theme/editorial';
 
 /**
  * Props for {@link FunnelHeadline}.
@@ -173,23 +174,29 @@ export function FunnelHeadline(props: FunnelHeadlineProps): React.ReactElement {
 }
 
 /**
- * StyleSheet — derived entirely from design tokens. No hard-coded sizes,
- * colours, or spacing values. Any visual tweak should land in the token
- * module, not here.
+ * StyleSheet — editorial/VSCO typography. The headline is set in Pretendard
+ * Light with a tight optical line-height; the subhead is a smaller,
+ * letter-spaced muted-ink row. Sizes are local to this component (the legacy
+ * `TYPOGRAPHY` matrix is frozen by its unit test); colours + families come
+ * from the additive `theme/editorial` tokens.
  */
 const styles = StyleSheet.create({
   container: {
-    // Vertical rhythm between the two rows. `gap` reads more declaratively
-    // than `marginTop` on the subhead and generalises trivially if a future
-    // variant adds a third row.
-    gap: SPACING.xs,
+    // Vertical rhythm between the two rows.
+    gap: SPACING.sm,
   },
   headline: {
-    ...TYPOGRAPHY.headline.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.light,
+    fontSize: 28,
+    lineHeight: 38,
+    letterSpacing: -0.3,
+    color: INK.primary,
   },
   subhead: {
-    ...TYPOGRAPHY.subhead.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    letterSpacing: 0.2,
+    color: INK.muted,
   },
 });

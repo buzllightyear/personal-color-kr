@@ -108,7 +108,7 @@ import {
   type PressableStateCallbackType,
 } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Default testID used when the caller does not supply one. Exported as a
@@ -218,44 +218,33 @@ export function FunnelPrimaryButton(
 
 const styles = StyleSheet.create({
   button: {
-    // Token-driven padding for a 16×32 pill that fits cleanly on a
-    // 4-inch+ phone width with comfortable hit-target margins.
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    // Fully rounded pill. Not a token — corner radii are a stylistic
-    // constant, not a design rhythm dimension (the spacing scale measures
-    // layout gaps).
-    borderRadius: 999,
-    // Korean beauty market visual identity (see colors.ts docblock).
-    backgroundColor: COLORS.base.coral,
-    // Center the label horizontally within the pill — the parent layout
-    // controls the button's outer width / alignment.
+    // Editorial/VSCO primary action: a flat, near-square charcoal bar. The
+    // parent layout controls outer width (the funnel CTAs stretch full-bleed);
+    // 18pt vertical padding gives a comfortable tap target.
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    // Near-square corners (not a pill) — the hardware-minimal editorial look.
+    borderRadius: 2,
+    // Monochrome ink fill replaces the former coral.
+    backgroundColor: INK.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonPressed: {
-    // Subtle press feedback without an animation library. 0.7 is the
-    // canonical RN "pressed" opacity used by the deprecated
-    // TouchableOpacity — we preserve that visual intuition.
-    opacity: 0.7,
+    // Subtle press feedback without an animation library.
+    opacity: 0.8,
   },
   buttonDisabled: {
-    // Disabled fill — mid-gray reads as "this button is not interactive"
-    // without competing with the coral primary fill on the rest of the
-    // screen. Opacity is left at 1.0; the gray fill alone communicates
-    // the state.
-    backgroundColor: COLORS.grayscale.disabled,
+    // Faint-ink fill reads as "not interactive" against the primary-ink CTA.
+    backgroundColor: INK.faint,
   },
   label: {
-    // 16pt/700 button typography token — matches Korean text density
-    // calibration in typography.ts. Spread the token first so any local
-    // overrides (color) win.
-    ...TYPOGRAPHY.button.bold,
-    // Pure white on coral yields AAA contrast on both enabled and
-    // disabled fills.
-    color: COLORS.grayscale.background,
-    // Center the label inside the row in case the button stretches
-    // horizontally beyond the label's intrinsic width.
+    // Pretendard Medium with wide tracking — the VSCO label rhythm.
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    // Paper-white on the charcoal fill keeps AAA contrast in both states.
+    color: INK.paper,
     textAlign: 'center',
   },
 });

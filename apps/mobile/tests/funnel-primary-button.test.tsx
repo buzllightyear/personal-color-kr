@@ -120,7 +120,7 @@ import {
   FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID,
   FunnelPrimaryButton,
 } from '../src/components/funnel/FunnelPrimaryButton';
-import { COLORS, SPACING, TYPOGRAPHY } from '../src/theme';
+import { FONT, INK } from '../src/theme/editorial';
 
 describe('FunnelPrimaryButton — render', () => {
   it('renders the supplied Korean label text', () => {
@@ -323,7 +323,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     return (resolved as Record<string, unknown>) ?? {};
   }
 
-  it('uses COLORS.base.coral as the enabled background fill', () => {
+  it('uses INK.primary (charcoal) as the enabled background fill', () => {
     const result = render(
       React.createElement(FunnelPrimaryButton, {
         label: '시작하기',
@@ -332,10 +332,10 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
-    expect(style.backgroundColor).toBe(COLORS.base.coral);
+    expect(style.backgroundColor).toBe(INK.primary);
   });
 
-  it('swaps to COLORS.grayscale.disabled fill when disabled', () => {
+  it('swaps to INK.faint fill when disabled', () => {
     const result = render(
       React.createElement(FunnelPrimaryButton, {
         label: '시작하기',
@@ -345,7 +345,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
-    expect(style.backgroundColor).toBe(COLORS.grayscale.disabled);
+    expect(style.backgroundColor).toBe(INK.faint);
   });
 
   it('applies a press-feedback opacity dip while pressed (enabled state)', () => {
@@ -358,7 +358,7 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const pressedStyle = resolveStyle(pressable, { pressed: true });
     const idleStyle = resolveStyle(pressable, { pressed: false });
-    expect(pressedStyle.opacity).toBe(0.7);
+    expect(pressedStyle.opacity).toBe(0.8);
     // Idle state must NOT carry the press opacity (would dim the button
     // even when not pressed).
     expect(idleStyle.opacity).toBeUndefined();
@@ -374,12 +374,12 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: true });
-    // Disabled state pins the gray fill regardless of pressed flag.
-    expect(style.backgroundColor).toBe(COLORS.grayscale.disabled);
+    // Disabled state pins the faint-ink fill regardless of pressed flag.
+    expect(style.backgroundColor).toBe(INK.faint);
     expect(style.opacity).toBeUndefined();
   });
 
-  it('uses SPACING.md vertical and SPACING.xl horizontal padding tokens', () => {
+  it('uses an 18pt vertical tap-target padding', () => {
     const result = render(
       React.createElement(FunnelPrimaryButton, {
         label: '시작하기',
@@ -388,11 +388,10 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
-    expect(style.paddingVertical).toBe(SPACING.md);
-    expect(style.paddingHorizontal).toBe(SPACING.xl);
+    expect(style.paddingVertical).toBe(18);
   });
 
-  it('uses a fully rounded pill (borderRadius 999) — stylistic constant', () => {
+  it('uses near-square corners (borderRadius 2) — the editorial flat-bar look', () => {
     const result = render(
       React.createElement(FunnelPrimaryButton, {
         label: '시작하기',
@@ -401,10 +400,10 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const pressable = result.getByTestId(FUNNEL_PRIMARY_BUTTON_DEFAULT_TEST_ID);
     const style = resolveStyle(pressable, { pressed: false });
-    expect(style.borderRadius).toBe(999);
+    expect(style.borderRadius).toBe(2);
   });
 
-  it('renders the label with TYPOGRAPHY.button.bold + white color', () => {
+  it('renders the label in Pretendard Medium, tracked, paper-white', () => {
     const result = render(
       React.createElement(FunnelPrimaryButton, {
         label: '시작하기',
@@ -413,9 +412,9 @@ describe('FunnelPrimaryButton — styling pulled from design tokens', () => {
     );
     const textNode = result.findTextNode('시작하기');
     const styleProp = textNode.props.style as Record<string, unknown>;
-    expect(styleProp.fontSize).toBe(TYPOGRAPHY.button.bold.fontSize);
-    expect(styleProp.fontWeight).toBe(TYPOGRAPHY.button.bold.fontWeight);
-    expect(styleProp.color).toBe(COLORS.grayscale.background);
+    expect(styleProp.fontFamily).toBe(FONT.medium);
+    expect(styleProp.letterSpacing).toBe(1.5);
+    expect(styleProp.color).toBe(INK.paper);
     expect(styleProp.textAlign).toBe('center');
   });
 });
