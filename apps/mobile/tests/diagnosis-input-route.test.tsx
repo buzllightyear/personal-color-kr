@@ -76,6 +76,18 @@ vi.mock('expo-router', () => {
   };
 });
 
+// Mock the real device picker the route injects so a tap deterministically
+// resolves a `file://` URI (the actual `expo-image-picker` flow is covered in
+// `pick-selfie.test.ts`). Without this, the route would invoke the real
+// `pickSelfieUri`, whose default permission stub denies → no capture, and the
+// route → context write contract below could not be exercised.
+vi.mock('../src/pick-selfie', () => {
+  return {
+    pickSelfieUri: (): Promise<string | null> =>
+      Promise.resolve('file:///tmp/route-selfie.jpg'),
+  };
+});
+
 // Import the default export AFTER the mocks have been registered so the
 // route module's `import { useRouter } from 'expo-router'` resolves to the
 // mocked surface above.
@@ -135,31 +147,34 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
     expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeNull();
   });
 
-  it('forwards capture-surface taps into setDiagnosisInput (screen re-renders with captured state)', () => {
+  it('forwards capture-surface taps into setDiagnosisInput (screen re-renders with captured state)', async () => {
     pushSpy.mockClear();
     const tree = renderRoute();
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
     expect(surface).toBeTruthy();
     const onPress = surface?.props.onPress as (() => void) | undefined;
     expect(typeof onPress).toBe('function');
-    act(() => {
+    // Capture is async (the injected picker resolves a Promise).
+    await act(async () => {
       (onPress as () => void)();
     });
-    // After the tap the route's onCaptureSelfie wrote a stub URI into
+    // After the tap the route's onCaptureSelfie wrote the picker URI into
     // context.diagnosisInput, which re-renders the screen with the captured
     // label visible — this is the route → context write contract.
     expect(findHostByTestId(tree, 'selfie-upload-label-captured')).toBeTruthy();
     expect(findHostByTestId(tree, 'selfie-upload-label-idle')).toBeNull();
   });
 
-  it('forwards useRouter().push to onNext (advances to /(funnel)/fake-scan-animation)', () => {
+  it('forwards useRouter().push to onNext (advances to /(funnel)/fake-scan-animation)', async () => {
     pushSpy.mockClear();
     const tree = renderRoute();
     // First capture a selfie so the CTA's disabled gate flips off — the
     // FunnelPrimaryButton suppresses onPress while disabled.
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
     const capturePress = surface?.props.onPress as () => void;
-    act(() => capturePress());
+    await act(async () => {
+      capturePress();
+    });
 
     const submit = findHostByTestId(tree, 'diagnosis-input-submit');
     expect(submit).toBeTruthy();

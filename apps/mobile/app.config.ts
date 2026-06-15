@@ -520,6 +520,18 @@ export default function defineExpoConfig({
           ],
         },
       ],
+      // Real selfie capture (step 7 → diagnosis). The permission strings mirror
+      // the app.json `ios.infoPlist` Korean copy so the config-plugin pass and
+      // the static infoPlist agree (no English fallback leaks into the prompt).
+      [
+        'expo-image-picker',
+        {
+          photosPermission:
+            '가지고 있는 셀카로 퍼스널 컬러를 진단할 수 있도록 사진 보관함 접근이 필요해요.',
+          cameraPermission:
+            '셀카로 퍼스널 컬러를 진단하기 위해 카메라를 사용해요. 촬영한 사진은 진단 분석에만 쓰여요.',
+        },
+      ],
       buildSentryPluginEntry(),
     ],
     runtimeVersion: EXPO_RUNTIME_VERSION,

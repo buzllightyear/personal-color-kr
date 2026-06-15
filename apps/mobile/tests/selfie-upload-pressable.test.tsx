@@ -164,7 +164,7 @@ describe('SelfieUploadPressable — render', () => {
 });
 
 describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
-  it('fires onCapture exactly once with a stub://selfie/<timestamp> URI when pressed', () => {
+  it('fires onCapture exactly once with a stub://selfie/<timestamp> URI when pressed', async () => {
     const onCapture = vi.fn();
     const tree = render(
       React.createElement(SelfieUploadPressable, {
@@ -178,7 +178,9 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     const onPress = surface?.props.onPress as (e: unknown) => void;
     expect(typeof onPress).toBe('function');
 
-    act(() => {
+    // The press handler acquires the URI asynchronously (the default acquirer
+    // resolves a Promise), so the assertion runs inside an async `act`.
+    await act(async () => {
       onPress({} as unknown);
     });
 
@@ -189,7 +191,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     expect(arg as string).toMatch(/^stub:\/\/selfie\/\d+$/);
   });
 
-  it('mints a new timestamp suffix on each press (re-capture path)', () => {
+  it('mints a new timestamp suffix on each press (re-capture path)', async () => {
     // Drive Date.now deterministically so the two URIs are guaranteed to
     // differ — we cannot rely on a millisecond elapsing inside the same
     // test tick under fake timers or fast CPUs.
@@ -206,10 +208,10 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     const onPress = surface?.props.onPress as (e: unknown) => void;
 
-    act(() => {
+    await act(async () => {
       onPress({} as unknown);
     });
-    act(() => {
+    await act(async () => {
       onPress({} as unknown);
     });
 
@@ -220,7 +222,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     dateNowSpy.mockRestore();
   });
 
-  it('fires onCapture even when a selfieUri is already present (re-capture supported)', () => {
+  it('fires onCapture even when a selfieUri is already present (re-capture supported)', async () => {
     const onCapture = vi.fn();
     const tree = render(
       React.createElement(SelfieUploadPressable, {
@@ -231,7 +233,7 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
     const onPress = surface?.props.onPress as (e: unknown) => void;
 
-    act(() => {
+    await act(async () => {
       onPress({} as unknown);
     });
 
@@ -239,6 +241,45 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     const arg = onCapture.mock.calls[0]?.[0] as unknown;
     expect(typeof arg).toBe('string');
     expect(arg as string).toMatch(/^stub:\/\/selfie\/\d+$/);
+  });
+
+  it('forwards a custom acquireSelfieUri result to onCapture', async () => {
+    const onCapture = vi.fn();
+    const tree = render(
+      React.createElement(SelfieUploadPressable, {
+        selfieUri: null,
+        onCapture,
+        acquireSelfieUri: () => Promise.resolve('file:///tmp/real.jpg'),
+      }),
+    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
+    const onPress = surface?.props.onPress as (e: unknown) => void;
+
+    await act(async () => {
+      onPress({} as unknown);
+    });
+
+    expect(onCapture).toHaveBeenCalledTimes(1);
+    expect(onCapture).toHaveBeenCalledWith('file:///tmp/real.jpg');
+  });
+
+  it('does NOT fire onCapture when the acquirer resolves null (permission deny / cancel)', async () => {
+    const onCapture = vi.fn();
+    const tree = render(
+      React.createElement(SelfieUploadPressable, {
+        selfieUri: null,
+        onCapture,
+        acquireSelfieUri: () => Promise.resolve(null),
+      }),
+    );
+    const surface = findHostByTestId(tree, SELFIE_UPLOAD_PRESSABLE_DEFAULT_TEST_ID);
+    const onPress = surface?.props.onPress as (e: unknown) => void;
+
+    await act(async () => {
+      onPress({} as unknown);
+    });
+
+    expect(onCapture).not.toHaveBeenCalled();
   });
 });
 

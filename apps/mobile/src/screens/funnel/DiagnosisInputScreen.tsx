@@ -105,6 +105,14 @@ export interface DiagnosisInputScreenProps {
    */
   readonly onCaptureSelfie: (uri: string) => void;
   /**
+   * Optional async selfie acquirer forwarded to the embedded
+   * {@link SelfieUploadPressable}. The route injects the real
+   * `expo-image-picker`-backed `pickSelfieUri`; when omitted the component
+   * falls back to its `stub://` minter so the screen test keeps the
+   * placeholder behaviour without pulling in a native module.
+   */
+  readonly acquireSelfieUri?: () => Promise<string | null>;
+  /**
    * Invoked when the primary CTA is pressed. Parent wires this to
    * `router.push('/(funnel)/fake-scan-animation')`. Only fires when
    * `selfieUri !== null` (the CTA is disabled until then).
@@ -140,7 +148,7 @@ const PRIMARY_CTA = requirePrimaryCta();
 export function DiagnosisInputScreen(
   props: DiagnosisInputScreenProps,
 ): React.ReactElement {
-  const { selfieUri, onCaptureSelfie, onNext } = props;
+  const { selfieUri, onCaptureSelfie, acquireSelfieUri, onNext } = props;
   const hasCapturedSelfie = selfieUri !== null;
 
   // The SelfieUploadPressable owns the stub-URI builder — the screen simply
@@ -169,6 +177,10 @@ export function DiagnosisInputScreen(
           selfieUri={selfieUri}
           onCapture={handleCapture}
           testID={DIAGNOSIS_INPUT_CAPTURE_SURFACE_TEST_ID}
+          // Forward the route-injected real picker when present; omit the prop
+          // entirely otherwise so the component's `stub://` default applies
+          // (conditional spread satisfies `exactOptionalPropertyTypes`).
+          {...(acquireSelfieUri !== undefined ? { acquireSelfieUri } : {})}
         />
       </View>
       <View style={styles.ctaWrapper}>
