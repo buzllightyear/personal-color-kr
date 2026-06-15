@@ -139,7 +139,8 @@ import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { SOCIAL_EVOLUTION_CONTINUE_CTA_LABEL } from '../../funnel/social-evolution-ctas';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Props for {@link SocialEvolutionSharedTrueBranch}.
@@ -352,8 +353,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmationText: {
-    ...TYPOGRAPHY.body.medium,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    color: INK.primary,
     textAlign: 'center',
   },
   emptyState: {
@@ -366,13 +368,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyText: {
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.disabled,
+    fontFamily: FONT.regular,
+    fontSize: 14,
+    color: INK.muted,
     textAlign: 'center',
   },
   friendCountText: {
-    ...TYPOGRAPHY.body.medium,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    color: INK.primary,
     textAlign: 'center',
   },
   ctaWrapper: {

@@ -72,7 +72,8 @@ import {
   SOCIAL_EVOLUTION_SKIP_CTA_LABEL,
 } from '../../funnel/social-evolution-ctas';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Korean upsell copy rendered inside the soft-pink nudge card. The card body
@@ -189,22 +190,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: SPACING.xl,
   },
+  // Editorial nudge: a neutral wash panel with a hairline, not a pink tint.
   upsellCard: {
-    // Soft-pink surface tint reads as a friendly nudge rather than a hard
-    // gate, matching the Korean beauty market visual identity baked into
-    // COLORS.base.pink.
-    backgroundColor: COLORS.base.pink,
-    borderRadius: SPACING.sm,
+    backgroundColor: INK.wash,
+    borderWidth: 1,
+    borderColor: INK.line,
+    borderRadius: 2,
     padding: SPACING.lg,
     gap: SPACING.sm,
   },
   upsellTitle: {
-    ...TYPOGRAPHY.subhead.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 17,
+    color: INK.primary,
   },
   upsellBody: {
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    color: INK.muted,
   },
   ctaStack: {
     gap: SPACING.md,
@@ -216,7 +220,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   skipLabel: {
-    ...TYPOGRAPHY.button.medium,
-    color: COLORS.grayscale.disabled,
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    color: INK.muted,
   },
 });
