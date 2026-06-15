@@ -141,6 +141,7 @@ import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { SOCIAL_EVOLUTION_CONTINUE_CTA_LABEL } from '../../funnel/social-evolution-ctas';
 import { SPACING } from '../../theme';
 import { FONT, INK } from '../../theme/editorial';
+import { UsersIcon } from '../../components/icons/UsersIcon';
 
 /**
  * Props for {@link SocialEvolutionSharedTrueBranch}.
@@ -213,16 +214,8 @@ export const SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT =
 export const SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT =
   '아직 친구가 참여하지 않았어요' as const;
 
-/**
- * Emoji glyph used as the empty-state placeholder illustration.
- *
- * `👥` (U+1F465 BUSTS IN SILHOUETTE) is a single-codepoint Unicode emoji
- * that renders consistently across iOS (Apple Color Emoji) and Android
- * (Noto Color Emoji) without an Image asset. Marked as a constant so the
- * test file can assert against the literal codepoint rather than the
- * rendered glyph (which differs between iOS / Android font tables).
- */
-export const SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI = '👥' as const;
+// The empty / friend-count states render the editorial `UsersIcon` line icon
+// (react-native-svg) — the former 👥 emoji constant was removed.
 
 /**
  * Build the Korean "friends joined" copy for a live `friend_used_count`
@@ -281,14 +274,13 @@ export function SocialEvolutionSharedTrueBranch(
         </View>
         {hasFriends ? (
           <View style={styles.emptyState} testID="social-evolution-friend-used-count">
-            <Text
-              style={styles.emptyEmoji}
+            <View
               testID="social-evolution-friend-used-count-emoji"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI}
-            </Text>
+              <UsersIcon size={48} />
+            </View>
             <Text
               style={styles.friendCountText}
               testID="social-evolution-friend-used-count-text"
@@ -298,14 +290,13 @@ export function SocialEvolutionSharedTrueBranch(
           </View>
         ) : (
           <View style={styles.emptyState} testID="social-evolution-empty-friend-list">
-            <Text
-              style={styles.emptyEmoji}
+            <View
               testID="social-evolution-empty-friend-list-emoji"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              {SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI}
-            </Text>
+              <UsersIcon size={48} />
+            </View>
             <Text
               style={styles.emptyText}
               testID="social-evolution-empty-friend-list-text"
@@ -362,10 +353,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     paddingVertical: SPACING.xl,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    textAlign: 'center',
   },
   emptyText: {
     fontFamily: FONT.regular,

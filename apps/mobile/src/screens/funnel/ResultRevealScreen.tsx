@@ -122,6 +122,7 @@ import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { SPACING } from '../../theme';
 import { FONT, INK } from '../../theme/editorial';
+import { LockIcon } from '../../components/icons/LockIcon';
 
 const SCREEN = FUNNEL_SCREENS.result_reveal;
 
@@ -407,13 +408,12 @@ function LockedAsset(props: LockedAssetProps): React.ReactElement {
           style={[styles.lockedAssetOverlay, { opacity: LOCKED_ASSET_OVERLAY_OPACITY }]}
           testID={`${config.testID}-overlay`}
         >
-          <Text
-            style={styles.lockIcon}
+          <LockIcon
+            size={28}
+            color={INK.muted}
             testID={`${config.testID}-lock-icon`}
             accessibilityLabel="잠김"
-          >
-            🔒
-          </Text>
+          />
           <Text style={styles.lockedAssetLabel}>{config.koreanLabel}</Text>
         </View>
       )}
@@ -505,9 +505,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.xs,
-  },
-  lockIcon: {
-    fontSize: 32,
   },
   lockedAssetLabel: {
     fontFamily: FONT.medium,

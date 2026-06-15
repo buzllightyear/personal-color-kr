@@ -213,7 +213,7 @@ describe('ResultRevealScreen — locked assets', () => {
     }
   });
 
-  it('each locked asset overlay carries the 🔒 emoji with accessibilityLabel="잠김"', () => {
+  it('each locked asset overlay carries the lock line icon with accessibilityLabel="잠김"', () => {
     const tree = render(
       React.createElement(ResultRevealScreen, {
         isPreviewMode: false,
@@ -227,9 +227,10 @@ describe('ResultRevealScreen — locked assets', () => {
       'result-reveal-locked-asset-first-curation',
     ];
     for (const id of assetIds) {
+      // The lock affordance is now a react-native-svg line icon (no emoji
+      // glyph); it carries the testID + the Korean a11y label on its root.
       const lockIcon = findHostByTestId(tree, `${id}-lock-icon`);
       expect(lockIcon, `${id} lock icon`).toBeTruthy();
-      expect(lockIcon?.props.children).toBe('🔒');
       expect(lockIcon?.props.accessibilityLabel).toBe('잠김');
     }
   });

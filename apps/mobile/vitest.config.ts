@@ -75,6 +75,13 @@ export default defineConfig({
         find: 'expo-linking',
         replacement: path.resolve(__dirname, 'tests/__stubs__/expo-linking-stub.ts'),
       },
+      // `react-native-svg` is a native module vite can't parse; the editorial
+      // line icons (src/components/icons/*) import it. Stub renders each SVG
+      // primitive as an inert host element so icon testIDs are findable.
+      {
+        find: 'react-native-svg',
+        replacement: path.resolve(__dirname, 'tests/__stubs__/react-native-svg-stub.ts'),
+      },
     ],
   },
 });
