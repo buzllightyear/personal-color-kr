@@ -21,11 +21,17 @@
 import { useFonts } from 'expo-font';
 
 export function useAppFonts(): boolean {
+  // `require()` is the canonical Metro pattern for bundling a static font
+  // asset — `useFonts` needs the numeric asset handle it returns, and there is
+  // no ESM-import equivalent for a binary `.otf`. The no-require-imports rule
+  // is disabled for exactly these four asset requires.
+  /* eslint-disable @typescript-eslint/no-require-imports */
   const [loaded] = useFonts({
     'Pretendard-Light': require('../../assets/fonts/Pretendard-Light.otf'),
     'Pretendard-Regular': require('../../assets/fonts/Pretendard-Regular.otf'),
     'Pretendard-Medium': require('../../assets/fonts/Pretendard-Medium.otf'),
     'Pretendard-SemiBold': require('../../assets/fonts/Pretendard-SemiBold.otf'),
   });
+  /* eslint-enable @typescript-eslint/no-require-imports */
   return loaded;
 }

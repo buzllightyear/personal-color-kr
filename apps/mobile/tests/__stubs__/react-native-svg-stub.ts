@@ -18,7 +18,10 @@ import * as React from 'react';
 type HostProps = Record<string, unknown> & { children?: React.ReactNode };
 
 function host(tag: string): (props: HostProps) => React.ReactElement {
-  return (props: HostProps) => React.createElement(tag, props, props?.children);
+  const Component = (props: HostProps): React.ReactElement =>
+    React.createElement(tag, props, props?.children);
+  Component.displayName = tag;
+  return Component;
 }
 
 const Svg = host('Svg');
