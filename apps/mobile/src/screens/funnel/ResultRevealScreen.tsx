@@ -123,6 +123,8 @@ import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { SPACING } from '../../theme';
 import { FONT, INK } from '../../theme/editorial';
 import { LockIcon } from '../../components/icons/LockIcon';
+import { buildResultHeadline } from '../../diagnosis-category';
+import type { DiagnosisResult } from '../../request-diagnosis';
 
 const SCREEN = FUNNEL_SCREENS.result_reveal;
 
@@ -292,10 +294,30 @@ export interface ResultRevealScreenProps {
    * is not rendered in either branch.
    */
   readonly onUnlock: () => void;
+  /**
+   * The live diagnosis result from the real `POST /v1/diagnose` round-trip
+   * (read from the `FunnelStateProvider` diagnosis slice). When non-null, the
+   * headline renders the diagnosed category dynamically (e.g.
+   * "당신의 카테고리는 ✦ 봄 웜톤 ✦"). When `null` — no token, no real selfie,
+   * or the call is still pending / failed — the screen falls back to the
+   * static `FUNNEL_SCREENS.result_reveal.headline` teaser so the existing
+   * fake-scan behaviour is preserved. Defaults to `null`.
+   */
+  readonly diagnosisResult?: DiagnosisResult | null;
 }
 
 export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactElement {
-  const { isPreviewMode, isPremium, onUnlock } = props;
+  const { isPreviewMode, isPremium, onUnlock, diagnosisResult = null } = props;
+
+  // Headline source: prefer the live diagnosed category from the real
+  // `/v1/diagnose` round-trip; fall back to the static teaser
+  // (`FUNNEL_SCREENS.result_reveal.headline`) when no result is present yet
+  // (no token / stub selfie / pending / errored). The subhead + body copy are
+  // unchanged across both branches — only the category line is dynamic.
+  const headline =
+    diagnosisResult !== null
+      ? buildResultHeadline(diagnosisResult.season, diagnosisResult.tone)
+      : SCREEN.headline;
 
   // The share-to-unlock CTA is only rendered on the default branch: the user
   // is neither viewing through a share_token preview link nor has completed
@@ -310,7 +332,7 @@ export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactE
       accessibilityLabel="진단 결과 부분 공개"
     >
       <FunnelHeadline
-        headline={SCREEN.headline}
+        headline={headline}
         subhead={SCREEN.subhead}
         testIDPrefix="result-reveal"
       />

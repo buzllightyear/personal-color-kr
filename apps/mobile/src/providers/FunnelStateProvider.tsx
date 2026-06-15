@@ -79,12 +79,15 @@
 import * as React from 'react';
 
 import {
+  INITIAL_FUNNEL_DIAGNOSIS,
   INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
   INITIAL_FUNNEL_PAYMENT,
   INITIAL_FUNNEL_REFERRAL,
+  type FunnelDiagnosis,
   type FunnelDiagnosisInput,
   type FunnelDiagnosisInputPatch,
+  type FunnelDiagnosisPatch,
   type FunnelOnboardingAnswers,
   type FunnelOnboardingPatch,
   type FunnelPayment,
@@ -93,6 +96,7 @@ import {
   type FunnelReferralPatch,
   type FunnelStateValue,
   type PaymentMethod,
+  type SetDiagnosis,
   type SetDiagnosisInput,
   type SetIsPremium,
   type SetOnboarding,
@@ -187,6 +191,15 @@ export interface FunnelStateProviderProps {
    * the step-12 payment tap sequence first.
    */
   readonly initialPayment?: FunnelPayment;
+  /**
+   * Optional seed value for the diagnosis-result slice (the step-8 → 9 real
+   * `POST /v1/diagnose` round-trip). When omitted (the production path), the
+   * provider initialises with `INITIAL_FUNNEL_DIAGNOSIS` so `status` is
+   * `'idle'` and `result` is `null`. Tests use this prop to spin up the
+   * provider with a pre-set `success` result so `result_reveal` rendering of
+   * the diagnosed category can be exercised without firing the real call.
+   */
+  readonly initialDiagnosis?: FunnelDiagnosis;
 }
 
 /**
@@ -220,6 +233,7 @@ export function FunnelStateProvider(
     initialDiagnosisInput,
     initialReferral,
     initialPayment,
+    initialDiagnosis,
   } = props;
 
   // `useState` is the entire engine here — no reducer, no external store,
@@ -267,6 +281,30 @@ export function FunnelStateProvider(
     (patch: FunnelDiagnosisInputPatch) => {
       setDiagnosisInputState((prev: FunnelDiagnosisInput) => {
         const next: FunnelDiagnosisInput = { ...prev, ...patch };
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Diagnosis-result slice (step 8 → 9 — the real `POST /v1/diagnose`
+  // round-trip). Same parallel-slice pattern as the others: independent
+  // `useState` cell seeded from `INITIAL_FUNNEL_DIAGNOSIS` (`status: 'idle'`,
+  // `result: null`, `errorKind: null`), immutable spread-merge updater, stable
+  // identity via `useCallback`.
+  const [diagnosis, setDiagnosisState] = React.useState<FunnelDiagnosis>(
+    () => initialDiagnosis ?? INITIAL_FUNNEL_DIAGNOSIS,
+  );
+
+  // `setDiagnosis` mirrors the other slice updaters exactly — immutable
+  // spread-merge, stable identity. The patch shape constrains `status` to the
+  // `DiagnosisStatus` union, `result` to `DiagnosisResult | null`, and
+  // `errorKind` to `DiagnosisErrorKind | null`, so spreading the patch cannot
+  // introduce out-of-domain values.
+  const setDiagnosis = React.useCallback<SetDiagnosis>(
+    (patch: FunnelDiagnosisPatch) => {
+      setDiagnosisState((prev: FunnelDiagnosis) => {
+        const next: FunnelDiagnosis = { ...prev, ...patch };
         return next;
       });
     },
@@ -454,6 +492,8 @@ export function FunnelStateProvider(
       setOnboarding,
       diagnosisInput,
       setDiagnosisInput,
+      diagnosis,
+      setDiagnosis,
       referral,
       setReferral,
       payment,
@@ -467,6 +507,8 @@ export function FunnelStateProvider(
       setOnboarding,
       diagnosisInput,
       setDiagnosisInput,
+      diagnosis,
+      setDiagnosis,
       referral,
       setReferral,
       payment,

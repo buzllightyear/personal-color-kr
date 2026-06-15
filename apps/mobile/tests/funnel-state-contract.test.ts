@@ -31,10 +31,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  INITIAL_FUNNEL_DIAGNOSIS,
   INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
   INITIAL_FUNNEL_PAYMENT,
   INITIAL_FUNNEL_REFERRAL,
+  type FunnelDiagnosis,
   type FunnelDiagnosisInput,
   type FunnelOnboardingAnswers,
   type FunnelOnboardingPatch,
@@ -46,6 +48,7 @@ import {
   type PaymentMethod,
   type PriorDiagnosis,
   type SelfieEditStyle,
+  type SetDiagnosis,
   type SetDiagnosisInput,
   type SetIsPremium,
   type SetOnboarding,
@@ -152,6 +155,8 @@ type _FunnelStateValue_IsExactShape = Expect<
       readonly setOnboarding: SetOnboarding;
       readonly diagnosisInput: FunnelDiagnosisInput;
       readonly setDiagnosisInput: SetDiagnosisInput;
+      readonly diagnosis: FunnelDiagnosis;
+      readonly setDiagnosis: SetDiagnosis;
       readonly referral: FunnelReferral;
       readonly setReferral: SetReferral;
       readonly payment: FunnelPayment;
@@ -244,6 +249,10 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
       setDiagnosisInput: () => {
         /* noop test impl */
       },
+      diagnosis: INITIAL_FUNNEL_DIAGNOSIS,
+      setDiagnosis: () => {
+        /* noop test impl */
+      },
       referral: INITIAL_FUNNEL_REFERRAL,
       setReferral: () => {
         /* noop test impl */
@@ -267,6 +276,9 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
     expect(typeof value.setOnboarding).toBe('function');
     expect(value.diagnosisInput.selfieUri).toBeNull();
     expect(typeof value.setDiagnosisInput).toBe('function');
+    expect(value.diagnosis.status).toBe('idle');
+    expect(value.diagnosis.result).toBeNull();
+    expect(typeof value.setDiagnosis).toBe('function');
     expect(value.referral.shared).toBe(false);
     expect(typeof value.setReferral).toBe('function');
     expect(value.payment.selectedMethod).toBeNull();

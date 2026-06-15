@@ -27,10 +27,12 @@
  *     `vi.fn`, so the test can assert the route wrapper calls it with the
  *     correct kebab path for step 9 once the auto-advance timer elapses.
  *
- * The route wrapper has no `useFunnelState()` dependency (the animation is
- * stateless from the funnel-state perspective — step 8 is purely temporal
- * priming) so unlike `diagnosis-input-route.test.tsx` we do NOT need to
- * wrap the route in a `<FunnelStateProvider>`.
+ * The route wrapper now reads `useFunnelState()` (it fires the real
+ * `POST /v1/diagnose` round-trip behind the scan overlay, reading the captured
+ * selfie + writing the diagnosis slice), so — like `diagnosis-input-route.test.tsx`
+ * — the renders are wrapped in a `<FunnelStateProvider>`. With no dev token /
+ * a default `null` selfie in the test env the diagnosis effect is a clean
+ * no-op, so the router-wiring assertions below are unaffected.
  */
 import * as React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
@@ -149,6 +151,7 @@ vi.mock('expo-router', () => {
 // route module's `import { useRouter } from 'expo-router'` resolves to the
 // mocked surface above.
 import FakeScanAnimationRoute from '../app/(funnel)/fake-scan-animation';
+import { FunnelStateProvider } from '../src/providers/FunnelStateProvider';
 
 interface TestInstance {
   readonly type: unknown;
@@ -168,7 +171,9 @@ function findHostByTestId(
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
   let tree: TestRenderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = TestRenderer.create(element);
+    // The route reads `useFunnelState()` for the diagnosis side-effect, so it
+    // must mount under a provider (mirrors `diagnosis-input-route.test.tsx`).
+    tree = TestRenderer.create(React.createElement(FunnelStateProvider, null, element));
   });
   if (!tree) throw new Error('render: tree not created');
   return tree;
