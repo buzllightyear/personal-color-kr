@@ -89,8 +89,8 @@
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
-import type { FontWeightNumeric } from '../theme/typography';
+import { SPACING } from '../theme';
+import { FONT, INK } from '../theme/editorial';
 
 /**
  * The tri-state lifecycle of a single ladder row. Matches the
@@ -270,12 +270,12 @@ function clampPercent(value: number): number {
  */
 function glyphStyleFor(state: StageLadderItemState): { color: string } {
   if (state === 'done') {
-    return { color: COLORS.grayscale.disabled };
+    return { color: INK.faint };
   }
   if (state === 'pending') {
-    return { color: COLORS.grayscale.border };
+    return { color: INK.line };
   }
-  return { color: COLORS.base.coral };
+  return { color: INK.primary };
 }
 
 /**
@@ -294,21 +294,22 @@ function glyphStyleFor(state: StageLadderItemState): { color: string } {
  */
 function labelStyleFor(state: StageLadderItemState): {
   color: string;
-  fontWeight?: FontWeightNumeric;
+  fontFamily?: string;
 } {
   if (state === 'active') {
+    // The in-progress row is the focal point: primary ink + medium weight.
     return {
-      color: COLORS.base.coral,
-      fontWeight: TYPOGRAPHY.body.bold.fontWeight,
+      color: INK.primary,
+      fontFamily: FONT.medium,
     };
   }
   if (state === 'pending') {
-    return { color: COLORS.grayscale.disabled };
+    return { color: INK.faint };
   }
   if (state === 'done') {
-    return { color: COLORS.grayscale.disabled };
+    return { color: INK.faint };
   }
-  return { color: COLORS.grayscale.text };
+  return { color: INK.primary };
 }
 
 /**
@@ -325,10 +326,12 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   glyph: {
-    ...TYPOGRAPHY.body.bold,
+    fontFamily: FONT.medium,
+    fontSize: 14,
   },
   label: {
-    ...TYPOGRAPHY.body.regular,
+    fontFamily: FONT.regular,
+    fontSize: 14,
   },
   meter: {
     flexDirection: 'row',
@@ -340,16 +343,18 @@ const styles = StyleSheet.create({
     flex: 1,
     height: SPACING.xxs,
     borderRadius: SPACING.xxs,
-    backgroundColor: COLORS.grayscale.border,
+    backgroundColor: INK.line,
     overflow: 'hidden',
   },
   meterFill: {
     height: SPACING.xxs,
     borderRadius: SPACING.xxs,
-    backgroundColor: COLORS.base.coral,
+    backgroundColor: INK.primary,
   },
   progressText: {
-    ...TYPOGRAPHY.caption.medium,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    color: INK.muted,
   },
 });

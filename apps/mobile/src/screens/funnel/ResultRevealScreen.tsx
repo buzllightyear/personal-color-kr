@@ -120,7 +120,9 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
+import { LockIcon } from '../../components/icons/LockIcon';
 
 const SCREEN = FUNNEL_SCREENS.result_reveal;
 
@@ -406,13 +408,12 @@ function LockedAsset(props: LockedAssetProps): React.ReactElement {
           style={[styles.lockedAssetOverlay, { opacity: LOCKED_ASSET_OVERLAY_OPACITY }]}
           testID={`${config.testID}-overlay`}
         >
-          <Text
-            style={styles.lockIcon}
+          <LockIcon
+            size={28}
+            color={INK.muted}
             testID={`${config.testID}-lock-icon`}
             accessibilityLabel="잠김"
-          >
-            🔒
-          </Text>
+          />
           <Text style={styles.lockedAssetLabel}>{config.koreanLabel}</Text>
         </View>
       )}
@@ -472,8 +473,10 @@ const GRID_CELL_SIZE = 80;
 
 const styles = StyleSheet.create({
   bodyCopy: {
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 15,
+    lineHeight: 24,
+    color: INK.primary,
     paddingTop: SPACING.md,
   },
   assetStack: {
@@ -483,11 +486,11 @@ const styles = StyleSheet.create({
   },
   lockedAssetWrapper: {
     position: 'relative',
-    borderRadius: SPACING.md,
+    borderRadius: 2,
     overflow: 'hidden',
-    backgroundColor: COLORS.base.pink,
+    backgroundColor: INK.wash,
     borderWidth: 1,
-    borderColor: COLORS.grayscale.border,
+    borderColor: INK.line,
   },
   lockedAssetPlaceholder: {
     padding: SPACING.md,
@@ -498,23 +501,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.grayscale.background,
+    backgroundColor: INK.paper,
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.xs,
   },
-  lockIcon: {
-    fontSize: 32,
-  },
   lockedAssetLabel: {
-    ...TYPOGRAPHY.body.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    color: INK.primary,
     textAlign: 'center',
   },
+  // Neutral skeleton placeholders for the (locked) generated assets — the
+  // real result image fills these post-unlock; the editorial skeleton is a
+  // monochrome wash, not a season tint.
   heroCardBlock: {
     height: HERO_CARD_ASPECT_HEIGHT,
-    borderRadius: SPACING.sm,
-    backgroundColor: COLORS.season.autumn,
+    borderRadius: 2,
+    backgroundColor: INK.wash,
   },
   textStack: {
     gap: SPACING.sm,
@@ -522,7 +526,7 @@ const styles = StyleSheet.create({
   textLine: {
     height: TEXT_LINE_HEIGHT,
     borderRadius: SPACING.xxs,
-    backgroundColor: COLORS.grayscale.text,
+    backgroundColor: INK.line,
   },
   grid2x2: {
     gap: SPACING.sm,
@@ -534,8 +538,8 @@ const styles = StyleSheet.create({
   gridCell: {
     width: GRID_CELL_SIZE,
     height: GRID_CELL_SIZE,
-    borderRadius: SPACING.sm,
-    backgroundColor: COLORS.base.blush,
+    borderRadius: 2,
+    backgroundColor: INK.wash,
   },
   ctaWrapper: {
     paddingBottom: SPACING.xl,

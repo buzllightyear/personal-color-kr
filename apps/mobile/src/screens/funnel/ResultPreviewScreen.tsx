@@ -73,7 +73,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { COLORS, SPACING, TYPOGRAPHY, type SeasonKey } from '../../theme';
+import { COLORS, SPACING, type SeasonKey } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -295,14 +296,16 @@ const styles = StyleSheet.create({
   trendTag: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xxs,
-    borderRadius: 999,
-    backgroundColor: COLORS.base.blush,
+    borderRadius: 2,
+    backgroundColor: INK.wash,
     borderWidth: 1,
-    borderColor: COLORS.base.coral,
+    borderColor: INK.line,
   },
   trendTagText: {
-    ...TYPOGRAPHY.caption.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    color: INK.muted,
   },
   sampleSlotScroll: {
     marginTop: SPACING.lg,
@@ -320,13 +323,18 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
   sampleSlotLabel: {
-    ...TYPOGRAPHY.caption.regular,
-    color: COLORS.grayscale.background,
+    // Sits on the season-coloured result swatch (set inline) — paper-white
+    // for contrast.
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    color: INK.paper,
     textAlign: 'center',
   },
   generationExampleText: {
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 15,
+    lineHeight: 24,
+    color: INK.primary,
     marginTop: SPACING.lg,
     textAlign: 'center',
   },

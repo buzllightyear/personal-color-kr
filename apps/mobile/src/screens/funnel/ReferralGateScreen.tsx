@@ -135,7 +135,8 @@ import {
   REFERRAL_GATE_SHARE_CTA_LABELS,
   REFERRAL_GATE_SKIP_CTA_LABEL,
 } from '../../funnel/referral-gate-ctas';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Stable testID for the Kakao share CTA. Exported as a named constant so
@@ -271,7 +272,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   skipLabel: {
-    ...TYPOGRAPHY.button.medium,
-    color: COLORS.grayscale.disabled,
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    color: INK.muted,
   },
 });

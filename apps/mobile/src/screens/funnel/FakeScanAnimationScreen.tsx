@@ -86,7 +86,8 @@ import { StageLadder } from '../../components/StageLadder';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
 import { useAutoAdvanceTimer } from '../../hooks/use-auto-advance-timer';
 import { useScanAnimationLadder } from '../../hooks/use-stage-ladder';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 const SCREEN = FUNNEL_SCREENS.fake_scan_animation;
 const METADATA = SCREEN.metadata as Readonly<{
@@ -361,12 +362,7 @@ function FaceDot(props: FaceDotProps): React.ReactElement {
   const lower = Math.max(0, upper - 0.001);
   const backgroundColor = progress.interpolate({
     inputRange: [0, lower, upper, 1],
-    outputRange: [
-      COLORS.grayscale.border,
-      COLORS.grayscale.border,
-      COLORS.base.coral,
-      COLORS.base.coral,
-    ],
+    outputRange: [INK.line, INK.line, INK.primary, INK.primary],
   });
   return (
     <Animated.View
@@ -390,9 +386,9 @@ const styles = StyleSheet.create({
     // oval (rounded-rectangle pill) — the closest pure-RN approximation of a
     // face portrait without resorting to SVG.
     borderRadius: FACE_WIDTH / 2,
-    borderWidth: 2,
-    borderColor: COLORS.grayscale.border,
-    backgroundColor: COLORS.base.pink,
+    borderWidth: 1,
+    borderColor: INK.line,
+    backgroundColor: INK.wash,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -411,7 +407,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: SWEEP_LINE_HEIGHT,
-    backgroundColor: COLORS.base.coral,
+    backgroundColor: INK.primary,
   },
   ladderWrapper: {
     paddingHorizontal: SPACING.xl,
@@ -422,7 +418,9 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl,
   },
   counter: {
-    ...TYPOGRAPHY.body.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 16,
+    letterSpacing: 0.3,
+    color: INK.primary,
   },
 });

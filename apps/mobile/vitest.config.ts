@@ -50,8 +50,19 @@ export default defineConfig({
     // `React.createContext(...)` in one copy is not recognised by
     // `React.useContext(...)` in the other — silently returning the context
     // default and breaking the singleton-via-context assertion.
-    alias: {
-      react: path.resolve(__dirname, 'node_modules/react'),
+    alias: [
+      // `use-app-fonts` loads `expo-font` + `require('*.otf')` font binaries —
+      // native/Metro-only concerns vite/rollup cannot parse in the node test
+      // env. Redirect to an inert stub (reports fonts-loaded) so RootLayout
+      // renders its real tree without pulling in the font runtime. Regex entry
+      // first so it wins before the string aliases below.
+      {
+        // Match the WHOLE specifier (regex aliases replace only the matched
+        // span, so anchor with `.*` to swap the entire import path).
+        find: /.*use-app-fonts$/,
+        replacement: path.resolve(__dirname, 'tests/__stubs__/use-app-fonts-stub.ts'),
+      },
+      { find: 'react', replacement: path.resolve(__dirname, 'node_modules/react') },
       // `expo-linking` transitively imports `react-native`, whose Flow
       // `import typeof` syntax vite/rollup cannot parse in the node test
       // environment (same root cause the `react-native` require-cache stub
@@ -60,10 +71,17 @@ export default defineConfig({
       // `app/_layout.tsx`, which mounts the deep-link referral-stash hook)
       // can be rendered. The stash logic itself is unit-tested directly
       // against `stashReferralCodeFromDeepLink`, not through this hook.
-      'expo-linking': path.resolve(
-        __dirname,
-        'tests/__stubs__/expo-linking-stub.ts',
-      ),
-    },
+      {
+        find: 'expo-linking',
+        replacement: path.resolve(__dirname, 'tests/__stubs__/expo-linking-stub.ts'),
+      },
+      // `react-native-svg` is a native module vite can't parse; the editorial
+      // line icons (src/components/icons/*) import it. Stub renders each SVG
+      // primitive as an inert host element so icon testIDs are findable.
+      {
+        find: 'react-native-svg',
+        replacement: path.resolve(__dirname, 'tests/__stubs__/react-native-svg-stub.ts'),
+      },
+    ],
   },
 });

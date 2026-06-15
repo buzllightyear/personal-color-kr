@@ -91,7 +91,8 @@
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * The three Korean selfie-prep cues, in canonical reading order.
@@ -199,16 +200,15 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   check: {
-    // Reuse the body bold token so the ✓ glyph reads at the same visual
-    // weight as the cue label without competing for emphasis.
-    ...TYPOGRAPHY.body.bold,
-    // Coral matches the primary CTA fill — the "do this" affordance reads
-    // as the same intent colour as the rest of the funnel's actionable
-    // surfaces.
-    color: COLORS.base.coral,
+    // The ✓ glyph reads in primary ink — monochrome, same weight family as
+    // the cue label (no coral).
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    color: INK.primary,
   },
   label: {
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 15,
+    color: INK.primary,
   },
 });

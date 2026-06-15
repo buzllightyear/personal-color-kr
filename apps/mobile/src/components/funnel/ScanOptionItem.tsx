@@ -94,7 +94,8 @@ import * as React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ScanOption } from '../../funnel/scan-options';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Default testID prefix used when the caller does not supply one. Exported
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     // hit-slop deltas.
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-    borderRadius: SPACING.md,
+    borderRadius: 2,
     borderWidth: 1,
     // Flex row keeps the label and the optional "곧 오픈" badge on the
     // same baseline — the badge slots to the right of the label.
@@ -214,42 +215,41 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   cardEnabled: {
-    // Korean beauty market visual identity (coral fill) — matches the
-    // primary CTA treatment used elsewhere in the funnel.
-    backgroundColor: COLORS.base.coral,
-    borderColor: COLORS.base.coral,
+    // Editorial primary = filled charcoal (replaces the coral fill).
+    backgroundColor: INK.primary,
+    borderColor: INK.primary,
   },
   cardDisabled: {
-    // Grayscale outline reads as "this card is not interactive" without
-    // competing with the coral primary fill on the rest of the screen.
-    backgroundColor: COLORS.grayscale.background,
-    borderColor: COLORS.grayscale.border,
+    // Hairline outline on paper reads as "not interactive" without color.
+    backgroundColor: INK.paper,
+    borderColor: INK.line,
   },
   label: {
-    ...TYPOGRAPHY.button.bold,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    letterSpacing: 0.3,
     // `flexShrink: 1` lets a long Korean label wrap rather than push the
     // badge off-screen.
     flexShrink: 1,
   },
   labelEnabled: {
-    // White-on-coral yields AAA contrast for the primary card.
-    color: COLORS.grayscale.background,
+    // Paper-white on the charcoal fill.
+    color: INK.paper,
   },
   labelDisabled: {
-    // Mid-gray text reinforces the "unavailable" affordance on disabled
-    // cards.
-    color: COLORS.grayscale.disabled,
+    // Muted ink reinforces the "unavailable" affordance on disabled cards.
+    color: INK.faint,
   },
   comingSoonBadge: {
     paddingVertical: SPACING.xxs,
     paddingHorizontal: SPACING.sm,
-    // Fully rounded pill — a stylistic constant rather than a token
-    // (the spacing scale measures layout gaps, not corner radii).
-    borderRadius: 999,
-    backgroundColor: COLORS.grayscale.border,
+    borderRadius: 2,
+    backgroundColor: INK.wash,
   },
   comingSoonLabel: {
-    ...TYPOGRAPHY.caption.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    color: INK.muted,
   },
 });

@@ -92,7 +92,6 @@ vi.mock('react-native-safe-area-context', () => {
 // mocked surface above.
 import {
   buildFriendUsedCountText,
-  SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI,
   SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_TEXT,
   SOCIAL_EVOLUTION_SHARE_CONFIRMATION_TEXT,
   SocialEvolutionSharedTrueBranch,
@@ -187,13 +186,11 @@ describe('SocialEvolutionSharedTrueBranch — render (AC 4)', () => {
     // Empty-state container — the wrapping `<View>` host exists.
     expect(findHostByTestId(tree, 'social-evolution-empty-friend-list')).toBeTruthy();
 
-    // Empty-state emoji glyph — assert the literal codepoint is rendered.
-    // The emoji is the placeholder illustration; pinning the codepoint
-    // (not the rendered pixel) keeps the test platform-independent (iOS
-    // and Android render the same codepoint with different fonts).
+    // Empty-state illustration is now a react-native-svg line icon (the
+    // former 👥 emoji was removed per the editorial direction). Assert the
+    // decorative icon container is still present under its testID.
     const emoji = findHostByTestId(tree, 'social-evolution-empty-friend-list-emoji');
     expect(emoji).toBeTruthy();
-    expect(collectText(emoji)).toBe(SOCIAL_EVOLUTION_EMPTY_FRIEND_LIST_EMOJI);
 
     // Empty-state Korean copy — pinned against the documented constant so
     // a copy tweak in the component file fails this test loud rather

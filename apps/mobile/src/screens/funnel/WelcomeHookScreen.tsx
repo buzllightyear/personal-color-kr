@@ -9,6 +9,13 @@
  * pulls the `useRouter` push handler and forwards it as `onNext`; this
  * component is pure props-in/callbacks-out so it unit-tests without any
  * expo-router context.
+ *
+ * Visual direction — "Editorial / VSCO":
+ *   Monochrome and type-led, built on negative space. The hook headline +
+ *   subhead (shared `FunnelHeadline`, now Pretendard Light) sit low in the
+ *   frame so the top breathes; the primary CTA (shared `FunnelPrimaryButton`,
+ *   now a flat charcoal bar) rests at the bottom. All visual tokens live in
+ *   the shared primitives, so this screen only owns its vertical composition.
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -17,7 +24,6 @@ import { FUNNEL_SCREENS } from 'core-ts/funnel';
 import { FunnelHeadline } from '../../components/FunnelHeadline';
 import { FunnelPrimaryButton } from '../../components/funnel/FunnelPrimaryButton';
 import { FunnelScreenLayout } from '../../funnel/FunnelScreenLayout';
-import { SPACING } from '../../theme';
 
 export interface WelcomeHookScreenProps {
   /** Invoked when the user taps the primary CTA. Parent wires to `router.push('/(funnel)/value-props')`. */
@@ -38,34 +44,32 @@ const PRIMARY_CTA = requirePrimaryCta();
 
 export function WelcomeHookScreen(props: WelcomeHookScreenProps): React.ReactElement {
   const { onNext } = props;
+
   return (
     <FunnelScreenLayout testID="welcome-hook-screen" accessibilityLabel="환영합니다">
-      <View style={styles.headerStack}>
+      <View style={styles.typeBlock}>
         <FunnelHeadline
           headline={SCREEN.headline}
           subhead={SCREEN.subhead}
           testIDPrefix="welcome-hook"
         />
       </View>
-      <View style={styles.ctaWrapper}>
-        <FunnelPrimaryButton
-          label={PRIMARY_CTA.label}
-          onPress={onNext}
-          testID="welcome-hook-cta"
-          accessibilityLabel="1분 진단 시작"
-        />
-      </View>
+      <FunnelPrimaryButton
+        label={PRIMARY_CTA.label}
+        onPress={onNext}
+        testID="welcome-hook-cta"
+        accessibilityLabel="1분 진단 시작"
+      />
     </FunnelScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  headerStack: {
+  // The headline block fills the frame and sits at the bottom edge of that
+  // space, leaving generous negative space above (the editorial move).
+  typeBlock: {
     flex: 1,
-    justifyContent: 'center',
-    gap: SPACING.lg,
-  },
-  ctaWrapper: {
-    paddingBottom: SPACING.xl,
+    justifyContent: 'flex-end',
+    paddingBottom: 40,
   },
 });

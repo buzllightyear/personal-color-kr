@@ -8,6 +8,7 @@ import { FUNNEL_KEBAB_SLUGS_ORDERED } from '../src/linking.config';
 import { getVendorKeys } from '../src/config/vendor-keys';
 import { configureSuperwall } from '../src/superwall/client';
 import { useStashReferralCodeOnDeepLink } from '../src/hooks/use-stash-referral-code';
+import { useAppFonts } from '../src/hooks/use-app-fonts';
 import { initSentry } from '../src/sentry';
 
 /**
@@ -204,12 +205,19 @@ function useInitSentryOnce(): void {
   }, []);
 }
 
-export default function RootLayout(): JSX.Element {
+export default function RootLayout(): JSX.Element | null {
   // Sentry FIRST — its global error hooks must be armed before PostHog's
   // constructor (runs during `<PostHogProvider>` render) and before the
   // Superwall configure effect, so any crash in those bootstraps is captured.
   useInitSentryOnce();
   useConfigureSuperwallOnce();
+  // Load the Pretendard family before first paint so screens never flash the
+  // system fallback face. Hook order is unconditional; the early return below
+  // only short-circuits the rendered tree, not the hook calls above it.
+  const fontsLoaded = useAppFonts();
+  if (!fontsLoaded) {
+    return null;
+  }
   return (
     <PostHogProvider>
       <RootLayoutInner />

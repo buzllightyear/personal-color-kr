@@ -503,7 +503,25 @@ export default function defineExpoConfig({
     // generated ios/ project. The org slug remains the `TODO_SENTRY_ORG_SLUG`
     // placeholder until the Sentry org is provisioned; the project is the
     // mobile-specific `pck-mobile`.
-    plugins: ['expo-router', 'expo-dev-client', buildSentryPluginEntry()],
+    plugins: [
+      'expo-router',
+      'expo-dev-client',
+      // Embed the Pretendard family (editorial/VSCO direction) into the native
+      // project at prebuild/build time. Runtime `useFonts` (src/hooks/use-app-fonts)
+      // also registers them so in-dev preview works without a fresh build.
+      [
+        'expo-font',
+        {
+          fonts: [
+            './assets/fonts/Pretendard-Light.otf',
+            './assets/fonts/Pretendard-Regular.otf',
+            './assets/fonts/Pretendard-Medium.otf',
+            './assets/fonts/Pretendard-SemiBold.otf',
+          ],
+        },
+      ],
+      buildSentryPluginEntry(),
+    ],
     runtimeVersion: EXPO_RUNTIME_VERSION,
     ios: {
       // MERGE the static app.json `ios` block (NOT replace it). app.json owns

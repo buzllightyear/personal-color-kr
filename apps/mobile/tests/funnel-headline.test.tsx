@@ -73,7 +73,8 @@ vi.mock('react-native', async () => {
   };
 });
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../src/theme';
+import { SPACING } from '../src/theme';
+import { FONT, INK } from '../src/theme/editorial';
 import { FunnelHeadline } from '../src/components/FunnelHeadline';
 
 interface TestInstance {
@@ -188,8 +189,8 @@ describe('FunnelHeadline — testID prefix expansion', () => {
   });
 });
 
-describe('FunnelHeadline — typography tokens applied (no drift from design tokens)', () => {
-  it('applies TYPOGRAPHY.headline.bold (fontSize + fontWeight) to the headline row', () => {
+describe('FunnelHeadline — editorial typography applied (no drift from tokens)', () => {
+  it('sets the headline in Pretendard Light at the editorial display size', () => {
     const tree = render(
       React.createElement(FunnelHeadline, {
         headline: KOREAN_HEADLINE,
@@ -199,15 +200,15 @@ describe('FunnelHeadline — typography tokens applied (no drift from design tok
     );
     const headlineNode = getByTestId(tree, 'welcome-hook-headline');
     const style = headlineNode.props.style as {
+      fontFamily?: string;
       fontSize?: number;
-      fontWeight?: string;
       color?: string;
     };
-    expect(style.fontSize).toBe(TYPOGRAPHY.headline.bold.fontSize);
-    expect(style.fontWeight).toBe(TYPOGRAPHY.headline.bold.fontWeight);
+    expect(style.fontFamily).toBe(FONT.light);
+    expect(style.fontSize).toBe(28);
   });
 
-  it('applies TYPOGRAPHY.subhead.regular (fontSize + fontWeight) to the subhead row', () => {
+  it('sets the subhead in Pretendard Regular at the editorial caption size', () => {
     const tree = render(
       React.createElement(FunnelHeadline, {
         headline: KOREAN_HEADLINE,
@@ -217,15 +218,15 @@ describe('FunnelHeadline — typography tokens applied (no drift from design tok
     );
     const subheadNode = getByTestId(tree, 'welcome-hook-subhead');
     const style = subheadNode.props.style as {
+      fontFamily?: string;
       fontSize?: number;
-      fontWeight?: string;
       color?: string;
     };
-    expect(style.fontSize).toBe(TYPOGRAPHY.subhead.regular.fontSize);
-    expect(style.fontWeight).toBe(TYPOGRAPHY.subhead.regular.fontWeight);
+    expect(style.fontFamily).toBe(FONT.regular);
+    expect(style.fontSize).toBe(14);
   });
 
-  it('paints both rows with COLORS.grayscale.text (canonical near-black)', () => {
+  it('paints the headline in primary ink and the subhead in muted ink', () => {
     const tree = render(
       React.createElement(FunnelHeadline, {
         headline: KOREAN_HEADLINE,
@@ -239,11 +240,11 @@ describe('FunnelHeadline — typography tokens applied (no drift from design tok
     const subheadStyle = getByTestId(tree, 'welcome-hook-subhead').props.style as {
       color?: string;
     };
-    expect(headlineStyle.color).toBe(COLORS.grayscale.text);
-    expect(subheadStyle.color).toBe(COLORS.grayscale.text);
+    expect(headlineStyle.color).toBe(INK.primary);
+    expect(subheadStyle.color).toBe(INK.muted);
   });
 
-  it('honours SPACING.xs for the headline→subhead vertical rhythm via container gap', () => {
+  it('honours SPACING.sm for the headline→subhead vertical rhythm via container gap', () => {
     const tree = render(
       React.createElement(FunnelHeadline, {
         headline: KOREAN_HEADLINE,
@@ -253,7 +254,7 @@ describe('FunnelHeadline — typography tokens applied (no drift from design tok
     );
     const group = getByTestId(tree, 'welcome-hook-headline-group');
     const groupStyle = group.props.style as { gap?: number };
-    expect(groupStyle.gap).toBe(SPACING.xs);
+    expect(groupStyle.gap).toBe(SPACING.sm);
   });
 });
 

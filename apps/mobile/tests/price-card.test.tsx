@@ -88,7 +88,7 @@ import {
   VALUE_PROP_CARD_DEFAULT_TEST_ID_PREFIX,
   VALUE_PROP_CARD_HEADING,
 } from '../src/components/funnel/PriceCard';
-import { COLORS, TYPOGRAPHY } from '../src/theme';
+import { FONT, INK } from '../src/theme/editorial';
 
 interface TestInstance {
   readonly type: unknown;
@@ -315,20 +315,19 @@ describe('PriceCard — Phase 2.5 price-removal contract (price_single_source)',
   });
 });
 
-describe('PriceCard — typography tokens applied (no drift from design tokens)', () => {
-  it('applies TYPOGRAPHY.subhead.bold (fontSize + fontWeight) to the heading row', () => {
+describe('PriceCard — editorial typography applied (no drift from tokens)', () => {
+  it('sets the heading in Pretendard Medium primary ink', () => {
     const tree = render(React.createElement(PriceCard, {}));
     const heading = findHostByTestId(tree, 'payment-model-value-prop-heading');
     const style = heading?.props.style as {
-      fontSize?: number;
-      fontWeight?: string;
+      fontFamily?: string;
       color?: string;
     };
-    expect(style.fontSize).toBe(TYPOGRAPHY.subhead.bold.fontSize);
-    expect(style.fontWeight).toBe(TYPOGRAPHY.subhead.bold.fontWeight);
+    expect(style.fontFamily).toBe(FONT.medium);
+    expect(style.color).toBe(INK.primary);
   });
 
-  it('applies TYPOGRAPHY.body.regular (fontSize + fontWeight) to every benefit row', () => {
+  it('sets every benefit row in Pretendard Regular muted ink', () => {
     const tree = render(React.createElement(PriceCard, {}));
     VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
       const row = findHostByTestId(
@@ -336,35 +335,23 @@ describe('PriceCard — typography tokens applied (no drift from design tokens)'
         `payment-model-value-prop-item-${String(index)}`,
       );
       const style = row?.props.style as {
-        fontSize?: number;
-        fontWeight?: string;
+        fontFamily?: string;
+        color?: string;
       };
-      expect(style.fontSize).toBe(TYPOGRAPHY.body.regular.fontSize);
-      expect(style.fontWeight).toBe(TYPOGRAPHY.body.regular.fontWeight);
+      expect(style.fontFamily).toBe(FONT.regular);
+      expect(style.color).toBe(INK.muted);
     });
   });
 
-  it('paints the heading and benefit rows with COLORS.grayscale.text (canonical near-black)', () => {
-    const tree = render(React.createElement(PriceCard, {}));
-    const headingStyle = findHostByTestId(tree, 'payment-model-value-prop-heading')
-      ?.props.style as { color?: string };
-    expect(headingStyle.color).toBe(COLORS.grayscale.text);
-
-    VALUE_PROP_CARD_BENEFITS.forEach((_benefit, index) => {
-      const row = findHostByTestId(
-        tree,
-        `payment-model-value-prop-item-${String(index)}`,
-      );
-      const rowStyle = row?.props.style as { color?: string };
-      expect(rowStyle.color).toBe(COLORS.grayscale.text);
-    });
-  });
-
-  it('paints the card background with COLORS.base.pink (Korean beauty surface, carried forward from Phase 2.4)', () => {
+  it('paints the card as a neutral wash panel with a hairline edge', () => {
     const tree = render(React.createElement(PriceCard, {}));
     const card = findHostByTestId(tree, 'payment-model-value-prop-card');
-    const style = card?.props.style as { backgroundColor?: string };
-    expect(style.backgroundColor).toBe(COLORS.base.pink);
+    const style = card?.props.style as {
+      backgroundColor?: string;
+      borderColor?: string;
+    };
+    expect(style.backgroundColor).toBe(INK.wash);
+    expect(style.borderColor).toBe(INK.line);
   });
 });
 

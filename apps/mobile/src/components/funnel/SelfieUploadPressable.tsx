@@ -102,7 +102,8 @@ import {
   type PressableStateCallbackType,
 } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Default testID used when the caller does not supply one. Exported as a
@@ -242,14 +243,13 @@ export function SelfieUploadPressable(
         <Text
           style={styles.icon}
           testID="selfie-upload-icon"
-          // The camera emoji is the only icon affordance allowed under the
-          // Seed constraint (no icon packages). Suppress its own
-          // announcement so VoiceOver does not say "camera" twice (the
-          // spoken label sits on the Pressable above).
+          // Editorial upload affordance: a thin typographic "+" (no emoji, no
+          // icon package). Suppress its own announcement so VoiceOver does not
+          // read the glyph — the spoken label sits on the Pressable above.
           accessibilityElementsHidden
           importantForAccessibility="no"
         >
-          📷
+          +
         </Text>
         <Text style={styles.label} testID={labelTestID}>
           {hasCapturedSelfie ? SELFIE_UPLOAD_CAPTURED_LABEL : SELFIE_UPLOAD_IDLE_LABEL}
@@ -272,35 +272,37 @@ const styles = StyleSheet.create({
   surface: {
     width: 240,
     height: 240,
-    // borderRadius half the width/height gives a perfect circle — matches
-    // the Phase 2.3 design's "selfie portrait" framing without
-    // react-native-svg.
+    // borderRadius half the width/height gives a perfect circle — the
+    // "selfie portrait" crop hint, now monochrome.
     borderRadius: 120,
-    borderWidth: 2,
-    borderColor: COLORS.grayscale.border,
-    backgroundColor: COLORS.base.pink,
+    borderWidth: 1,
+    borderColor: INK.line,
+    backgroundColor: INK.wash,
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
   },
   surfaceCaptured: {
-    borderColor: COLORS.base.coral,
-    backgroundColor: COLORS.base.blush,
+    // Captured = a crisp charcoal ring on paper (no color).
+    borderWidth: 1.5,
+    borderColor: INK.primary,
+    backgroundColor: INK.paper,
   },
   surfacePressed: {
-    // Subtle press feedback without an animation library. 0.7 is the
-    // canonical RN "pressed" opacity used historically by
-    // TouchableOpacity — we preserve that visual intuition.
-    opacity: 0.7,
+    // Subtle press feedback without an animation library.
+    opacity: 0.8,
   },
   icon: {
-    // Use a large font size for the emoji glyph — RN handles the emoji
-    // rasterisation from the platform font (no asset loaded).
-    fontSize: 48,
+    // Thin "+" affordance in Pretendard Light.
+    fontFamily: FONT.light,
+    fontSize: 44,
+    color: INK.faint,
   },
   label: {
-    ...TYPOGRAPHY.body.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 14,
+    letterSpacing: 0.3,
+    color: INK.muted,
     textAlign: 'center',
   },
 });
