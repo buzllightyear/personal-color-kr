@@ -139,7 +139,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { PaymentMethod } from '../../contracts/funnel-state';
 import { PAYMENT_MODEL_METHOD_LABELS } from '../../funnel/payment-model-ctas';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Default testID prefix used when the caller does not supply one. Exported
@@ -321,47 +322,41 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
-    borderRadius: 16,
+    borderRadius: 2,
     borderWidth: 1,
   },
   optionSelected: {
-    backgroundColor: COLORS.base.coral,
-    borderColor: COLORS.base.coral,
+    // Selected = filled charcoal (no coral).
+    backgroundColor: INK.primary,
+    borderColor: INK.primary,
   },
   optionUnselected: {
-    backgroundColor: COLORS.grayscale.background,
-    borderColor: COLORS.grayscale.border,
+    backgroundColor: INK.paper,
+    borderColor: INK.line,
   },
   optionDisabled: {
-    // Disabled fill — mid-gray reads as "this control is not interactive"
-    // without competing with the coral primary fill on the rest of the
-    // screen. Painted last in the style stack so it overrides both the
-    // selected and unselected fills.
-    backgroundColor: COLORS.grayscale.disabled,
-    borderColor: COLORS.grayscale.disabled,
+    // Faint-ink fill reads as "not interactive". Painted last so it
+    // overrides both the selected and unselected fills.
+    backgroundColor: INK.wash,
+    borderColor: INK.line,
   },
   label: {
-    // 16pt/700 button typography token — matches FunnelPrimaryButton so
-    // the radio labels carry the same visual weight as the primary CTA
-    // below them.
-    ...TYPOGRAPHY.button.bold,
+    fontFamily: FONT.medium,
+    fontSize: 15,
+    letterSpacing: 0.3,
     // `flexShrink: 1` lets a long Korean label wrap rather than push the
     // radio dot off-screen.
     flexShrink: 1,
   },
   labelSelected: {
-    // White-on-coral yields AAA contrast for the selected option.
-    color: COLORS.grayscale.background,
+    // Paper-white on the charcoal fill.
+    color: INK.paper,
   },
   labelUnselected: {
-    // Near-black on white for unselected options — high contrast on the
-    // pure-white card fill.
-    color: COLORS.grayscale.text,
+    color: INK.primary,
   },
   labelDisabled: {
-    // Pure white on mid-gray reads as "this label is muted" while
-    // remaining legible.
-    color: COLORS.grayscale.background,
+    color: INK.faint,
   },
   dot: {
     // Fixed 20pt diameter circle — a stylistic constant, not a token
@@ -375,27 +370,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dotSelected: {
-    // White hollow ring on the coral fill — provides a colour-blind
-    // safe affordance independent of the fill colour.
-    borderColor: COLORS.grayscale.background,
-    backgroundColor: COLORS.base.coral,
+    // Paper ring on the charcoal-filled option.
+    borderColor: INK.paper,
+    backgroundColor: INK.primary,
   },
   dotUnselected: {
-    // Gray hollow ring on white — matches the unselected option border.
-    borderColor: COLORS.grayscale.border,
-    backgroundColor: COLORS.grayscale.background,
+    // Hairline ring on paper — matches the unselected option border.
+    borderColor: INK.line,
+    backgroundColor: INK.paper,
   },
   dotDisabled: {
-    // White hollow ring on the muted gray fill.
-    borderColor: COLORS.grayscale.background,
-    backgroundColor: COLORS.grayscale.disabled,
+    borderColor: INK.faint,
+    backgroundColor: INK.wash,
   },
   dotInner: {
-    // 10pt filled inner circle — half the dot diameter, centred inside
-    // the dot ring. White on coral matches the selected option's text.
+    // 10pt filled inner circle — paper-white, reads against the charcoal
+    // selected option.
     width: 10,
     height: 10,
     borderRadius: 999,
-    backgroundColor: COLORS.grayscale.background,
+    backgroundColor: INK.paper,
   },
 });

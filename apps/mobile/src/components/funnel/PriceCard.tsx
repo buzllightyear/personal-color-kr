@@ -120,7 +120,8 @@
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
+import { SPACING } from '../../theme';
+import { FONT, INK } from '../../theme/editorial';
 
 /**
  * Default testID prefix used when the caller does not supply one. Exported
@@ -266,40 +267,30 @@ export function PriceCard(props: PriceCardProps): React.ReactElement {
  */
 const styles = StyleSheet.create({
   card: {
-    // Soft pink surface tint — Korean beauty market visual identity.
-    // Carried forward from Phase 2.4 unchanged so the screen rhythm is
-    // visually continuous across phases.
-    backgroundColor: COLORS.base.pink,
-    // Slightly deeper blush picks out the card edge against the soft-pink
-    // fill without introducing a neutral gray that would clash with the
-    // Korean beauty palette.
-    borderColor: COLORS.base.blush,
+    // Editorial: a neutral wash panel with a hairline edge — no pink tint.
+    backgroundColor: INK.wash,
+    borderColor: INK.line,
     borderWidth: 1,
-    // 16px rounded corners — stylistic constant, not a token (the spacing
-    // scale measures layout gaps, not corner radii).
-    borderRadius: 16,
+    // Near-square corners (editorial flat surface).
+    borderRadius: 2,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-    // Tight internal rhythm between heading + list block — the heading
-    // anchors the card, the list sits as a closely-related enumeration
-    // directly beneath it.
+    // Tight internal rhythm between heading + list block.
     gap: SPACING.sm,
   },
   heading: {
-    // Subhead-bold typography — the heading anchors the card visually
-    // without competing with the primary CTA below.
-    ...TYPOGRAPHY.subhead.bold,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.medium,
+    fontSize: 18,
+    color: INK.primary,
   },
   list: {
-    // Rows read as a list — tight inline spacing between each benefit so
-    // the trio is scannable in one glance.
+    // Rows read as a list — tight inline spacing between each benefit.
     gap: SPACING.xs,
   },
   item: {
-    // Body-regular typography — comfortable reading size for Korean
-    // glyphs, matches the body-text rhythm used elsewhere in the funnel.
-    ...TYPOGRAPHY.body.regular,
-    color: COLORS.grayscale.text,
+    fontFamily: FONT.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: INK.muted,
   },
 });
