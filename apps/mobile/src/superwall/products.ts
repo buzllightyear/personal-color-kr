@@ -72,7 +72,7 @@
  * record. Must match exactly:
  *
  *   - The product ID registered in App Store Connect under the bundle
- *     identifier `com.personalcolorkr.app`.
+ *     identifier `com.method.pov`.
  *   - The product ID listed inside the local StoreKit configuration file
  *     (`storekit/PersonalColorKR.storekit`).
  *   - The product ID bound inside the Superwall dashboard paywall.
@@ -187,7 +187,7 @@ export const SUBSCRIPTION_BILLING_PERIOD: {
  * silently — recovery is documented in the runbook's "Drift Recovery"
  * section.
  */
-export const SUBSCRIPTION_BUNDLE_IDENTIFIER = 'com.personalcolorkr.app' as const;
+export const SUBSCRIPTION_BUNDLE_IDENTIFIER = 'com.method.pov' as const;
 
 /**
  * Locale identifier used for the primary subscription localisation in

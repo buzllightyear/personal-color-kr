@@ -63,7 +63,7 @@ The app reads these at runtime; missing `DATABASE_URL` / `JWT_SECRET` /
 fly secrets set \
   DATABASE_URL='postgresql+asyncpg://USER:PASS@HOST:5432/DB' \
   JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
-  APPLE_BUNDLE_ID='com.personalcolorkr.app' \
+  APPLE_BUNDLE_ID='com.method.pov' \
   FAL_API_KEY='...' \
   SENTRY_DSN_API='https://...ingest.sentry.io/...' \
   --app pov-api

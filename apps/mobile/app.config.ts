@@ -205,7 +205,7 @@ export function resolveEasBuildProfile(): string {
  * added) can pin the contract from the test side without re-parsing the
  * exported config object.
  */
-export const IOS_BUNDLE_IDENTIFIER: string = 'com.personalcolorkr.app';
+export const IOS_BUNDLE_IDENTIFIER: string = 'com.method.pov';
 
 /**
  * Expo runtime version — pinned to the Expo SDK 51 series so OTA updates

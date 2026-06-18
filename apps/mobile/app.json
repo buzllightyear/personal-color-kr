@@ -17,7 +17,7 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "com.personalcolorkr.app",
+      "bundleIdentifier": "com.method.pov",
       "buildNumber": "1",
       "appleTeamId": "72Y243L24R",
       "config": {
