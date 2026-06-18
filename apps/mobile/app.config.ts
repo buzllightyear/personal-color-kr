@@ -326,15 +326,34 @@ export function isEasBuild(
  * isolation, while {@link defineExpoConfig} only *invokes* it inside a real EAS
  * Build (see {@link isEasBuild}).
  *
+ * Sentry-provisioning escape hatch:
+ *   The gate only enforces the DSN requirement once Sentry is actually
+ *   provisioned — i.e. once `SENTRY_ORG_SLUG` is no longer the
+ *   `TODO_SENTRY_*` placeholder. Before that, the entire Sentry integration
+ *   is inert (the config plugin points at a placeholder org; runtime
+ *   `Sentry.init` no-ops without a DSN), so requiring a DSN would be a
+ *   chicken-and-egg block on the FIRST production / TestFlight build. The gate
+ *   RE-ARMS automatically the moment a real org slug is filled in — exactly
+ *   when crash observability becomes an expectation rather than a future TODO.
+ *
  * @param profile - the resolved EAS build profile name.
  * @param env - environment map to read the DSN from; defaults to `process.env`.
- * @throws Error when a production build is missing `SENTRY_DSN_MOBILE`.
+ * @param sentryProvisioned - whether Sentry is set up (org slug is real);
+ *   defaults to {@link isSentryProvisioned} reading the module `SENTRY_ORG_SLUG`.
+ * @throws Error when a production build with Sentry PROVISIONED lacks `SENTRY_DSN_MOBILE`.
  */
 export function assertProductionSentryDsn(
   profile: string,
   env: Record<string, string | undefined> = process.env,
+  sentryProvisioned: boolean = isSentryProvisioned(),
 ): void {
   if (profile !== PRODUCTION_EAS_BUILD_PROFILE) {
+    return;
+  }
+  // Sentry not yet provisioned → the DSN requirement does not apply (the whole
+  // Sentry integration is inert until a real org slug lands). This unblocks the
+  // first TestFlight beta; the gate re-arms once Sentry is wired up.
+  if (!sentryProvisioned) {
     return;
   }
   const dsn = env[SENTRY_DSN_MOBILE_ENV_KEY];
@@ -348,6 +367,20 @@ export function assertProductionSentryDsn(
         `before re-running this production build.`,
     );
   }
+}
+
+/**
+ * Whether Sentry is provisioned — i.e. the org slug is a real value, not the
+ * `TODO_SENTRY_*` placeholder. Used by {@link assertProductionSentryDsn} to
+ * decide whether the production DSN requirement applies yet. Injectable
+ * `orgSlug` so the unit test can exercise both branches without mutating the
+ * module constant.
+ *
+ * @param orgSlug - the Sentry org slug to inspect; defaults to the module
+ *   {@link SENTRY_ORG_SLUG} constant.
+ */
+export function isSentryProvisioned(orgSlug: string = SENTRY_ORG_SLUG): boolean {
+  return !orgSlug.startsWith(SENTRY_TODO_SLUG_PREFIX);
 }
 
 /**
