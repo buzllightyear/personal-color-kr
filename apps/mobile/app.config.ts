@@ -238,20 +238,29 @@ export const SENTRY_EXPO_PLUGIN_NAME: string = '@sentry/react-native/expo';
 /**
  * Sentry organization slug the symbolication artifacts upload to.
  *
- * Phase 7.3 contract: the Sentry org is not yet provisioned, so this stays the
- * `TODO_SENTRY_ORG_SLUG` placeholder. A human replaces it (here and/or via the
- * EAS Secret flow documented in `docs/testflight-dry-run.md`) at credential
- * time — no other source change is required to reach TestFlight readiness.
+ * Resolved from the `SENTRY_ORG` env var (set per-profile in `eas.json` →
+ * `method-c3` for the provisioned org), falling back to the
+ * `TODO_SENTRY_ORG_SLUG` placeholder off-build (vitest / local without the
+ * var). Driving it from env — rather than hardcoding — keeps the placeholder
+ * the test suite pins while letting the real slug flow in only at build time
+ * (mirrors the `SENTRY_DSN_MOBILE` / `EXPO_PUBLIC_API_BASE_URL` pattern), and
+ * `SENTRY_ORG` is also the var sentry-cli reads for the upload. When the
+ * placeholder is still in effect, `isSentryProvisioned()` is `false` so the
+ * production-DSN gate stays inert.
  */
-export const SENTRY_ORG_SLUG: string = 'TODO_SENTRY_ORG_SLUG';
+export const SENTRY_ORG_SLUG: string =
+  process.env.SENTRY_ORG ?? 'TODO_SENTRY_ORG_SLUG';
 
 /**
  * Sentry project slug for the mobile app.
  *
- * Deliberately `pck-mobile` (not `pck-api`) so mobile issues group into their
- * own Sentry project, mirroring the api/mobile split from Phase 7.2.
+ * Resolved from the `SENTRY_PROJECT` env var (`eas.json` → `react-native`, the
+ * slug Sentry auto-assigned the React Native project), falling back to
+ * `pck-mobile` off-build. Same env-driven rationale as {@link SENTRY_ORG_SLUG};
+ * `SENTRY_PROJECT` is also the var sentry-cli reads for the upload.
  */
-export const SENTRY_PROJECT_SLUG: string = 'pck-mobile';
+export const SENTRY_PROJECT_SLUG: string =
+  process.env.SENTRY_PROJECT ?? 'pck-mobile';
 
 /**
  * Build the `[pluginName, options]` tuple for the Sentry Expo config plugin.
@@ -611,6 +620,12 @@ export default function defineExpoConfig({
       // fallback off-EAS). Surfaced via `expo-constants` so the runtime
       // Sentry init can derive its `environment` tag deterministically.
       easBuildProfile,
+      // Forward the Sentry DSN (read from `SENTRY_DSN_MOBILE`, set per-profile
+      // in `eas.json`) into the runtime manifest so `initSentry()` can read it
+      // via `Constants.expoConfig.extra.sentryDsnMobile`. A Sentry DSN is a
+      // public, send-only credential (safe to bundle); absent off-build, so
+      // `initSentry()` fail-opens (no-ops) when it is undefined.
+      sentryDsnMobile: process.env[SENTRY_DSN_MOBILE_ENV_KEY],
     },
   };
 }
