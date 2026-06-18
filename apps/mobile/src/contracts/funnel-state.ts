@@ -625,6 +625,74 @@ export type FunnelDiagnosisPatch = {
 export type SetDiagnosis = (patch: FunnelDiagnosisPatch) => void;
 
 // ---------------------------------------------------------------------------
+// Auth slice (Sign in with Apple — gates the step-7 selfie capture)
+// ---------------------------------------------------------------------------
+
+/**
+ * Lifecycle of the in-funnel Apple Sign In session:
+ *
+ *   - `unknown`    — the route has not yet hydrated the persisted session
+ *     (the brief window before the mount effect reads the Keychain). The gate
+ *     treats `unknown` like `signed_out` (shows the sign-in affordance) so a
+ *     returning user never flashes the capture surface before hydration.
+ *   - `signed_out` — no usable session; the diagnosis-input gate shows the
+ *     Apple Sign In button and withholds the selfie-capture surface.
+ *   - `signed_in`  — a backend access token is persisted in the Keychain; the
+ *     gate reveals the capture surface and the step-8 `/v1/diagnose` round-trip
+ *     can authenticate.
+ *
+ * The token itself NEVER lives in this slice (or any React state) — it is held
+ * only in `expo-secure-store` (`storage/auth-token-storage.ts`). This slice
+ * carries just the UI-relevant status + the user id (for display / analytics),
+ * so a context dump can never leak the bearer credential.
+ */
+export type AuthStatus = 'unknown' | 'signed_out' | 'signed_in';
+
+/**
+ * Immutable record of the Apple Sign In session state, kept structurally
+ * parallel to the other funnel slices (own `INITIAL_*` frozen constant, own
+ * patch-shaped updater).
+ *
+ *   - `status` — see {@link AuthStatus}.
+ *   - `userId` — the backend `users.id` from a successful sign-in, or `null`.
+ *     Used for display / Sentry correlation only; never a security signal.
+ */
+export type FunnelAuth = {
+  readonly status: AuthStatus;
+  readonly userId: string | null;
+};
+
+/**
+ * Canonical "session not yet hydrated" value. Suitable as the React Context
+ * default for the auth slice and as the initial state for any synthetic test
+ * provider. Frozen so an accidental mutation fails loud rather than corrupting
+ * other tests via shared reference — same pattern as the sibling `INITIAL_*`
+ * constants.
+ */
+export const INITIAL_FUNNEL_AUTH: FunnelAuth = Object.freeze({
+  status: 'unknown',
+  userId: null,
+});
+
+/**
+ * Partial update accepted by `setAuth`. Each field is optional (so a caller can
+ * flip `status` to `signed_in` while setting `userId` in one call, or update
+ * either independently) but still constrained to the same domain declared on
+ * {@link FunnelAuth}.
+ */
+export type FunnelAuthPatch = {
+  readonly [K in keyof FunnelAuth]?: FunnelAuth[K];
+};
+
+/**
+ * Updater function injected through the React Context for the auth slice.
+ * Implementations MUST treat the previous `auth` value as immutable and return
+ * (via `setState`) a fresh object that merges the patch — same contract as
+ * {@link SetOnboarding} and the other slice updaters.
+ */
+export type SetAuth = (patch: FunnelAuthPatch) => void;
+
+// ---------------------------------------------------------------------------
 // Public context value
 // ---------------------------------------------------------------------------
 
@@ -710,4 +778,16 @@ export type FunnelStateValue = {
    * that re-enters `result_reveal` on the unlocked branch.
    */
   readonly setIsPremium: SetIsPremium;
+  /**
+   * Immutable snapshot of the Apple Sign In session that gates the step-7
+   * selfie capture. The bearer token lives only in the Keychain — this slice
+   * carries just the `status` + `userId` the diagnosis-input gate branches on.
+   */
+  readonly auth: FunnelAuth;
+  /**
+   * Updater handle exposed to the diagnosis-input route, which hydrates the
+   * persisted session on mount and flips the slice to `signed_in` after a
+   * successful `runSignIn`.
+   */
+  readonly setAuth: SetAuth;
 };

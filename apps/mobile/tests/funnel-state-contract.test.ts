@@ -31,11 +31,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  INITIAL_FUNNEL_AUTH,
   INITIAL_FUNNEL_DIAGNOSIS,
   INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
   INITIAL_FUNNEL_PAYMENT,
   INITIAL_FUNNEL_REFERRAL,
+  type AuthStatus,
+  type FunnelAuth,
+  type FunnelAuthPatch,
   type FunnelDiagnosis,
   type FunnelDiagnosisInput,
   type FunnelOnboardingAnswers,
@@ -48,6 +52,7 @@ import {
   type PaymentMethod,
   type PriorDiagnosis,
   type SelfieEditStyle,
+  type SetAuth,
   type SetDiagnosis,
   type SetDiagnosisInput,
   type SetIsPremium,
@@ -164,6 +169,8 @@ type _FunnelStateValue_IsExactShape = Expect<
       readonly setSelectedPaymentMethod: SetSelectedPaymentMethod;
       readonly setPaymentProcessing: SetPaymentProcessing;
       readonly setIsPremium: SetIsPremium;
+      readonly auth: FunnelAuth;
+      readonly setAuth: SetAuth;
     }
   >
 >;
@@ -270,6 +277,10 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
       setIsPremium: () => {
         /* noop test impl */
       },
+      auth: INITIAL_FUNNEL_AUTH,
+      setAuth: () => {
+        /* noop test impl */
+      },
     };
     expect(value.onboarding.selfieEditStyle).toBeNull();
     expect(value.onboarding.priorDiagnosis).toBeNull();
@@ -288,7 +299,55 @@ describe('FunnelStateValue contract — Sub-AC 7.1', () => {
     expect(typeof value.setSelectedPaymentMethod).toBe('function');
     expect(typeof value.setPaymentProcessing).toBe('function');
     expect(typeof value.setIsPremium).toBe('function');
+    expect(value.auth.status).toBe('unknown');
+    expect(value.auth.userId).toBeNull();
+    expect(typeof value.setAuth).toBe('function');
   });
+
+  // -------------------------------------------------------------------------
+  // Auth slice (Sign in with Apple — gates the step-7 selfie capture)
+  // -------------------------------------------------------------------------
+  it('exposes FunnelAuth with status unknown + userId null, frozen', () => {
+    expect(INITIAL_FUNNEL_AUTH).toEqual({ status: 'unknown', userId: null });
+    expect(Object.isFrozen(INITIAL_FUNNEL_AUTH)).toBe(true);
+  });
+
+  it('accepts SetAuth patches flipping status and userId', () => {
+    let last: FunnelAuthPatch | null = null;
+    const setAuth: SetAuth = (patch) => {
+      last = patch;
+    };
+
+    setAuth({ status: 'signed_in', userId: 'user-123' });
+    expect(last).toEqual({ status: 'signed_in', userId: 'user-123' });
+
+    setAuth({ status: 'signed_out', userId: null });
+    expect(last).toEqual({ status: 'signed_out', userId: null });
+
+    setAuth({});
+    expect(last).toEqual({});
+  });
+
+  // Type-level: AuthStatus is exactly the closed three-state union.
+  type _AuthStatus_IsExactUnion = Expect<
+    Equal<AuthStatus, 'unknown' | 'signed_out' | 'signed_in'>
+  >;
+  const _authStatusAssertion: _AuthStatus_IsExactUnion = true;
+  void _authStatusAssertion;
+
+  // Type-level: FunnelAuth must have exactly the two readonly fields.
+  type _FunnelAuth_ExactShape = Expect<
+    Equal<FunnelAuth, { readonly status: AuthStatus; readonly userId: string | null }>
+  >;
+  const _authShapeAssertion: _FunnelAuth_ExactShape = true;
+  void _authShapeAssertion;
+
+  // Type-level: SetAuth signature.
+  type _SetAuth_ExactSignature = Expect<
+    Equal<SetAuth, (patch: FunnelAuthPatch) => void>
+  >;
+  const _setAuthAssertion: _SetAuth_ExactSignature = true;
+  void _setAuthAssertion;
 
   it('exposes FunnelDiagnosisInput with selfieUri initialised to null', () => {
     expect(INITIAL_FUNNEL_DIAGNOSIS_INPUT).toEqual({ selfieUri: null });

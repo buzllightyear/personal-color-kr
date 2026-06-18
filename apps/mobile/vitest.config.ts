@@ -90,6 +90,30 @@ export default defineConfig({
         find: 'expo-image-picker',
         replacement: path.resolve(__dirname, 'tests/__stubs__/expo-image-picker-stub.ts'),
       },
+      // `expo-apple-authentication` is a native module vite can't parse;
+      // `src/acquire-apple-credential.ts` imports its `signInAsync` /
+      // `isAvailableAsync` + scope enum, and `AppleSignInButton` imports the
+      // native `AppleAuthenticationButton`. Stub resolves the import, exposes
+      // the enums, and renders the button as an inert host element. The auth
+      // flow itself is tested through `acquireAppleCredential`'s injected deps.
+      {
+        find: 'expo-apple-authentication',
+        replacement: path.resolve(
+          __dirname,
+          'tests/__stubs__/expo-apple-authentication-stub.ts',
+        ),
+      },
+      // `expo-secure-store` is a native Keychain module vite can't parse;
+      // `src/storage/auth-token-storage.ts` imports its get/set/delete fns.
+      // Stub resolves the import with inert no-ops — the storage seam is tested
+      // through its injected deps.
+      {
+        find: 'expo-secure-store',
+        replacement: path.resolve(
+          __dirname,
+          'tests/__stubs__/expo-secure-store-stub.ts',
+        ),
+      },
     ],
   },
 });

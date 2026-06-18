@@ -1,28 +1,81 @@
 /**
- * Funnel route — diagnosis_input (Phase 2.3, step 7 of 12).
+ * Funnel route — diagnosis_input (step 7 of 12).
  *
- * Thin expo-router wrapper. Resolves the `useRouter` push handler and the
- * `useFunnelState` hook here so the presentational `DiagnosisInputScreen`
- * stays pure props-in / callbacks-out (and unit-tests without any
- * provider or router context).
+ * Thin expo-router wrapper that ALSO owns the Sign in with Apple gate. The
+ * step-8 `POST /v1/diagnose` round-trip needs a backend JWT (Apple Sign In
+ * only), so this route gates selfie capture behind sign-in:
  *
- *   - `selfieUri` is read from `FunnelStateContext.diagnosisInput`.
- *   - `acquireSelfieUri` injects the real `expo-image-picker` device capture
- *     (`pickSelfieUri`) — a `file://` URI, or `null` on permission-deny/cancel.
- *   - `onCaptureSelfie(uri)` writes the captured URI via `setDiagnosisInput`.
- *   - `onNext()` navigates to the next funnel step
- *     (`/(funnel)/fake-scan-animation`).
+ *   - On mount it hydrates the persisted session: a Keychain-stored access
+ *     token flips the auth slice to `signed_in`; otherwise `signed_out`.
+ *   - While not `signed_in`, it renders the presentational
+ *     `DiagnosisSignInGateScreen` (Apple button). A press drives `runSignIn`
+ *     (native credential → backend → Keychain) and, on success, flips the auth
+ *     slice — re-rendering into the capture surface below.
+ *   - Once `signed_in`, it renders the original `DiagnosisInputScreen`
+ *     unchanged (selfie capture → fake-scan-animation).
+ *
+ * Both screens stay pure props-in / callbacks-out; this route is the only place
+ * that touches `expo-router`, `useFunnelState`, the picker, and the auth seams.
  */
 import * as React from 'react';
 import { useRouter } from 'expo-router';
 
 import { DiagnosisInputScreen } from '../../src/screens/funnel/DiagnosisInputScreen';
+import { DiagnosisSignInGateScreen } from '../../src/screens/funnel/DiagnosisSignInGateScreen';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
 import { pickSelfieUri } from '../../src/pick-selfie';
+import { readAuthToken } from '../../src/storage/auth-token-storage';
+import { runSignIn } from '../../src/run-sign-in';
+
+/** Single user-facing message for any non-cancel sign-in failure. */
+const SIGN_IN_ERROR_MESSAGE = '로그인에 실패했어요. 다시 시도해 주세요.';
 
 export default function DiagnosisInputRoute(): React.ReactElement {
   const router = useRouter();
-  const { diagnosisInput, setDiagnosisInput } = useFunnelState();
+  const { diagnosisInput, setDiagnosisInput, auth, setAuth } = useFunnelState();
+
+  const [isSigningIn, setIsSigningIn] = React.useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  // Hydrate the persisted Apple Sign In session once on mount: a Keychain
+  // token means the user is already signed in (capture surface), otherwise the
+  // gate is shown. Keyed on `setAuth` (stable via useCallback) so it runs once.
+  React.useEffect((): void => {
+    void (async (): Promise<void> => {
+      const token = await readAuthToken();
+      setAuth({ status: token !== null ? 'signed_in' : 'signed_out', userId: null });
+    })();
+  }, [setAuth]);
+
+  const handleSignIn = React.useCallback((): void => {
+    setErrorMessage(null);
+    setIsSigningIn(true);
+    void (async (): Promise<void> => {
+      try {
+        const result = await runSignIn();
+        if (result.status === 'signed_in') {
+          setAuth({ status: 'signed_in', userId: result.userId });
+        } else if (result.status === 'error') {
+          setErrorMessage(SIGN_IN_ERROR_MESSAGE);
+        }
+        // `canceled` is a silent no-op: the user dismissed the sheet, so the
+        // gate stays put with no error shown.
+      } finally {
+        setIsSigningIn(false);
+      }
+    })();
+  }, [setAuth]);
+
+  if (auth.status !== 'signed_in') {
+    return (
+      <DiagnosisSignInGateScreen
+        onSignIn={handleSignIn}
+        isSigningIn={isSigningIn}
+        errorMessage={errorMessage}
+      />
+    );
+  }
+
   return (
     <DiagnosisInputScreen
       selfieUri={diagnosisInput.selfieUri}

@@ -79,11 +79,14 @@
 import * as React from 'react';
 
 import {
+  INITIAL_FUNNEL_AUTH,
   INITIAL_FUNNEL_DIAGNOSIS,
   INITIAL_FUNNEL_DIAGNOSIS_INPUT,
   INITIAL_FUNNEL_ONBOARDING_ANSWERS,
   INITIAL_FUNNEL_PAYMENT,
   INITIAL_FUNNEL_REFERRAL,
+  type FunnelAuth,
+  type FunnelAuthPatch,
   type FunnelDiagnosis,
   type FunnelDiagnosisInput,
   type FunnelDiagnosisInputPatch,
@@ -96,6 +99,7 @@ import {
   type FunnelReferralPatch,
   type FunnelStateValue,
   type PaymentMethod,
+  type SetAuth,
   type SetDiagnosis,
   type SetDiagnosisInput,
   type SetIsPremium,
@@ -200,6 +204,15 @@ export interface FunnelStateProviderProps {
    * the diagnosed category can be exercised without firing the real call.
    */
   readonly initialDiagnosis?: FunnelDiagnosis;
+  /**
+   * Optional seed value for the auth slice (Sign in with Apple). When omitted
+   * (the production path), the provider initialises with `INITIAL_FUNNEL_AUTH`
+   * so `status` is `'unknown'` until the diagnosis-input route hydrates the
+   * persisted session. Tests use this prop to spin up the provider already
+   * `signed_in` so the gate's capture surface can be exercised without driving
+   * the sign-in flow first.
+   */
+  readonly initialAuth?: FunnelAuth;
 }
 
 /**
@@ -234,6 +247,7 @@ export function FunnelStateProvider(
     initialReferral,
     initialPayment,
     initialDiagnosis,
+    initialAuth,
   } = props;
 
   // `useState` is the entire engine here — no reducer, no external store,
@@ -483,6 +497,26 @@ export function FunnelStateProvider(
     });
   }, []);
 
+  // Auth slice (Sign in with Apple — gates the step-7 selfie capture). Same
+  // parallel-slice pattern as the others: independent `useState` cell seeded
+  // from `INITIAL_FUNNEL_AUTH` (`status: 'unknown'`, `userId: null`), immutable
+  // spread-merge updater, stable identity via `useCallback`. The bearer token
+  // never lives here — only the UI-relevant status + user id.
+  const [auth, setAuthState] = React.useState<FunnelAuth>(
+    () => initialAuth ?? INITIAL_FUNNEL_AUTH,
+  );
+
+  // `setAuth` mirrors the other slice updaters exactly — immutable spread-merge,
+  // stable identity. The patch shape constrains `status` to the `AuthStatus`
+  // union and `userId` to `string | null`, so spreading the patch cannot
+  // introduce out-of-domain values.
+  const setAuth = React.useCallback<SetAuth>((patch: FunnelAuthPatch) => {
+    setAuthState((prev: FunnelAuth) => {
+      const next: FunnelAuth = { ...prev, ...patch };
+      return next;
+    });
+  }, []);
+
   // Stable context value reference — only rebuilt when one of the state
   // slices actually changes (every `set*` updater is itself stable via
   // useCallback, so they never trigger a rebuild on their own).
@@ -501,6 +535,8 @@ export function FunnelStateProvider(
       setSelectedPaymentMethod,
       setPaymentProcessing,
       setIsPremium,
+      auth,
+      setAuth,
     }),
     [
       onboarding,
@@ -516,6 +552,8 @@ export function FunnelStateProvider(
       setSelectedPaymentMethod,
       setPaymentProcessing,
       setIsPremium,
+      auth,
+      setAuth,
     ],
   );
 

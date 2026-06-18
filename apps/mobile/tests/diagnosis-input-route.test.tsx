@@ -88,6 +88,26 @@ vi.mock('../src/pick-selfie', () => {
   };
 });
 
+// The route now gates capture behind Apple Sign In: on mount it hydrates the
+// session from the Keychain. Mock the token read to resolve a token so
+// hydration flips the auth slice to `signed_in` and the route renders the
+// capture surface (`DiagnosisInputScreen`) — the gate itself is covered in
+// `diagnosis-sign-in-gate.test.tsx`. The dedicated gate→sign-in wiring is
+// covered in `diagnosis-input-route-sign-in.test.tsx`.
+vi.mock('../src/storage/auth-token-storage', () => {
+  return {
+    readAuthToken: (): Promise<string | null> => Promise.resolve('eyJ.test.jwt'),
+  };
+});
+
+// Mock the sign-in orchestrator so this capture-wiring test never pulls in the
+// native `@sentry/react-native` chain `run-sign-in.ts` transitively imports.
+vi.mock('../src/run-sign-in', () => {
+  return {
+    runSignIn: vi.fn(() => Promise.resolve({ status: 'canceled' })),
+  };
+});
+
 // Import the default export AFTER the mocks have been registered so the
 // route module's `import { useRouter } from 'expo-router'` resolves to the
 // mocked surface above.
@@ -109,9 +129,13 @@ function findHostByTestId(
   return (matches[0] as unknown as TestInstance) ?? null;
 }
 
-function renderRoute(): TestRenderer.ReactTestRenderer {
+// Async render: the route's mount-effect hydration (`await readAuthToken()` →
+// `setAuth({ status: 'signed_in' })`) resolves on a microtask, so we flush it
+// inside `await act(async …)`. After it settles the route has re-rendered from
+// the brief gate into the `DiagnosisInputScreen` capture surface.
+async function renderRoute(): Promise<TestRenderer.ReactTestRenderer> {
   let tree: TestRenderer.ReactTestRenderer | undefined;
-  act(() => {
+  await act(async () => {
     tree = TestRenderer.create(
       React.createElement(
         FunnelStateProvider,
@@ -125,18 +149,18 @@ function renderRoute(): TestRenderer.ReactTestRenderer {
 }
 
 describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
-  it('mounts the DiagnosisInputScreen presentational component', () => {
+  it('mounts the DiagnosisInputScreen presentational component', async () => {
     pushSpy.mockClear();
-    const tree = renderRoute();
+    const tree = await renderRoute();
     // The screen overrides the FunnelScreenLayout testID to
     // `diagnosis-input-screen` — its presence under the route wrapper proves
     // the wrapper delegated to the correct component.
     expect(findHostByTestId(tree, 'diagnosis-input-screen')).toBeTruthy();
   });
 
-  it('renders the idle capture label "셀카 등록하기" before any tap (selfieUri starts null)', () => {
+  it('renders the idle capture label "셀카 등록하기" before any tap (selfieUri starts null)', async () => {
     pushSpy.mockClear();
-    const tree = renderRoute();
+    const tree = await renderRoute();
     // FunnelStateProvider seeds diagnosisInput with selfieUri === null, so
     // the screen renders the idle state. This pins the read side of the
     // wiring (context.diagnosisInput.selfieUri → screen.selfieUri). The
@@ -149,7 +173,7 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
 
   it('forwards capture-surface taps into setDiagnosisInput (screen re-renders with captured state)', async () => {
     pushSpy.mockClear();
-    const tree = renderRoute();
+    const tree = await renderRoute();
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');
     expect(surface).toBeTruthy();
     const onPress = surface?.props.onPress as (() => void) | undefined;
@@ -167,7 +191,7 @@ describe('diagnosis-input route wrapper — mount smoke (Sub-AC 2.2)', () => {
 
   it('forwards useRouter().push to onNext (advances to /(funnel)/fake-scan-animation)', async () => {
     pushSpy.mockClear();
-    const tree = renderRoute();
+    const tree = await renderRoute();
     // First capture a selfie so the CTA's disabled gate flips off — the
     // FunnelPrimaryButton suppresses onPress while disabled.
     const surface = findHostByTestId(tree, 'diagnosis-input-capture-surface');

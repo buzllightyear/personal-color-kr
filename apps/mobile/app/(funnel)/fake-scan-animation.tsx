@@ -33,7 +33,7 @@ import { useRouter } from 'expo-router';
 
 import { FakeScanAnimationScreen } from '../../src/screens/funnel/FakeScanAnimationScreen';
 import { useFunnelState } from '../../src/hooks/use-funnel-state';
-import { getDevAuthToken } from '../../src/config/dev-auth-token';
+import { getAuthToken } from '../../src/config/auth-token';
 import { runDiagnosis, selfieFileFromUri } from '../../src/run-diagnosis';
 
 export default function FakeScanAnimationRoute(): React.ReactElement {
@@ -42,14 +42,24 @@ export default function FakeScanAnimationRoute(): React.ReactElement {
 
   // Fire the real diagnosis exactly once, when a real selfie + token are both
   // available. Keyed on the selfie URI so a re-capture (new URI) re-fires; the
-  // guard below makes the common pre-membership path a no-op.
+  // guard below makes the no-token path a clean no-op (static teaser fallback).
+  //
+  // The token now resolves asynchronously (`getAuthToken` reads the Keychain-
+  // persisted Apple-Sign-In session, falling back to the dev seam), so the
+  // effect short-circuits on a `null` selfie *before* the async read to avoid
+  // an unnecessary Keychain hit, then fires the request inside a void IIFE.
   React.useEffect((): void => {
     const selfie = selfieFileFromUri(diagnosisInput.selfieUri);
-    const accessToken = getDevAuthToken();
-    if (selfie === null || accessToken === null) {
+    if (selfie === null) {
       return;
     }
-    void runDiagnosis({ selfie, accessToken, setDiagnosis });
+    void (async (): Promise<void> => {
+      const accessToken = await getAuthToken();
+      if (accessToken === null) {
+        return;
+      }
+      await runDiagnosis({ selfie, accessToken, setDiagnosis });
+    })();
   }, [diagnosisInput.selfieUri, setDiagnosis]);
 
   return (
