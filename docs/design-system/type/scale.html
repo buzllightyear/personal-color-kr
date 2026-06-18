@@ -1,0 +1,70 @@
+<!-- @dsCard group="Type" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Type scale — Pretendard</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-muted: #8a8a8a;
+        --ink-line: #e8e8e8;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: var(--ink-paper);
+        color: var(--ink-primary);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow {
+        font-size: 12px; font-weight: 500; letter-spacing: 0.18em;
+        text-transform: uppercase; color: var(--ink-muted); margin: 0 0 4px;
+      }
+      .title { font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin: 0 0 28px; }
+      .row { padding: 18px 0; border-top: 1px solid var(--ink-line); }
+      .row:last-child { border-bottom: 1px solid var(--ink-line); }
+      .spec { font-size: 11px; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 8px; }
+      .headline { font-weight: 300; font-size: 28px; line-height: 38px; letter-spacing: -0.3px; }
+      .subhead  { font-weight: 400; font-size: 14px; line-height: 22px; letter-spacing: 0.2px; color: var(--ink-muted); }
+      .body     { font-weight: 400; font-size: 15px; line-height: 24px; }
+      .btnlabel { font-weight: 500; font-size: 13px; letter-spacing: 1.5px; }
+      .caption  { font-weight: 400; font-size: 12px; line-height: 18px; letter-spacing: 0.2px; color: var(--ink-muted); }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Type</p>
+    <h1 class="title">Pretendard — type scale</h1>
+
+    <div class="row">
+      <p class="spec">HEADLINE · Light · 28/38 · tracking −0.3</p>
+      <div class="headline">내 퍼스널 컬러로 셀카가 한 장 더 빛나도록</div>
+    </div>
+    <div class="row">
+      <p class="spec">SUBHEAD · Regular · 14/22 · tracking +0.2</p>
+      <div class="subhead">1분 진단으로 봄·여름·가을·겨울 카테고리부터 맞춤 편집까지</div>
+    </div>
+    <div class="row">
+      <p class="spec">BODY · Regular · 15/24</p>
+      <div class="body">피부 톤·명도·채도·컨트라스트를 한 번에 계산해 어울리는 카테고리를 찾아드려요.</div>
+    </div>
+    <div class="row">
+      <p class="spec">BUTTON LABEL · Medium · 13 · tracking +1.5</p>
+      <div class="btnlabel">결과 잠금 해제</div>
+    </div>
+    <div class="row">
+      <p class="spec">CAPTION · Regular · 12/18 · tracking +0.2</p>
+      <div class="caption">출시되면 가장 먼저 알려드려요. 스팸은 보내지 않아요.</div>
+    </div>
+  </body>
+</html>

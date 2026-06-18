@@ -1,0 +1,112 @@
+<!-- @dsCard group="Colors" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ink ramp</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-muted: #8a8a8a;
+        --ink-faint: #b8b8b8;
+        --ink-line: #e8e8e8;
+        --ink-wash: #f4f4f4;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: var(--ink-paper);
+        color: var(--ink-primary);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        margin: 0 0 4px;
+      }
+      .title {
+        font-weight: 300;
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        margin: 0 0 4px;
+      }
+      .note {
+        font-size: 13px;
+        color: var(--ink-muted);
+        margin: 0 0 28px;
+      }
+      .ramp {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 16px;
+      }
+      .swatch__chip {
+        height: 88px;
+        border-radius: 2px;
+        border: 1px solid var(--ink-line);
+      }
+      .swatch__name {
+        font-weight: 500;
+        font-size: 13px;
+        margin: 10px 0 2px;
+      }
+      .swatch__hex {
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--ink-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Colors</p>
+    <h1 class="title">Ink ramp</h1>
+    <p class="note">
+      Chrome is built almost entirely from this monochrome ramp. (theme/editorial.ts → INK)
+    </p>
+    <div class="ramp">
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #1a1a1a"></div>
+        <div class="swatch__name">primary</div>
+        <div class="swatch__hex">#1A1A1A · headlines · CTA fill</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #8a8a8a"></div>
+        <div class="swatch__name">muted</div>
+        <div class="swatch__hex">#8A8A8A · subheads · captions</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #b8b8b8"></div>
+        <div class="swatch__name">faint</div>
+        <div class="swatch__hex">#B8B8B8 · placeholders · disabled</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #e8e8e8"></div>
+        <div class="swatch__name">line</div>
+        <div class="swatch__hex">#E8E8E8 · hairline dividers</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #f4f4f4"></div>
+        <div class="swatch__name">wash</div>
+        <div class="swatch__hex">#F4F4F4 · neutral fills</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #ffffff"></div>
+        <div class="swatch__name">paper</div>
+        <div class="swatch__hex">#FFFFFF · surface · label on dark</div>
+      </div>
+    </div>
+  </body>
+</html>

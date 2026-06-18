@@ -1,0 +1,89 @@
+<!-- @dsCard group="Colors" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Season accents</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-muted: #8a8a8a;
+        --ink-line: #e8e8e8;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: var(--ink-paper);
+        color: var(--ink-primary);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        margin: 0 0 4px;
+      }
+      .title { font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin: 0 0 4px; }
+      .note { font-size: 13px; color: var(--ink-muted); margin: 0 0 28px; max-width: 52ch; }
+      .reserved {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        border: 1px solid var(--ink-line);
+        border-radius: 2px;
+        padding: 5px 9px;
+        margin-bottom: 24px;
+      }
+      .ramp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+      .swatch__chip { height: 96px; border-radius: 2px; }
+      .swatch__name { font-weight: 500; font-size: 13px; margin: 10px 0 2px; }
+      .swatch__hex { font-size: 12px; letter-spacing: 0.04em; color: var(--ink-muted); }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Colors</p>
+    <h1 class="title">Season accents</h1>
+    <span class="reserved">Reserved — diagnosed result only</span>
+    <p class="note">
+      The only color in the product. Use exclusively where we show a personal-color
+      result (a swatch/chip) — never to tint chrome. (theme/colors.ts → COLORS.season)
+    </p>
+    <div class="ramp">
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #f7a6b3"></div>
+        <div class="swatch__name">봄 웜 · spring</div>
+        <div class="swatch__hex">#F7A6B3</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #a6cde3"></div>
+        <div class="swatch__name">여름 쿨 · summer</div>
+        <div class="swatch__hex">#A6CDE3</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #c9925e"></div>
+        <div class="swatch__name">가을 웜 · autumn</div>
+        <div class="swatch__hex">#C9925E</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch__chip" style="background: #5c5470"></div>
+        <div class="swatch__name">겨울 쿨 · winter</div>
+        <div class="swatch__hex">#5C5470</div>
+      </div>
+    </div>
+  </body>
+</html>
