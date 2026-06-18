@@ -68,6 +68,15 @@ import { setSentryUser, type SentryUserPayload } from './set-sentry-user';
 export interface SignInHttpResponse {
   readonly status: number;
   readonly userId?: string | number;
+  /**
+   * The backend-issued HS256 access token from a successful sign-in
+   * (`response.access_token`). Surfaced by the transport adapter so the
+   * orchestration layer (`run-sign-in.ts`) can persist it to the Keychain.
+   * Optional because the clear-on-200 / Sentry concerns this module owns need
+   * only the status + user id; a transport that omits it (or a non-200
+   * response) simply yields no token to persist.
+   */
+  readonly accessToken?: string;
 }
 
 /**

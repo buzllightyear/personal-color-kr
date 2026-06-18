@@ -532,6 +532,16 @@ export default function defineExpoConfig({
             '셀카로 퍼스널 컬러를 진단하기 위해 카메라를 사용해요. 촬영한 사진은 진단 분석에만 쓰여요.',
         },
       ],
+      // Sign in with Apple (the only auth method). Listing the config plugin
+      // makes `expo prebuild` / EAS Build add the `com.apple.developer.applesignin`
+      // entitlement to the generated ios/ project so the native
+      // `AppleAuthentication.signInAsync()` call mints a real identity token.
+      // Mirrors `ios.usesAppleSignIn: true` set in the ios block below.
+      'expo-apple-authentication',
+      // Backend access-token persistence (Keychain-backed). The config plugin
+      // wires the native expo-secure-store module into the prebuilt project so
+      // the JWT survives app restarts without a re-auth round-trip.
+      'expo-secure-store',
       buildSentryPluginEntry(),
     ],
     runtimeVersion: EXPO_RUNTIME_VERSION,
@@ -546,6 +556,12 @@ export default function defineExpoConfig({
         ? (config.ios as Record<string, unknown>)
         : {}),
       bundleIdentifier: IOS_BUNDLE_IDENTIFIER,
+      // Sign in with Apple capability. Setting this to `true` (in addition to
+      // the `expo-apple-authentication` config plugin above) makes Expo add the
+      // `com.apple.developer.applesignin` entitlement to the generated ios/
+      // project — required for `AppleAuthentication.signInAsync()` to succeed on
+      // device. The Apple Developer App ID must also have the capability enabled.
+      usesAppleSignIn: true,
       // StoreKit subscription products are exercised in the iOS sandbox
       // environment when running on a real device (simulator does not
       // exercise the full receipt validation surface). The simulator build
