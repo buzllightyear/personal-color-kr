@@ -1,0 +1,77 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shape & spacing</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-muted: #8a8a8a;
+        --ink-faint: #b8b8b8;
+        --ink-line: #e8e8e8;
+        --ink-wash: #f4f4f4;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 32px; background: var(--ink-paper);
+        color: var(--ink-primary); font-family: var(--font); -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 4px; }
+      .title { font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin: 0 0 28px; }
+      .sub { font-weight: 500; font-size: 13px; letter-spacing: 0.04em; color: var(--ink-muted); margin: 0 0 14px; }
+      .block { padding: 22px 0; border-top: 1px solid var(--ink-line); }
+      .block:last-child { border-bottom: 1px solid var(--ink-line); }
+
+      .shapes { display: flex; gap: 24px; align-items: flex-end; }
+      .shape { text-align: center; }
+      .shape__box { width: 96px; height: 64px; background: var(--ink-wash); border: 1px solid var(--ink-line); border-radius: 2px; }
+      .shape__hair { width: 140px; height: 1px; background: var(--ink-line); }
+      .shape__cap { font-size: 12px; color: var(--ink-muted); margin-top: 10px; }
+
+      .spacing { display: flex; flex-direction: column; gap: 10px; }
+      .sp { display: flex; align-items: center; gap: 14px; }
+      .sp__bar { height: 12px; background: var(--ink-primary); border-radius: 2px; }
+      .sp__cap { font-size: 12px; color: var(--ink-muted); }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Foundations</p>
+    <h1 class="title">Shape &amp; spacing</h1>
+
+    <div class="block">
+      <p class="sub">SHAPE — flat, near-square (radius 2), hairline 1px. No pills, shadows, glows.</p>
+      <div class="shapes">
+        <div class="shape">
+          <div class="shape__box"></div>
+          <div class="shape__cap">radius 2 · card / button</div>
+        </div>
+        <div class="shape">
+          <div class="shape__hair"></div>
+          <div class="shape__cap">hairline 1px · ink.line</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <p class="sub">SPACING — t-shirt scale (px). (theme/spacing.ts → SPACING)</p>
+      <div class="spacing">
+        <div class="sp"><div class="sp__bar" style="width: 4px"></div><span class="sp__cap">xxs · 4</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 8px"></div><span class="sp__cap">xs · 8</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 12px"></div><span class="sp__cap">sm · 12</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 16px"></div><span class="sp__cap">md · 16</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 24px"></div><span class="sp__cap">lg · 24</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 32px"></div><span class="sp__cap">xl · 32</span></div>
+        <div class="sp"><div class="sp__bar" style="width: 48px"></div><span class="sp__cap">xxl · 48</span></div>
+      </div>
+    </div>
+  </body>
+</html>

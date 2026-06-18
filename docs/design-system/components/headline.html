@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Funnel headline</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-muted: #8a8a8a;
+        --ink-line: #e8e8e8;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 32px; background: var(--ink-paper);
+        color: var(--ink-primary); font-family: var(--font); -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 4px; }
+      .title { font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin: 0 0 28px; }
+      .group { display: flex; flex-direction: column; gap: 12px; padding: 24px 0; }
+      .group + .group { border-top: 1px solid var(--ink-line); }
+      .h { font-weight: 300; font-size: 28px; line-height: 38px; letter-spacing: -0.3px; margin: 0; }
+      .s { font-weight: 400; font-size: 14px; line-height: 22px; letter-spacing: 0.2px; color: var(--ink-muted); margin: 0; }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Components</p>
+    <h1 class="title">Funnel headline</h1>
+    <div class="group">
+      <p class="h">잠깐, 별점 한 번만 부탁드려요</p>
+      <p class="s">iOS 별점 dialog 입니다. 부담 없이 나중으로 미뤄도 괜찮아요.</p>
+    </div>
+    <div class="group">
+      <p class="h">AI가 24개 포인트로 분석 중…</p>
+      <p class="s">피부 톤 · 명도 · 채도 · 컨트라스트를 한번에 계산하고 있어요</p>
+    </div>
+  </body>
+</html>

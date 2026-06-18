@@ -1,0 +1,69 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Primary button</title>
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      :root {
+        --ink-primary: #1a1a1a;
+        --ink-faint: #b8b8b8;
+        --ink-muted: #8a8a8a;
+        --ink-paper: #ffffff;
+        --font: 'Pretendard', -apple-system, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 32px; background: var(--ink-paper);
+        color: var(--ink-primary); font-family: var(--font); -webkit-font-smoothing: antialiased;
+      }
+      .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 4px; }
+      .title { font-weight: 300; font-size: 24px; letter-spacing: -0.01em; margin: 0 0 4px; }
+      .note { font-size: 13px; color: var(--ink-muted); margin: 0 0 28px; }
+      .stack { display: flex; flex-direction: column; gap: 20px; max-width: 460px; }
+      .label { font-size: 11px; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 8px; }
+      /* Flat full-width bar, near-square (radius 2), NOT a pill. */
+      .btn {
+        display: block; width: 100%; text-align: center;
+        font-family: var(--font); font-weight: 500; font-size: 13px; letter-spacing: 1.5px;
+        color: var(--ink-paper); background: var(--ink-primary);
+        border: none; border-radius: 2px; padding: 18px 24px; cursor: pointer;
+      }
+      .btn--pressed { opacity: 0.8; }
+      .btn--disabled { background: var(--ink-faint); cursor: default; }
+      .secondary {
+        background: none; border: none; color: var(--ink-muted);
+        font-family: var(--font); font-size: 14px; letter-spacing: 0.02em; cursor: pointer; padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Components</p>
+    <h1 class="title">Primary button</h1>
+    <p class="note">Flat full-width bar · radius 2 · Pretendard Medium tracked label. (FunnelPrimaryButton)</p>
+    <div class="stack">
+      <div>
+        <p class="label">DEFAULT</p>
+        <button class="btn">결과 잠금 해제</button>
+      </div>
+      <div>
+        <p class="label">PRESSED · opacity 0.8</p>
+        <button class="btn btn--pressed">결과 잠금 해제</button>
+      </div>
+      <div>
+        <p class="label">DISABLED · ink.faint</p>
+        <button class="btn btn--disabled" disabled>결과 잠금 해제</button>
+      </div>
+      <div>
+        <p class="label">SECONDARY / SKIP · text-only, ink.muted</p>
+        <button class="secondary">나중에</button>
+      </div>
+    </div>
+  </body>
+</html>
