@@ -137,7 +137,7 @@ describe('superwall/products — constants (AC 15)', () => {
     // surfaces the drift — the operator must then re-register the ASC
     // product against the new bundle before sandbox purchases will route.
     expect(SUBSCRIPTION_BUNDLE_IDENTIFIER).toBe(IOS_BUNDLE_IDENTIFIER);
-    expect(SUBSCRIPTION_BUNDLE_IDENTIFIER).toBe('com.personalcolorkr.app');
+    expect(SUBSCRIPTION_BUNDLE_IDENTIFIER).toBe('com.method.pov');
   });
 
   it('exposes the aggregate SUBSCRIPTION_PRODUCT as a frozen record', () => {
@@ -275,7 +275,7 @@ describe('docs/PHASE-2.5-ASC-SUBSCRIPTION.md — restates constants (AC 15)', ()
     expect(hasGrouped || hasUngrouped).toBe(true);
   });
 
-  it('mentions the bundle identifier (com.personalcolorkr.app)', () => {
+  it('mentions the bundle identifier (com.method.pov)', () => {
     const runbook = loadRunbook();
     expect(runbook).toContain(SUBSCRIPTION_BUNDLE_IDENTIFIER);
   });

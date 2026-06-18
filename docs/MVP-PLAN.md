@@ -1736,7 +1736,7 @@ Markdown 산출 (14 files, `docs/app-store/ko-KR/`):
 - `reviews/response-templates.md` (NEW, 4 templates: positive / negative-bug / negative-feature / neutral)
 
 `apps/mobile/app.json` 강화 (+15 LOC, iOS 제출-blocking 필드):
-- `expo.ios.bundleIdentifier` = `"com.personalcolorkr.app"`
+- `expo.ios.bundleIdentifier` = `"com.method.pov"`
 - `expo.ios.buildNumber` = `"1"`
 - `expo.ios.appleTeamId` = `"TODO_APPLE_TEAM_ID"` (Apple Developer 등록 시 채움)
 - `expo.ios.config.usesNonExemptEncryption` = `false`

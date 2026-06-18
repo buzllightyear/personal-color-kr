@@ -24,7 +24,7 @@ Before starting the registration, confirm:
 | ---------------------------------- | --------------------------------------- | ------------------------------------------------- |
 | Apple Developer Program membership | Active ($99/yr individual or org)        | <https://developer.apple.com/account>             |
 | App Store Connect access           | Admin or App Manager role                | <https://appstoreconnect.apple.com/access/users>  |
-| Bundle identifier registered       | `com.personalcolorkr.app`                | Identifiers → App IDs                             |
+| Bundle identifier registered       | `com.method.pov`                | Identifiers → App IDs                             |
 | App record created in ASC          | Bundle ID matches above                  | My Apps → personal-color-kr                       |
 | Paid Apps Agreement signed         | Status = "Active"                        | Business → Agreements, Tax, and Banking           |
 | Banking + tax info complete        | Status = "Active"                        | Business → Agreements, Tax, and Banking           |
