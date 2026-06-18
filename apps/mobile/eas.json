@@ -9,6 +9,9 @@
     "development-simulator": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+      },
       "ios": {
         "simulator": true,
         "resourceClass": "m-medium",
@@ -19,6 +22,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "image": "macos-sequoia-15.3-xcode-16.2"
@@ -27,6 +33,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "image": "macos-sequoia-15.3-xcode-16.2"
@@ -35,6 +44,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "image": "macos-sequoia-15.3-xcode-16.2"
