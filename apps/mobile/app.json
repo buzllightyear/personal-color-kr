@@ -19,7 +19,7 @@
     "ios": {
       "bundleIdentifier": "com.personalcolorkr.app",
       "buildNumber": "1",
-      "appleTeamId": "TODO_APPLE_TEAM_ID",
+      "appleTeamId": "72Y243L24R",
       "config": {
         "usesNonExemptEncryption": false
       },
