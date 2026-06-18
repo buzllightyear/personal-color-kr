@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>퍼스널 컬러 — 1분 셀카 진단</title>
+    <meta
+      name="description"
+      content="1분 셀카 진단으로 봄·여름·가을·겨울 퍼스널 컬러 카테고리부터 맞춤 편집까지. 곧 출시 — 출시 알림을 받아보세요."
+    />
+
+    <!-- Open Graph / social preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="퍼스널 컬러 — 1분 셀카 진단" />
+    <meta
+      property="og:description"
+      content="내 퍼스널 컬러로 셀카가 한 장 더 빛나도록. 곧 출시."
+    />
+    <meta property="og:locale" content="ko_KR" />
+
+    <!-- Pretendard (SIL OFL) — the editorial brand typeface (mirrors apps/mobile theme/editorial.ts) -->
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- ───────────────────────── Top bar ───────────────────────── -->
+    <header class="topbar">
+      <a class="wordmark" href="#top" aria-label="퍼스널 컬러 홈">퍼스널 컬러</a>
+      <span class="eyebrow eyebrow--pill">곧 출시</span>
+    </header>
+
+    <main id="top">
+      <!-- ───────────────────────── Hero ───────────────────────── -->
+      <section class="hero section">
+        <p class="eyebrow">PERSONAL&nbsp;COLOR · 1분&nbsp;진단</p>
+        <h1 class="headline">
+          내 퍼스널 컬러로<br />셀카가 한 장 더 빛나도록
+        </h1>
+        <p class="subhead">
+          1분 진단으로 봄·여름·가을·겨울 카테고리부터 맞춤 편집까지.
+        </p>
+
+        <form class="waitlist" id="waitlist-form" novalidate>
+          <label class="visually-hidden" for="email-hero">이메일</label>
+          <input
+            class="waitlist__input"
+            id="email-hero"
+            name="email"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="이메일 주소"
+            required
+          />
+          <button class="btn" type="submit">출시 알림받기</button>
+          <p class="waitlist__status" id="waitlist-status" role="status" aria-live="polite"></p>
+          <p class="waitlist__note">출시되면 가장 먼저 알려드려요. 스팸은 보내지 않아요.</p>
+        </form>
+      </section>
+
+      <!-- ─────────────── The one moment of color: season swatches ─────────────── -->
+      <section class="section seasons" aria-label="퍼스널 컬러 4계절">
+        <p class="eyebrow eyebrow--center">네 가지 톤, 하나의 정답</p>
+        <ul class="swatch-row">
+          <li class="swatch">
+            <span class="swatch__chip" style="background: var(--season-spring)"></span>
+            <span class="swatch__label">봄 웜</span>
+          </li>
+          <li class="swatch">
+            <span class="swatch__chip" style="background: var(--season-summer)"></span>
+            <span class="swatch__label">여름 쿨</span>
+          </li>
+          <li class="swatch">
+            <span class="swatch__chip" style="background: var(--season-autumn)"></span>
+            <span class="swatch__label">가을 웜</span>
+          </li>
+          <li class="swatch">
+            <span class="swatch__chip" style="background: var(--season-winter)"></span>
+            <span class="swatch__label">겨울 쿨</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ───────────────────────── How it works ───────────────────────── -->
+      <section class="section steps" aria-label="진단 과정">
+        <h2 class="section__title">진단은 셀카 한 장이면 충분해요</h2>
+        <ol class="step-list">
+          <li class="step">
+            <span class="step__index">01</span>
+            <div class="step__body">
+              <h3 class="step__title">셀카 한 장 등록</h3>
+              <p class="step__desc">정면 셀카 한 장만 있으면 시작돼요.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step__index">02</span>
+            <div class="step__body">
+              <h3 class="step__title">AI가 24개 포인트로 분석</h3>
+              <p class="step__desc">피부 톤·명도·채도·컨트라스트를 한 번에 계산해요.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step__index">03</span>
+            <div class="step__body">
+              <h3 class="step__title">퍼스널 컬러 결과 + 맞춤 편집</h3>
+              <p class="step__desc">내 카테고리부터 어울리는 편집 preset까지 받아봐요.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ───────────────────────── Value ───────────────────────── -->
+      <section class="section value">
+        <h2 class="headline headline--sm">오늘의 트렌드,<br />내 얼굴에 맞춘 편집</h2>
+        <p class="subhead">
+          퍼스널 컬러 기반 추천 preset · 매월 새로운 스타일이 자동으로 업데이트돼요.
+        </p>
+      </section>
+
+      <!-- ───────────────────────── Closing CTA ───────────────────────── -->
+      <section class="section closing">
+        <h2 class="headline headline--sm">출시 소식, 가장 먼저 받아보세요</h2>
+        <form class="waitlist waitlist--center" id="waitlist-form-foot" novalidate>
+          <label class="visually-hidden" for="email-foot">이메일</label>
+          <input
+            class="waitlist__input"
+            id="email-foot"
+            name="email"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="이메일 주소"
+            required
+          />
+          <button class="btn" type="submit">출시 알림받기</button>
+          <p class="waitlist__status" id="waitlist-status-foot" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="wordmark wordmark--sm">퍼스널 컬러</span>
+      <span class="footer__legal">© 2026 personal-color-kr</span>
+    </footer>
+
+    <script src="./main.js" defer></script>
+  </body>
+</html>
