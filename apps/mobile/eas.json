@@ -10,7 +10,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "simulator": true,
@@ -23,7 +24,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "resourceClass": "m-medium",
@@ -34,7 +36,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "resourceClass": "m-medium",
@@ -45,7 +48,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "resourceClass": "m-medium",
