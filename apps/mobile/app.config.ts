@@ -208,14 +208,14 @@ export function resolveEasBuildProfile(): string {
 export const IOS_BUNDLE_IDENTIFIER: string = 'com.method.pov';
 
 /**
- * Expo runtime version — pinned to the Expo SDK 51 series so OTA updates
+ * Expo runtime version — pinned to the Expo SDK 54 series so OTA updates
  * served via EAS Update only land on dev clients whose native binary
- * matches the JS bundle's native module ABI. Phase 2.5 is the first phase
- * that links a native module (@superwall/react-native-superwall), so OTA
- * mismatches would now manifest as native crashes rather than benign JS
- * errors — pinning the runtime version is the cheapest mitigation.
+ * matches the JS bundle's native module ABI. The SDK 51 → 54 upgrade bumped
+ * every native module (RN 0.74 → 0.81, New Architecture), so the runtime
+ * version MUST advance in lock-step — otherwise an OTA JS bundle built against
+ * the SDK 54 native ABI could land on a stale SDK 51 binary and crash natively.
  */
-export const EXPO_RUNTIME_VERSION: string = '51.0.0';
+export const EXPO_RUNTIME_VERSION: string = '54.0.0';
 
 /**
  * Module specifier for the Sentry Expo config plugin.

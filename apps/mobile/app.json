@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "personal-color-kr",
+    "newArchEnabled": true,
     "platforms": ["ios", "android", "web"],
     "plugins": ["expo-router"],
     "experiments": {

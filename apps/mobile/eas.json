@@ -17,8 +17,7 @@
       },
       "ios": {
         "simulator": true,
-        "resourceClass": "m-medium",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "resourceClass": "m-medium"
       },
       "channel": "development"
     },
@@ -32,8 +31,7 @@
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
       },
       "ios": {
-        "resourceClass": "m-medium",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "resourceClass": "m-medium"
       },
       "channel": "development"
     },
@@ -46,8 +44,7 @@
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
       },
       "ios": {
-        "resourceClass": "m-medium",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "resourceClass": "m-medium"
       },
       "channel": "preview"
     },
@@ -60,8 +57,7 @@
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
       },
       "ios": {
-        "resourceClass": "m-medium",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "resourceClass": "m-medium"
       },
       "channel": "production"
     }
