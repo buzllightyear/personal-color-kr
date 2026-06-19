@@ -20,7 +20,7 @@
  * sibling component tests: see guide-list.test.tsx for the full rationale.
  */
 import * as React from 'react';
-import TestRenderer from 'react-test-renderer';
+import TestRenderer, { act } from 'react-test-renderer';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-native', async () => {
@@ -93,7 +93,14 @@ function getByTestId(
 }
 
 function render(element: React.ReactElement): TestRenderer.ReactTestRenderer {
-  return TestRenderer.create(element);
+  // React 19's react-test-renderer mounts into a concurrent root, so `create()`
+  // must run inside `act(...)` for the tree to commit before `.root` is read
+  // (otherwise: "Can't access .root on unmounted test renderer").
+  let tree!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(element);
+  });
+  return tree;
 }
 
 /** Flatten the array-or-object style prop into a single object for assertions. */

@@ -13,6 +13,11 @@
     "test": "pnpm --filter core-ts run test && (cd packages/core-python && python3 -m pytest -q)",
     "test:coverage": "pnpm --filter core-ts run test:coverage && (cd packages/core-python && python3 -m pytest -q)"
   },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.17"
+    }
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^8.60.1",

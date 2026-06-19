@@ -39,7 +39,7 @@
  *   the rendered tree directly.
  */
 import * as React from 'react';
-import TestRenderer from 'react-test-renderer';
+import TestRenderer, { act } from 'react-test-renderer';
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock `react-native` ESM entry to a minimal host-component set. Vite's SSR
@@ -133,6 +133,20 @@ function getByTestId(
 }
 
 /**
+ * Mount an element with react-test-renderer. React 19's renderer uses a
+ * concurrent root, so `create()` must run inside `act(...)` for the tree to
+ * commit before `.root` is read (otherwise: "Can't access .root on unmounted
+ * test renderer").
+ */
+function actRender(element: React.ReactElement): TestRenderer.ReactTestRenderer {
+  let tree!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(element);
+  });
+  return tree;
+}
+
+/**
  * Flatten the layered style array a component may have received. Our
  * StyleSheet mock returns the literal object passed to `StyleSheet.create`,
  * so a single style prop is already the merged object; this helper just
@@ -151,7 +165,7 @@ function flattenStyle(styleProp: unknown): Readonly<Record<string, unknown>> {
 
 describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   it('renders its children inside the layout root', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -163,7 +177,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('applies the documented default testID when none is supplied', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -178,7 +192,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('overrides the testID when a screen-supplied value is passed', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         { testID: 'welcome-hook-screen' },
@@ -191,7 +205,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('passes a Korean accessibilityLabel through to the root', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         { accessibilityLabel: '환영합니다' },
@@ -203,7 +217,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('omits accessibilityLabel from the root when the prop is not provided', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -217,7 +231,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('paints the SafeAreaView surface with COLORS.grayscale.background', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -232,7 +246,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('applies SPACING.lg horizontal and SPACING.xl vertical padding to the content layer', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -250,7 +264,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('marks both safe-area and content layers as flex-1 fill', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         null,
@@ -264,7 +278,7 @@ describe('FunnelScreenLayout — shared frame contract (AC 8)', () => {
   });
 
   it('also renames the inner content testID when the outer testID is overridden', () => {
-    const tree = TestRenderer.create(
+    const tree = actRender(
       React.createElement(
         FunnelScreenLayout,
         { testID: 'value-props-screen' },

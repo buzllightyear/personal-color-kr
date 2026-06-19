@@ -6,8 +6,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "personal-color-kr",
-    "platforms": ["ios", "android", "web"],
-    "plugins": ["expo-router"],
+    "newArchEnabled": true,
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": false
     },
@@ -18,7 +25,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.method.pov",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "appleTeamId": "72Y243L24R",
       "config": {
         "usesNonExemptEncryption": false
