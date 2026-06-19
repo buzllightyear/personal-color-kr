@@ -21,7 +21,7 @@
  * renders sanely" (crash-free smoke) for all 12 v0.2 steps.
  */
 import * as React from 'react';
-import TestRenderer from 'react-test-renderer';
+import TestRenderer, { act } from 'react-test-renderer';
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock `react-native` ESM entry to a minimal host-component set. The setup-rn-stub
@@ -80,7 +80,13 @@ function makeQuery(tree: TestRenderer.ReactTestRenderer) {
 }
 
 function render(element: React.ReactElement) {
-  const tree = TestRenderer.create(element);
+  // React 19's react-test-renderer mounts into a concurrent root, so `create()`
+  // must run inside `act(...)` for the tree to commit before `.root` is read
+  // (otherwise: "Can't access .root on unmounted test renderer").
+  let tree!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(element);
+  });
   return makeQuery(tree);
 }
 

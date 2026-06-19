@@ -192,11 +192,17 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
   });
 
   it('mints a new timestamp suffix on each press (re-capture path)', async () => {
-    // Drive Date.now deterministically so the two URIs are guaranteed to
-    // differ — we cannot rely on a millisecond elapsing inside the same
-    // test tick under fake timers or fast CPUs.
-    const dateNowSpy = vi.spyOn(Date, 'now');
-    dateNowSpy.mockReturnValueOnce(1000).mockReturnValueOnce(2000);
+    // Drive Date.now as a strictly-monotonic counter so the two URIs are
+    // guaranteed to differ — we cannot rely on a millisecond elapsing inside
+    // the same test tick under fake timers or fast CPUs. A monotonic impl (vs.
+    // `mockReturnValueOnce(1000, 2000)`) is resilient to React 19's concurrent
+    // renderer, whose scheduler also calls `Date.now()` during render/act and
+    // would otherwise consume the queued one-shot values before the press
+    // handlers run.
+    let clock = 1000;
+    const dateNowSpy = vi
+      .spyOn(Date, 'now')
+      .mockImplementation((): number => (clock += 1));
 
     const onCapture = vi.fn();
     const tree = render(
@@ -216,8 +222,13 @@ describe('SelfieUploadPressable — onCapture wiring (Sub-AC 5.2 core)', () => {
     });
 
     expect(onCapture).toHaveBeenCalledTimes(2);
-    expect(onCapture.mock.calls[0]?.[0]).toBe('stub://selfie/1000');
-    expect(onCapture.mock.calls[1]?.[0]).toBe('stub://selfie/2000');
+    const firstUri = onCapture.mock.calls[0]?.[0] as string;
+    const secondUri = onCapture.mock.calls[1]?.[0] as string;
+    // Both are well-formed stub URIs...
+    expect(firstUri).toMatch(/^stub:\/\/selfie\/\d+$/);
+    expect(secondUri).toMatch(/^stub:\/\/selfie\/\d+$/);
+    // ...and the re-capture press minted a fresh, distinct timestamp suffix.
+    expect(secondUri).not.toBe(firstUri);
 
     dateNowSpy.mockRestore();
   });

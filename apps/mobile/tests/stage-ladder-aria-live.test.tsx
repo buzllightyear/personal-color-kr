@@ -192,13 +192,18 @@ function liveRegionFor(vm: {
   readonly ariaLive: 'off' | 'polite' | 'assertive';
   readonly items: ReadonlyArray<{ readonly label: string; readonly status?: string }>;
 }): unknown {
-  const tree = TestRenderer.create(
-    React.createElement(StageLadder, {
-      items: vm.items as never,
-      ariaLive: vm.ariaLive,
-      testIDPrefix: 'aria-chain',
-    }),
-  );
+  // React 19's react-test-renderer uses a concurrent root, so `create()` must
+  // run inside `act(...)` for the tree to commit before `.root` is read.
+  let tree!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(
+      React.createElement(StageLadder, {
+        items: vm.items as never,
+        ariaLive: vm.ariaLive,
+        testIDPrefix: 'aria-chain',
+      }),
+    );
+  });
   const containers = tree.root.findAll(
     (node) => typeof node.type === 'string' && node.props?.testID === 'aria-chain',
   );
