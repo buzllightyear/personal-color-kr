@@ -98,6 +98,18 @@ vi.mock('../src/store-review/request-store-review', () => ({
     Promise.resolve({ attempted: false, available: false, platform: 'android' }),
 }));
 
+// Mock `posthog-react-native` so loading the rating-gate route does NOT pull in
+// PostHog's real CJS dist, whose top-level `require('react-native')` would load
+// react-native through Node's CommonJS loader. Combined with the
+// `vi.mock('react-native')` ESM mock below, that dual CJS+ESM load of the same
+// module specifier trips a hard Node `ERR_INTERNAL_ASSERTION` ("module imported
+// again after being required") on Node ≥ 20.19 / 22 / 25. The route uses
+// `usePostHog()` only for analytics (optional-chained, undefined = silent no-op),
+// so an undefined stub is faithful to its degraded-mode contract.
+vi.mock('posthog-react-native', () => ({
+  usePostHog: () => undefined,
+}));
+
 vi.mock('react-native', () => {
   type PlatformSelectSpec<T> = {
     ios?: T;
