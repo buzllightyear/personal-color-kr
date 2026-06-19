@@ -23,7 +23,11 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [workspaceRoot];
+// Extend (do NOT replace) Expo's default watchFolders so the monorepo root is
+// watched in addition to whatever `getDefaultConfig` already registers. SDK 54's
+// default config seeds watchFolders itself; clobbering it with a bare
+// `[workspaceRoot]` drops those entries (flagged by `expo-doctor`).
+config.watchFolders = [...(config.watchFolders ?? []), workspaceRoot];
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
