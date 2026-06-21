@@ -663,6 +663,54 @@ def get_sentry_traces_sample_rate() -> float:
     return parsed
 
 
+# ---------------------------------------------------------------------------
+# Content Generation — admin route bearer token (ADMIN_TOKEN)
+# ---------------------------------------------------------------------------
+# All /admin routes are protected by a static bearer token. The token is
+# set via the ``ADMIN_TOKEN`` env var; it must be non-empty in every
+# environment where the admin UI is in use. Unlike the JWT secret (which
+# is a signing key), ADMIN_TOKEN is a simple shared secret — long, random,
+# and known only to the single operator.
+#
+# Access policy:
+#   * Unset/empty → returns None (fail-open, so local dev can start without it;
+#     the admin-auth dependency will reject requests with 403).
+#   * Set → returns the value verbatim.
+#
+# The ``require_*`` variant is used by the admin-auth dependency to enforce
+# the presence of the token at request time (not at startup), so a missing
+# ADMIN_TOKEN only impacts admin-route access, never the user-facing surface.
+
+
+def get_admin_token() -> str | None:
+    """Return ``ADMIN_TOKEN`` from env, or ``None`` if unset/empty.
+
+    The static bearer token that guards all ``/admin`` routes. Never
+    appears in error messages or logs (same secret-hygiene contract as
+    ``JWT_SECRET``).
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("ADMIN_TOKEN")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_admin_token() -> str:
+    """Return ``ADMIN_TOKEN`` or raise :class:`LookupError`.
+
+    Convenience for the admin-auth dependency. The error message names
+    the env var but NOT its value.
+    """
+    value = get_admin_token()
+    if value is None:
+        raise LookupError(
+            "ADMIN_TOKEN is required to protect admin routes. "
+            "Set the env var in .env or the deployment environment."
+        )
+    return value
+
+
 def _reject_or_default_traces_rate(
     *,
     environment: Environment,

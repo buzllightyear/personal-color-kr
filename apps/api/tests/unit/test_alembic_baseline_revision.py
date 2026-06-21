@@ -44,6 +44,7 @@ _BASELINE_FILENAME = "2026_01_01_0000-phase_4_1_baseline_phase_4_1_baseline.py"
 _EVENTS_FILENAME = "2026_01_02_0000-phase_4_2_events_create_events_table.py"
 _USERS_FILENAME = "2026_01_03_0000-phase_4_3_users_create_users_table.py"
 _REFERRALS_FILENAME = "2026_01_04_0000-phase_4_5_referrals_add_referral_columns.py"
+_RECIPES_FILENAME = "2026_06_21_0000-content_gen_recipes_create_recipes_table.py"
 
 # Pinned revision identifiers — single source of truth for the chain
 # topology. Any test that asserts a specific ``down_revision`` value reads
@@ -52,6 +53,7 @@ _BASELINE_REVISION_ID = "phase_4_1_baseline"
 _EVENTS_REVISION_ID = "phase_4_2_events"
 _USERS_REVISION_ID = "phase_4_3_users"
 _REFERRALS_REVISION_ID = "phase_4_5_referrals"
+_RECIPES_REVISION_ID = "content_gen_recipes"
 
 
 def _collect_py_files() -> list[Path]:
@@ -88,25 +90,30 @@ def _extract_module_constant(
 
 
 @pytest.mark.unit
-def test_versions_directory_contains_exactly_four_py_files() -> None:
-    """The versions/ directory holds exactly four revision files in Phase 4.5.
+def test_versions_directory_contains_exactly_five_py_files() -> None:
+    """The versions/ directory holds exactly five revision files.
 
     Phase 4.1 shipped a single empty baseline migration. Phase 4.2 added
     the events table. Phase 4.3 added the users table + events.user_id FK.
     Phase 4.5 adds the ``users.referrer_user_id`` referral-attribution
-    column (Phase 4.4 shipped no DDL). Any fifth file in this directory is
-    an orphan revision (regression) and must be removed or rolled into the
-    chain explicitly.
+    column (Phase 4.4 shipped no DDL). The Content Generation Phase adds
+    the ``recipes`` table. Any sixth file is an orphan revision (regression)
+    and must be removed or rolled into the chain explicitly.
     """
     py_files = _collect_py_files()
     actual_names = sorted(p.name for p in py_files)
     expected_names = sorted(
-        [_BASELINE_FILENAME, _EVENTS_FILENAME, _USERS_FILENAME, _REFERRALS_FILENAME]
+        [
+            _BASELINE_FILENAME,
+            _EVENTS_FILENAME,
+            _USERS_FILENAME,
+            _REFERRALS_FILENAME,
+            _RECIPES_FILENAME,
+        ]
     )
     assert actual_names == expected_names, (
-        "Phase 4.5 must ship exactly four migrations: the empty "
-        "baseline, the events table, the users table, and the referral "
-        "attribution column. Expected files "
+        "Content Generation Phase must ship exactly five migrations: "
+        "baseline, events, users, referrals, and recipes. Expected files "
         f"{expected_names!r}; found {actual_names!r}. An extra "
         "file indicates an orphan revision; a missing file indicates a "
         "regression in the migration chain."
