@@ -30,6 +30,7 @@ from api.routers import metrics as metrics_router
 from api.routers import referrals as referrals_router
 from api.routers import version as version_router
 from api.routers import admin_recipes as admin_recipes_router
+from api.routers import generate as generate_router
 from api.routers import recipes as recipes_router
 
 
@@ -129,6 +130,11 @@ def create_app() -> FastAPI:
     # The router owns its own /admin/recipes prefix internally; the /v1 prefix
     # is applied here to keep the versioned surface consistent.
     app.include_router(admin_recipes_router.router, prefix="/v1")
+
+    # Content Generation — authenticated end-to-end generation (AC2).
+    # POST /v1/generate takes a published recipe id + a fresh selfie and returns
+    # the server-side watermarked AI image within the 30 s budget.
+    app.include_router(generate_router.router, prefix="/v1")
 
     return app
 
