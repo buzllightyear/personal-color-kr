@@ -107,6 +107,7 @@ function RootLayoutInner(): React.ReactElement {
       <Stack.Screen name="index" />
       <Stack.Screen name="(funnel)" />
       <Stack.Screen name="(post-payment)" />
+      <Stack.Screen name="(generate)" />
       <Stack.Screen name="magazine/[month]" />
     </Stack>
   );

@@ -330,16 +330,22 @@ _ALEMBIC_CLI_TIMEOUT_SECONDS: int = 60
 
 
 async def _reset_db_to_blank_for_session(db_url: str) -> None:
-    """Drop ``events`` (CASCADE) and ``alembic_version`` so the upgrade is fresh.
+    """Drop every app table (CASCADE) + ``alembic_version`` so the upgrade is fresh.
 
     The session-scoped upgrade fixture must produce identical state on every
     CI run regardless of whether the docker-compose postgres volume carries
-    leftover rows from a prior local run. We drop ``events`` first (the
-    ``CASCADE`` clean-sweeps its two indexes alongside the table) and then
-    ``alembic_version`` so ``alembic upgrade head`` re-stamps the chain
+    leftover rows from a prior local run. We drop every application table
+    (``CASCADE`` clean-sweeps dependent indexes/FKs alongside each table) and
+    then ``alembic_version`` so ``alembic upgrade head`` re-stamps the chain
     from scratch.
 
-    Both drops are guarded with ``IF EXISTS`` so the very first invocation
+    The drop set must cover **every** table the migration chain creates —
+    otherwise a leftover table (with ``alembic_version`` dropped) makes the
+    re-run's ``CREATE TABLE`` fail with ``DuplicateTableError``. As the chain
+    grew (events → users → referrals → recipes → generations) this set must
+    grow with it. ``CASCADE`` makes order irrelevant.
+
+    All drops are guarded with ``IF EXISTS`` so the very first invocation
     on a brand-new container is a no-op rather than an error.
 
     Why a private helper rather than reusing the one in
@@ -352,8 +358,11 @@ async def _reset_db_to_blank_for_session(db_url: str) -> None:
     engine = create_async_engine(db_url, future=True)
     try:
         async with engine.begin() as conn:
+            # Content Generation tables (AC4 generations FKs into users; AC1/AC5
+            # recipes is standalone). CASCADE handles FK/index dependencies.
+            await conn.execute(text("DROP TABLE IF EXISTS generations CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS recipes CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
-
             await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     finally:

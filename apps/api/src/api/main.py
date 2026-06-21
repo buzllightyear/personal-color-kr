@@ -29,6 +29,10 @@ from api.routers import health as health_router
 from api.routers import metrics as metrics_router
 from api.routers import referrals as referrals_router
 from api.routers import version as version_router
+from api.routers import admin_recipes as admin_recipes_router
+from api.routers import gallery as gallery_router
+from api.routers import generate as generate_router
+from api.routers import recipes as recipes_router
 
 
 def create_app() -> FastAPI:
@@ -116,6 +120,27 @@ def create_app() -> FastAPI:
     # the caller's fixed referral code, the server-assembled share URL, and
     # the live friend-used count. Requires a valid backend JWT.
     app.include_router(referrals_router.router, prefix="/v1")
+
+    # Content Generation — public recipe catalog (auth-gated, published-only).
+    # GET /v1/recipes returns published recipes sorted by publish_date DESC,
+    # display_order ASC. Requires a valid backend JWT.
+    app.include_router(recipes_router.router, prefix="/v1")
+
+    # Content Generation — operator admin API for recipe lifecycle management.
+    # All routes under /v1/admin/recipes are guarded by ADMIN_TOKEN bearer auth.
+    # The router owns its own /admin/recipes prefix internally; the /v1 prefix
+    # is applied here to keep the versioned surface consistent.
+    app.include_router(admin_recipes_router.router, prefix="/v1")
+
+    # Content Generation — authenticated end-to-end generation (AC2).
+    # POST /v1/generate takes a published recipe id + a fresh selfie and returns
+    # the server-side watermarked AI image within the 30 s budget.
+    app.include_router(generate_router.router, prefix="/v1")
+
+    # Content Generation — authenticated user image gallery (AC4).
+    # GET /v1/gallery lists the caller's non-expired generations; GET
+    # /v1/gallery/{id}/image streams the watermarked PNG from object storage.
+    app.include_router(gallery_router.router, prefix="/v1")
 
     return app
 

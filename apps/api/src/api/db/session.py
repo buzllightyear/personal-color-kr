@@ -29,8 +29,9 @@ The source-line regex doesn't match because the line starts with
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -47,11 +48,34 @@ from api.db.engine import get_engine
 __all__ = [
     "AsyncSession",
     "IntegrityError",
+    "Select",
     "func",
     "get_session",
     "pg_insert",
     "select",
+    "session_scope",
 ]
+
+
+@asynccontextmanager
+async def session_scope() -> AsyncGenerator[AsyncSession, None]:
+    """Yield a standalone ``AsyncSession`` for non-request code paths.
+
+    ``get_session`` is the FastAPI request dependency; out-of-band code (e.g.
+    the TTL sweep at :mod:`api.services.generation_sweep`) needs a session
+    outside an HTTP request without importing ``sqlalchemy`` itself (which would
+    break the AC11 single-import-boundary invariant). This context manager owns
+    that construction inside the boundary:
+
+        async with session_scope() as session:
+            ...
+
+    The session is built from the same cached engine as ``get_session`` and is
+    closed (with rollback on exception) on exit.
+    """
+    factory = async_sessionmaker(get_engine(), expire_on_commit=False)
+    async with factory() as session:
+        yield session
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Literal
 
@@ -663,6 +664,54 @@ def get_sentry_traces_sample_rate() -> float:
     return parsed
 
 
+# ---------------------------------------------------------------------------
+# Content Generation — admin route bearer token (ADMIN_TOKEN)
+# ---------------------------------------------------------------------------
+# All /admin routes are protected by a static bearer token. The token is
+# set via the ``ADMIN_TOKEN`` env var; it must be non-empty in every
+# environment where the admin UI is in use. Unlike the JWT secret (which
+# is a signing key), ADMIN_TOKEN is a simple shared secret — long, random,
+# and known only to the single operator.
+#
+# Access policy:
+#   * Unset/empty → returns None (fail-open, so local dev can start without it;
+#     the admin-auth dependency will reject requests with 403).
+#   * Set → returns the value verbatim.
+#
+# The ``require_*`` variant is used by the admin-auth dependency to enforce
+# the presence of the token at request time (not at startup), so a missing
+# ADMIN_TOKEN only impacts admin-route access, never the user-facing surface.
+
+
+def get_admin_token() -> str | None:
+    """Return ``ADMIN_TOKEN`` from env, or ``None`` if unset/empty.
+
+    The static bearer token that guards all ``/admin`` routes. Never
+    appears in error messages or logs (same secret-hygiene contract as
+    ``JWT_SECRET``).
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("ADMIN_TOKEN")
+    if value is None or value == "":
+        return None
+    return value
+
+
+def require_admin_token() -> str:
+    """Return ``ADMIN_TOKEN`` or raise :class:`LookupError`.
+
+    Convenience for the admin-auth dependency. The error message names
+    the env var but NOT its value.
+    """
+    value = get_admin_token()
+    if value is None:
+        raise LookupError(
+            "ADMIN_TOKEN is required to protect admin routes. "
+            "Set the env var in .env or the deployment environment."
+        )
+    return value
+
+
 def _reject_or_default_traces_rate(
     *,
     environment: Environment,
@@ -713,3 +762,129 @@ def _reject_or_default_traces_rate(
         },
     )
     return default
+
+
+# ---------------------------------------------------------------------------
+# Content Generation (AC4) — object storage credentials (S3 / Cloudflare R2)
+# ---------------------------------------------------------------------------
+# The generated, watermarked images are persisted to an S3-compatible object
+# store (AWS S3 or Cloudflare R2 — both speak the same SigV4 + REST API). The
+# five values below fully describe the connection; they are read as a single
+# group so a partially-configured store (e.g. a bucket without a secret) is
+# treated as "unconfigured" rather than silently building a broken client.
+#
+# Access policy (mirrors the fal.ai key seam in ``dependencies/generate.py``):
+#   * All five present → :func:`get_object_storage_config` returns a frozen
+#     config object; the production :class:`S3ObjectStorage` is constructed.
+#   * Any missing/empty → returns ``None``; the storage dependency falls back
+#     to a process-local in-memory store (local dev / CI) so the app still
+#     boots and the generation flow works end-to-end without cloud creds.
+#
+# The secret access key never appears in any log line or error message — same
+# secret-hygiene contract as ``JWT_SECRET`` / ``ADMIN_TOKEN``.
+
+
+@dataclass(frozen=True)
+class ObjectStorageConfig:
+    """Immutable S3 / R2 connection parameters resolved from the environment.
+
+    Attributes
+    ----------
+    endpoint_url:
+        The S3-compatible REST endpoint origin, e.g.
+        ``https://<account>.r2.cloudflarestorage.com`` (R2) or
+        ``https://s3.us-east-1.amazonaws.com`` (AWS). No trailing slash.
+    bucket:
+        The bucket name objects are written under.
+    access_key_id:
+        The access key id used for SigV4 signing.
+    secret_access_key:
+        The secret signing key (never logged).
+    region:
+        The signing region. R2 ignores the region for routing but still
+        requires it in the SigV4 credential scope; ``auto`` is the R2
+        convention and a sensible default.
+    """
+
+    endpoint_url: str
+    bucket: str
+    access_key_id: str
+    secret_access_key: str
+    region: str
+
+
+#: Default SigV4 signing region when ``S3_REGION`` is unset. ``auto`` matches
+#: the Cloudflare R2 convention; AWS deployments should set the real region.
+DEFAULT_S3_REGION: Final[str] = "auto"
+
+
+def get_object_storage_config() -> ObjectStorageConfig | None:
+    """Return the S3/R2 connection config, or ``None`` if not fully configured.
+
+    Reads ``S3_ENDPOINT_URL``, ``S3_BUCKET``, ``S3_ACCESS_KEY_ID``,
+    ``S3_SECRET_ACCESS_KEY`` (all required) and ``S3_REGION`` (optional,
+    defaults to :data:`DEFAULT_S3_REGION`). When any required value is unset or
+    empty the function returns ``None`` so the caller can fall back to the
+    in-memory store rather than constructing a half-configured client.
+
+    Returns
+    -------
+    ObjectStorageConfig | None
+        The frozen config when all required vars are present, else ``None``.
+    """
+    _load_root_dotenv_once()
+    endpoint = os.environ.get("S3_ENDPOINT_URL")
+    bucket = os.environ.get("S3_BUCKET")
+    access_key = os.environ.get("S3_ACCESS_KEY_ID")
+    secret_key = os.environ.get("S3_SECRET_ACCESS_KEY")
+    if not endpoint or not bucket or not access_key or not secret_key:
+        return None
+    region = os.environ.get("S3_REGION") or DEFAULT_S3_REGION
+    return ObjectStorageConfig(
+        endpoint_url=endpoint.rstrip("/"),
+        bucket=bucket,
+        access_key_id=access_key,
+        secret_access_key=secret_key,
+        region=region,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Content Generation (AC4) — generated-image retention TTL (IMAGE_TTL_DAYS)
+# ---------------------------------------------------------------------------
+# Generated images are retained for a fixed window then swept (the gallery
+# read-path filters expired rows; an out-of-band sweep deletes the rows and
+# their storage objects). Like the latency threshold, this is a *sensible
+# default* knob — a missing/malformed value must never crash the app, so the
+# getter always returns a strictly-positive ``int``.
+
+#: Default retention window (days) when ``IMAGE_TTL_DAYS`` is unset, empty, or
+#: malformed. 30 days balances "let users revisit their results" against the
+#: storage cost of an unbounded cumulative gallery.
+DEFAULT_IMAGE_TTL_DAYS: Final[int] = 30
+
+
+def get_image_ttl_days() -> int:
+    """Return the generated-image retention window in days (default 30).
+
+    Reads ``IMAGE_TTL_DAYS`` from the environment (after loading the root
+    ``.env`` once). Any value that is unset, empty, non-integer, or
+    non-positive falls back to :data:`DEFAULT_IMAGE_TTL_DAYS` (30). A
+    misconfigured retention knob must never take the API down.
+
+    Returns
+    -------
+    int
+        A strictly-positive retention window in days.
+    """
+    _load_root_dotenv_once()
+    value = os.environ.get("IMAGE_TTL_DAYS")
+    if value is None or value == "":
+        return DEFAULT_IMAGE_TTL_DAYS
+    try:
+        parsed = int(value)
+    except ValueError:
+        return DEFAULT_IMAGE_TTL_DAYS
+    if parsed <= 0:
+        return DEFAULT_IMAGE_TTL_DAYS
+    return parsed

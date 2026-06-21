@@ -145,6 +145,17 @@ follow_imports = "silent"
 module = ["yaml"]
 ignore_missing_imports = true
 
+# `image_edit` is in core-python (installed editably as an editable path
+# dep without a PEP 561 `py.typed` marker). The admin preview endpoint
+# imports `image_edit.fal_ai_api_key.load_fal_api_key` to load the fal.ai
+# API key via the Phase 4.1 AC12 authorised surface (core-python only).
+# The override tells mypy to trust the inline annotations of the
+# `image_edit` sub-package without requiring a stub.
+[[tool.mypy.overrides]]
+module = ["image_edit.*"]
+ignore_missing_imports = true
+follow_imports = "silent"
+
 [tool.ruff]
 # Match the Phase 0.x / Phase 4.x `target-version = "py312"` so ruff lints
 # against the same Python the CI runner uses (see `.github/workflows/ci.yml`).
@@ -184,4 +195,16 @@ ignore = [
     # them here. Disabling E501 keeps the CI lint gate signal exclusive
     # to logic/style issues that black does not auto-format away.
     "E501",
+]
+
+[tool.uv.sources]
+core-python = { path = "../../packages/core-python" }
+
+[dependency-groups]
+dev = [
+    "anyio>=4.13.0",
+    "core-python",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]

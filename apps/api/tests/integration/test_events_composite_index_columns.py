@@ -127,6 +127,8 @@ async def _reset_db_to_blank(db_url: str) -> None:
     engine = create_async_engine(db_url, future=True)
     try:
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS generations CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS recipes CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
 
             await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))

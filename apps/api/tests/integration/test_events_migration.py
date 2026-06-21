@@ -60,9 +60,10 @@ _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 # here instead of a confusing test failure deep in an assertion message.
 _BASELINE_REVISION: str = "phase_4_1_baseline"
 _EVENTS_REVISION: str = "phase_4_2_events"
-# Phase 4.5 added the referrals migration on top of users (Phase 4.3);
-# ``alembic upgrade head`` now stamps alembic_version to this revision.
-_HEAD_REVISION: str = "phase_4_5_referrals"
+# The Content Generation phase extended the chain past Phase 4.5: AC1/AC5
+# added ``content_gen_recipes`` and AC4 added ``content_gen_generations`` on
+# top. ``alembic upgrade head`` now stamps alembic_version to the latter.
+_HEAD_REVISION: str = "content_gen_generations"
 
 # Generous timeout — the events migration emits two ``CREATE INDEX``
 # statements but no data backfill; 60s protects against a wedged asyncpg
@@ -150,6 +151,8 @@ async def _reset_db_to_blank(db_url: str) -> None:
     engine = create_async_engine(db_url, future=True)
     try:
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS generations CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS recipes CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
 
             await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
@@ -544,7 +547,7 @@ async def test_alembic_upgrade_head_creates_events_table_with_exact_schema() -> 
             )
             assert ver_rows[0][0] == _HEAD_REVISION, (
                 f"alembic_version.version_num must equal "
-                f"{_HEAD_REVISION!r} (Phase 4.5 head) after upgrade head; "
+                f"{_HEAD_REVISION!r} (chain head) after upgrade head; "
                 f"got {ver_rows[0][0]!r}."
             )
     finally:
