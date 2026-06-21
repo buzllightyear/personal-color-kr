@@ -43,7 +43,9 @@ from api.db.models.user import User
 from api.db.session import get_session
 from api.dependencies.auth import require_current_user
 from api.dependencies.generate import get_generate_runner
+from api.dependencies.storage import get_object_storage
 from api.main import create_app
+from api.storage.object_storage import InMemoryObjectStorage
 from personal_color.generate.fal_client import FalGenerationConfig
 from personal_color.generate.orchestrator import (
     GenerationBudgetExhaustedError,
@@ -99,10 +101,16 @@ class _StubResult:
 
 
 class _OneRecipeSession:
-    """Stub session: returns the recipe whose recipe_id matches the query."""
+    """Stub session: returns the recipe whose recipe_id matches the query.
+
+    Also records ``add`` / ``commit`` calls so the AC4 persistence path
+    (storing a :class:`Generation` row) can be asserted without a real DB.
+    """
 
     def __init__(self, recipes: list[Recipe]) -> None:
         self._recipes = list(recipes)
+        self.added: list[Any] = []
+        self.commits = 0
 
     async def execute(self, stmt: Any) -> _StubResult:
         rows = list(self._recipes)
@@ -115,6 +123,12 @@ class _OneRecipeSession:
             except AttributeError:
                 pass
         return _StubResult(rows)
+
+    def add(self, obj: Any) -> None:
+        self.added.append(obj)
+
+    async def commit(self) -> None:
+        self.commits += 1
 
 
 def _known_user() -> User:
@@ -131,9 +145,16 @@ def _known_user() -> User:
     return user
 
 
-def _build_app(recipes: list[Recipe], runner: Any) -> Any:
+def _build_app(
+    recipes: list[Recipe],
+    runner: Any,
+    *,
+    session: _OneRecipeSession | None = None,
+    storage: InMemoryObjectStorage | None = None,
+) -> Any:
     app = create_app()
-    stub = _OneRecipeSession(recipes)
+    stub = session if session is not None else _OneRecipeSession(recipes)
+    store = storage if storage is not None else InMemoryObjectStorage()
 
     async def _stub_session() -> AsyncGenerator[_OneRecipeSession, None]:
         yield stub
@@ -141,6 +162,7 @@ def _build_app(recipes: list[Recipe], runner: Any) -> Any:
     app.dependency_overrides[get_session] = _stub_session
     app.dependency_overrides[require_current_user] = _known_user
     app.dependency_overrides[get_generate_runner] = lambda: runner
+    app.dependency_overrides[get_object_storage] = lambda: store
     return app
 
 
@@ -159,7 +181,9 @@ async def test_generate_returns_watermarked_png_on_success() -> None:
             last_verdict=_passed_verdict(),
         )
 
-    app = _build_app([_make_recipe(recipe_id="r-001")], _runner)
+    session = _OneRecipeSession([_make_recipe(recipe_id="r-001")])
+    storage = InMemoryObjectStorage()
+    app = _build_app([], _runner, session=session, storage=storage)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
         resp = await client.post(
@@ -180,6 +204,52 @@ async def test_generate_returns_watermarked_png_on_success() -> None:
     assert captured["config"].prompt == "An editorial portrait, soft studio light"
     assert captured["config"].parameters == {"num_inference_steps": 28}
     assert captured["selfie"] == _png_bytes((10, 10, 10))
+
+    # AC4 — the watermarked result is persisted: one gallery row committed,
+    # its bytes stored under the row's key, and the id echoed in the header.
+    assert session.commits == 1
+    assert len(session.added) == 1
+    row = session.added[0]
+    assert row.recipe_id == "r-001"
+    assert row.retry_count == 2
+    assert resp.headers["x-generation-id"] == str(row.id)
+    # The bytes in storage are exactly the watermarked PNG that was returned.
+    assert storage.get(row.result_image_key) == resp.content
+
+
+@pytest.mark.asyncio
+async def test_generate_succeeds_even_when_persistence_fails() -> None:
+    """A storage failure must not fail a delivered image (best-effort persist)."""
+
+    class _FailingStorage(InMemoryObjectStorage):
+        def put(self, key: str, data: bytes, content_type: str) -> None:
+            raise RuntimeError("storage down")
+
+    def _runner(
+        config: FalGenerationConfig, selfie_bytes: bytes
+    ) -> OrchestrationResult:
+        return OrchestrationResult(
+            image_bytes=_png_bytes(),
+            retry_count=0,
+            last_verdict=_passed_verdict(),
+        )
+
+    session = _OneRecipeSession([_make_recipe(recipe_id="r-001")])
+    app = _build_app([], _runner, session=session, storage=_FailingStorage())
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={"selfie": ("s.png", _png_bytes(), "image/png")},
+        )
+
+    # Image still delivered (200 + PNG); no gallery row; no id header.
+    assert resp.status_code == 200
+    assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert session.commits == 0
+    assert session.added == []
+    assert "x-generation-id" not in resp.headers
 
 
 @pytest.mark.asyncio

@@ -32,16 +32,22 @@ Error mapping:
 from __future__ import annotations
 
 import asyncio
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Final
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, status
 
+from api.config.env import get_image_ttl_days
+from api.db.models.generation import Generation
 from api.db.models.recipe import RECIPE_STATUS_PUBLISHED, Recipe
 from api.db.models.user import User
 from api.db.session import AsyncSession, get_session, select
 from api.dependencies.auth import require_current_user
 from api.dependencies.generate import GenerateRunner, get_generate_runner
 from api.dependencies.selfie_validation import validate_selfie_upload
+from api.dependencies.storage import get_object_storage
 from api.observability.generation_metrics import (
     OUTCOME_FAILED,
     OUTCOME_SUCCESS,
@@ -49,9 +55,12 @@ from api.observability.generation_metrics import (
     GenerationMetricsRecorder,
     get_generation_metrics_recorder,
 )
+from api.storage.object_storage import ObjectStorage
 from personal_color.generate.fal_client import FalGenerationConfig, FalGenerationError
 from personal_color.generate.orchestrator import GenerationBudgetExhaustedError
 from personal_color.generate.watermark import apply_watermark
+
+_LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Wire constants
@@ -74,7 +83,75 @@ DETAIL_GENERATION_UNAVAILABLE: Final[str] = "generation_unavailable"
 #: and the rolling success-rate metric (AC3).
 HEADER_RETRY_COUNT: Final[str] = "X-Generation-Retry-Count"
 
+#: Response header carrying the persisted generation id so the client can later
+#: fetch the image from the gallery (``GET /v1/gallery/{id}/image``). Absent when
+#: persistence failed (the image is still delivered inline).
+HEADER_GENERATION_ID: Final[str] = "X-Generation-Id"
+
 router: APIRouter = APIRouter(tags=["generate"])
+
+
+def _result_image_key(user_id: uuid.UUID, generation_id: uuid.UUID) -> str:
+    """Build the object-storage key for a user's watermarked result.
+
+    Keys are composed solely of ``[A-Za-z0-9/.-]`` (UUID hex + ``.png``) so they
+    are identity-encoded by the SigV4 canonical-URI rules — see
+    :mod:`api.storage.s3_object_storage` for the key-safety invariant.
+    """
+    return f"generations/{user_id}/{generation_id}.png"
+
+
+async def _persist_generation(
+    *,
+    session: AsyncSession,
+    storage: ObjectStorage,
+    user_id: uuid.UUID,
+    recipe_id: str,
+    watermarked: bytes,
+    retry_count: int,
+    now: datetime,
+) -> uuid.UUID | None:
+    """Store the watermarked bytes + a gallery row. Best-effort.
+
+    The image is *already delivered inline* by the handler, so a storage / DB
+    failure here must not fail the request — the gallery simply won't have this
+    entry. The failure is logged (never silently swallowed) and ``None`` is
+    returned so the handler omits the ``X-Generation-Id`` header.
+
+    Returns
+    -------
+    uuid.UUID | None
+        The new generation id on success, else ``None``.
+    """
+    generation_id = uuid.uuid4()
+    result_key = _result_image_key(user_id, generation_id)
+    expires_at = now + timedelta(days=get_image_ttl_days())
+    try:
+        # ``storage.put`` is synchronous (httpx); offload so the event loop is
+        # not blocked on the upload round-trip.
+        await asyncio.to_thread(storage.put, result_key, watermarked, "image/png")
+        row = Generation()
+        row.id = generation_id
+        row.user_id = user_id
+        row.recipe_id = recipe_id
+        row.result_image_key = result_key
+        row.retry_count = retry_count
+        row.expires_at = expires_at
+        session.add(row)
+        await session.commit()
+    except Exception as exc:  # noqa: BLE001
+        # Broad catch on purpose: persistence is best-effort and must never turn
+        # a successfully delivered image into a failed request. Storage
+        # (:class:`ObjectStorageError`) and DB errors alike are logged + the
+        # gallery entry dropped rather than propagated.
+        _LOGGER.warning(
+            "generation_persist_failed user_id=%s recipe_id=%s error=%s",
+            str(user_id),
+            recipe_id,
+            type(exc).__name__,
+        )
+        return None
+    return generation_id
 
 
 def _build_config(recipe: Recipe) -> FalGenerationConfig:
@@ -112,9 +189,10 @@ async def generate(
     recipe_id: str = Form(..., description="Published recipe id to generate from"),
     selfie_bytes: bytes = Depends(validate_selfie_upload),
     session: AsyncSession = Depends(get_session),
-    _user: User = Depends(require_current_user),
+    user: User = Depends(require_current_user),
     runner: GenerateRunner = Depends(get_generate_runner),
     metrics: GenerationMetricsRecorder = Depends(get_generation_metrics_recorder),
+    storage: ObjectStorage = Depends(get_object_storage),
 ) -> Response:
     """Generate a server-side watermarked AI image and return it as PNG bytes."""
     result = await session.execute(select(Recipe).where(Recipe.recipe_id == recipe_id))
@@ -152,8 +230,21 @@ async def generate(
     watermarked = await asyncio.to_thread(apply_watermark, generation.image_bytes)
     metrics.record_outcome(OUTCOME_SUCCESS, retry_count=generation.retry_count)
 
-    return Response(
-        content=watermarked,
-        media_type="image/png",
-        headers={HEADER_RETRY_COUNT: str(generation.retry_count)},
+    # Persist the watermarked result + a gallery row (best-effort: the image is
+    # delivered inline regardless). The original selfie is never persisted —
+    # only the watermarked output egresses, honoring the zero-PII invariant.
+    generation_id = await _persist_generation(
+        session=session,
+        storage=storage,
+        user_id=user.id,
+        recipe_id=recipe_id,
+        watermarked=watermarked,
+        retry_count=generation.retry_count,
+        now=datetime.now(timezone.utc),
     )
+
+    headers = {HEADER_RETRY_COUNT: str(generation.retry_count)}
+    if generation_id is not None:
+        headers[HEADER_GENERATION_ID] = str(generation_id)
+
+    return Response(content=watermarked, media_type="image/png", headers=headers)

@@ -30,6 +30,7 @@ from api.routers import metrics as metrics_router
 from api.routers import referrals as referrals_router
 from api.routers import version as version_router
 from api.routers import admin_recipes as admin_recipes_router
+from api.routers import gallery as gallery_router
 from api.routers import generate as generate_router
 from api.routers import recipes as recipes_router
 
@@ -135,6 +136,11 @@ def create_app() -> FastAPI:
     # POST /v1/generate takes a published recipe id + a fresh selfie and returns
     # the server-side watermarked AI image within the 30 s budget.
     app.include_router(generate_router.router, prefix="/v1")
+
+    # Content Generation — authenticated user image gallery (AC4).
+    # GET /v1/gallery lists the caller's non-expired generations; GET
+    # /v1/gallery/{id}/image streams the watermarked PNG from object storage.
+    app.include_router(gallery_router.router, prefix="/v1")
 
     return app
 

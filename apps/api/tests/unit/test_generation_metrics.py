@@ -27,7 +27,9 @@ from api.db.models.user import User
 from api.db.session import get_session
 from api.dependencies.auth import require_current_user
 from api.dependencies.generate import get_generate_runner
+from api.dependencies.storage import get_object_storage
 from api.main import create_app
+from api.storage.object_storage import InMemoryObjectStorage
 from api.observability.generation_metrics import (
     OUTCOME_FAILED,
     OUTCOME_SUCCESS,
@@ -81,6 +83,14 @@ class _Session:
     async def execute(self, _stmt: Any) -> _Result:
         return _Result(self._rows)
 
+    def add(self, _obj: Any) -> None:
+        # AC4 persistence path adds a Generation row; the metric tests do not
+        # assert on it, so a no-op keeps the success path running.
+        return None
+
+    async def commit(self) -> None:
+        return None
+
 
 def _user() -> User:
     u = User()
@@ -115,6 +125,7 @@ def _build_app(runner: Any, recorder: _RecordingRecorder) -> Any:
     app.dependency_overrides[require_current_user] = _user
     app.dependency_overrides[get_generate_runner] = lambda: runner
     app.dependency_overrides[get_generation_metrics_recorder] = lambda: recorder
+    app.dependency_overrides[get_object_storage] = InMemoryObjectStorage
     return app
 
 

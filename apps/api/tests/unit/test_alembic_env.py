@@ -100,11 +100,12 @@ def test_alembic_env_exposes_events_target_metadata() -> None:
         metadata, MetaData
     ), f"target_metadata must be a sqlalchemy.MetaData; got {type(metadata)!r}."
 
-    # Content Generation Phase registers a third table on ``Base.metadata``:
-    # ``events`` (Phase 4.2) + ``users`` (Phase 4.3) + ``recipes`` (content gen).
-    # Asserting the full table-name set catches both kinds of drift: a missing
-    # model registration AND an unintended extra table sneaking in.
-    expected_tables = {"events", "users", "recipes"}
+    # Content Generation Phase registers tables on ``Base.metadata``:
+    # ``events`` (Phase 4.2) + ``users`` (Phase 4.3) + ``recipes`` (AC1/AC5) +
+    # ``generations`` (AC4). Asserting the full table-name set catches both
+    # kinds of drift: a missing model registration AND an unintended extra
+    # table sneaking in.
+    expected_tables = {"events", "users", "recipes", "generations"}
     assert set(metadata.tables) == expected_tables, (
         f"Content Generation Phase target_metadata must contain exactly "
         f"{expected_tables!r}; found {sorted(metadata.tables)!r}. An extra "

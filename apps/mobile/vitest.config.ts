@@ -114,6 +114,28 @@ export default defineConfig({
           'tests/__stubs__/expo-secure-store-stub.ts',
         ),
       },
+      // `expo-media-library` is a native module vite can't parse;
+      // `src/save-to-camera-roll.ts` imports its permission/save fns. Stub
+      // resolves the import with inert no-ops — the save seam is tested through
+      // its injected deps.
+      {
+        find: 'expo-media-library',
+        replacement: path.resolve(
+          __dirname,
+          'tests/__stubs__/expo-media-library-stub.ts',
+        ),
+      },
+      // `expo-file-system` is a native module vite can't parse;
+      // `src/save-to-camera-roll.ts` imports the SDK 54 `File`/`Directory`/
+      // `Paths` API. Stub resolves the import with inert classes — the save
+      // seam is tested through its injected `downloadToCache` dep.
+      {
+        find: 'expo-file-system',
+        replacement: path.resolve(
+          __dirname,
+          'tests/__stubs__/expo-file-system-stub.ts',
+        ),
+      },
     ],
   },
 });

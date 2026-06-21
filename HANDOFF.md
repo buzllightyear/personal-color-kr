@@ -12,24 +12,50 @@ Seed: `seed_409d0c0c0f3d` (interview_20260621_060602). Phase 1.
 | AC2 backend | `personal_color.generate` (fal_client, watermark, rejection, orchestrator) | ✅ 146 tests |
 | AC2 e2e | `POST /v1/generate` endpoint + mobile transport (`src/request-generation.ts`) + `GenerationScreen` + `app/(generate)/generate.tsx` | ✅ |
 | AC3 | Sentry request-level success metric (`api/observability/generation_metrics.py`, wired in generate router) | ✅ |
+| AC4 | Object storage (SigV4 S3/R2 adapter + in-memory) + `generations` table/migration + persist-on-generate + `GET /v1/gallery` (+ `/{id}/image` stream) + TTL sweep + mobile gallery tab/transport/camera-roll | ✅ |
 
 Salvage notes: the original ooo run (`exec_144c13c738a4`) stopped on **rate-limit**, not code defects. Real fixes made: `FalNsfwClassifier._ENDPOINT` typo, unused `type: ignore`, committed `build/` artifacts removed+gitignored, `apps/web` eslint flat config (replaced interactive `next lint`).
 
-## AC4 — REMAINING (object storage + gallery + TTL)
+## AC4 — DONE & committed (object storage + gallery + TTL)
 
-Build with the **adapter/transport-seam pattern, secrets via env, stub-based tests** (user decision).
+Built with the **adapter/transport-seam pattern, secrets via env, stub-based tests**.
+Resolved `image_ttl_days = 30` (env `IMAGE_TTL_DAYS`, sensible-default). Decisions that
+differ from the original sketch above:
 
-1. **Object storage adapter** (`apps/api/src/api/storage/` new):
-   - `ObjectStorage` Protocol: `put(key, bytes, content_type) -> None`, `presign_get(key, ttl) -> str`, `delete(key) -> None`.
-   - `R2ObjectStorage` (Cloudflare R2 / S3 via boto3 or httpx-signed) reading creds from env (`R2_ACCOUNT_ID`/`R2_ACCESS_KEY_ID`/`R2_SECRET`/`R2_BUCKET` or `S3_*`).
-   - `InMemoryObjectStorage` stub for tests. DI via `get_object_storage()`.
-2. **Generation/gallery DB model + migration**: a `generations` table mapping the ontology fields already in the seed (generation_id, user_id, recipe_id, original_image_key, result_image_key, reject_reason, retry_count, generation_status, expires_at, created_at). Alembic migration mirroring `recipe.py`'s migration style.
-3. **Wire storage into `POST /v1/generate`**: after watermark, `put` original (server-only) + watermarked under per-user keys, persist a generation row with `expires_at = now + TTL`. Decide: return the watermarked bytes inline (current) AND/OR a presigned URL. Keep "original never egresses".
-4. **Gallery API**: `GET /v1/gallery` (auth) → user's non-expired generations (presigned result URLs), newest first. Images stay intact regardless of recipe lifecycle state.
-5. **TTL auto-deletion**: `image_ttl_days` (unresolved_slot — pick a value, e.g. 30) — a cleanup path (cron/management command or lazy filter on `expires_at`). At minimum, filter expired rows out of the gallery and document the sweep.
-6. **Mobile gallery**: `src/fetch-gallery.ts` transport-seam + `GalleryScreen` (pure) + `app/(generate)/(tabs)/gallery.tsx` route + camera-roll save (expo-media-library seam; stub+alias in `vitest.config.ts`). Add the gallery tab to `app/(generate)/(tabs)/_layout.tsx`.
+- **No `boto3`** — the S3/R2 adapter is `httpx` + hand-rolled **AWS SigV4** header signing
+  (`api/storage/sigv4.py`), unit-pinned to AWS's canonical `get-vanilla` test vector. Keeps
+  the dep tree light and `mypy --strict` clean (no boto3-stubs friction).
+- **No presigned URLs** — the gallery streams images through an authenticated endpoint
+  (`GET /v1/gallery/{id}/image`), so the original never egresses and no time-boxed public URL
+  is minted. `ObjectStorage` is `put` / `get` / `delete` (no `presign_get`).
+- **Watermarked result only is persisted** — the original selfie is never stored (honors the
+  zero-PII invariant), so no `original_image_key`. `generations` columns: `id, user_id (FK
+  users CASCADE), recipe_id (TEXT, not a FK → survives recipe removal), result_image_key,
+  retry_count, created_at, expires_at`.
+- **Persist-on-generate is best-effort** — a storage/DB failure logs + drops the gallery row
+  but still returns the delivered image (200); `X-Generation-Id` header carries the row id.
+- **TTL** — read-time filter (`expires_at > now`) hides expired rows in the gallery; an
+  out-of-band sweep (`api/services/generation_sweep.py::run_sweep`) deletes expired rows +
+  objects. No in-app scheduler shipped — run `run_sweep()` from a daily platform cron (recipe
+  in the module docstring).
+- **Mobile** — SDK 54 `expo-file-system` moved `downloadAsync`/`cacheDirectory` to `/legacy`
+  (TS source that trips strict tsc), so the camera-roll save uses the **new `File` API**
+  (`File.downloadFileAsync` → cache `Directory`). `expo-media-library` + `expo-file-system`
+  added as deps; both stubbed+aliased in `vitest.config.ts`.
 
-Open params (seed `unresolved_slots`): `image_ttl_days`, `watermark_form`, `reject_judgment_mechanism`, `rolling_window_length`.
+Key new files: `api/storage/{sigv4,object_storage,s3_object_storage}.py`,
+`api/dependencies/storage.py`, `api/db/models/generation.py` (+ migration `content_gen_generations`),
+`api/routers/gallery.py`, `api/schemas/gallery.py`, `api/services/generation_sweep.py`;
+mobile `src/fetch-gallery.ts`, `src/save-to-camera-roll.ts`,
+`src/screens/generate/GalleryScreen.tsx`, `app/(generate)/(tabs)/gallery.tsx`.
+
+Still seed `unresolved_slots` (not AC4-blocking): `watermark_form`,
+`reject_judgment_mechanism`, `rolling_window_length`.
+
+### AC4 env vars (production wiring — currently falls back to in-memory store)
+`S3_ENDPOINT_URL`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`
+(default `auto`), `IMAGE_TTL_DAYS` (default `30`). With the `S3_*` set absent the app boots and
+the flow works against a process-local in-memory bucket (dev/CI); set them for durable R2/S3.
 
 ## Running gates in THIS worktree (IMPORTANT)
 

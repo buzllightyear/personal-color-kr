@@ -32,10 +32,11 @@ from __future__ import annotations
 
 from api.db.models.base import Base
 from api.db.models.event import Event
+from api.db.models.generation import Generation
 from api.db.models.recipe import Recipe
 from api.db.models.user import User
 
 # Public re-exports. Adding a new model in Phase 4.3+ MUST also append the
 # model class name to this tuple so the import-side effect that populates
 # ``Base.metadata`` runs before ``env.py`` queries it.
-__all__ = ["Base", "Event", "Recipe", "User"]
+__all__ = ["Base", "Event", "Generation", "Recipe", "User"]
