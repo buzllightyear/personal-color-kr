@@ -392,7 +392,7 @@ class FalNsfwClassifier:
         try:
             with httpx.Client(timeout=self._timeout) as client:
                 response = client.post(
-                    self._endpoint, headers=headers, json=payload
+                    self._ENDPOINT, headers=headers, json=payload
                 )
         except httpx.TimeoutException:
             raise NsfwClassificationError(
