@@ -132,6 +132,8 @@ async def _reset_db_and_upgrade_head(url: str) -> None:
     setup_engine = create_async_engine(url, future=True)
     try:
         async with setup_engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS generations CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS recipes CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
 
             await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))

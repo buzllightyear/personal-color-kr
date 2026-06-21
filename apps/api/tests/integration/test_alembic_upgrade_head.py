@@ -164,6 +164,8 @@ async def test_alembic_upgrade_head_succeeds_and_writes_baseline_revision() -> N
             # table so a re-run after the events migration shipped doesn't
             # collide on ``CREATE TABLE events`` (which is what alembic
             # would emit if a previous test left the table behind).
+            await conn.execute(text("DROP TABLE IF EXISTS generations CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS recipes CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS events CASCADE"))
 
             await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
