@@ -173,9 +173,9 @@ def test_apply_watermark_modifies_image() -> None:
         plain_png_bytes = rebuf.getvalue()
 
     result = apply_watermark(input_bytes)
-    assert result != plain_png_bytes, (
-        "apply_watermark returned identical bytes — watermark was not applied"
-    )
+    assert (
+        result != plain_png_bytes
+    ), "apply_watermark returned identical bytes — watermark was not applied"
 
 
 @pytest.mark.unit

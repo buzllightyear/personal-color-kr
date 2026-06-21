@@ -417,7 +417,7 @@ async def preview_recipe(
     # when core-python is not installed — the import failure surfaces at
     # request time (503) rather than at startup.
     try:
-        from image_edit.fal_ai_api_key import load_fal_api_key  # type: ignore[import-untyped]
+        from image_edit.fal_ai_api_key import load_fal_api_key
 
         api_key: str = load_fal_api_key()
     except LookupError as exc:

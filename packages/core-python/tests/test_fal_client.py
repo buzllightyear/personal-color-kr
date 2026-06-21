@@ -46,9 +46,7 @@ _FAKE_SELFIE_STORAGE_URL: Final[str] = (
     "https://fal.media/files/canary/uploaded-selfie.png"
 )
 
-_FAKE_RESULT_CDN_URL: Final[str] = (
-    "https://fal.media/files/canary/generated-result.png"
-)
+_FAKE_RESULT_CDN_URL: Final[str] = "https://fal.media/files/canary/generated-result.png"
 
 _FAKE_GENERATED_BYTES: Final[bytes] = b"FAKE_GENERATED_IMAGE_BYTES"
 

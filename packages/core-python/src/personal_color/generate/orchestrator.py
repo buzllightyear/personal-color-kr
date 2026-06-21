@@ -287,9 +287,7 @@ def orchestrate_generation(
         # ------------------------------------------------------------------
         # Rejection scoring step
         # ------------------------------------------------------------------
-        verdict: RejectionVerdict = score(
-            raw_bytes, nsfw_classifier=nsfw_classifier
-        )
+        verdict: RejectionVerdict = score(raw_bytes, nsfw_classifier=nsfw_classifier)
 
         if verdict.passed:
             _LOGGER.info(

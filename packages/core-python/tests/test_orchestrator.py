@@ -516,7 +516,9 @@ def test_retryable_error_then_success_returns_result() -> None:
 def test_retryable_error_increments_retry_count() -> None:
     """Each retryable generation failure increments retry_count by 1."""
     fail_count = 2
-    generate_stub = _make_fail_then_succeed_generate(fail_count=fail_count, retryable=True)
+    generate_stub = _make_fail_then_succeed_generate(
+        fail_count=fail_count, retryable=True
+    )
 
     result = orchestrate_generation(
         _MINIMAL_CONFIG,

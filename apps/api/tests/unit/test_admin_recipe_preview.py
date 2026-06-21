@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -40,11 +40,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.db.models.recipe import RECIPE_STATUS_HIDDEN, RECIPE_STATUS_PUBLISHED, Recipe
+from api.db.models.recipe import RECIPE_STATUS_PUBLISHED, Recipe
 from api.dependencies.admin_auth import require_admin
 from api.generation.fal_preview_caller import FalPreviewError
 from api.main import create_app
-from api.routers.admin_recipes import router
 
 # ---------------------------------------------------------------------------
 # Test fixtures
@@ -474,7 +473,7 @@ def test_call_fal_recipe_preview_success() -> None:
 @pytest.mark.unit
 def test_call_fal_recipe_preview_builds_correct_endpoint() -> None:
     """call_fal_recipe_preview POSTs to https://fal.run/{model_id}."""
-    from unittest.mock import MagicMock, call, patch
+    from unittest.mock import MagicMock, patch
 
     from api.generation.fal_preview_caller import call_fal_recipe_preview
 
@@ -506,7 +505,10 @@ def test_call_fal_recipe_preview_raises_on_transient_error() -> None:
     """call_fal_recipe_preview raises FalPreviewError(retryable=True) on 503."""
     from unittest.mock import MagicMock, patch
 
-    from api.generation.fal_preview_caller import FalPreviewError, call_fal_recipe_preview
+    from api.generation.fal_preview_caller import (
+        FalPreviewError,
+        call_fal_recipe_preview,
+    )
 
     mock_response = MagicMock()
     mock_response.status_code = 503
@@ -532,7 +534,10 @@ def test_call_fal_recipe_preview_raises_on_client_error() -> None:
     """call_fal_recipe_preview raises FalPreviewError(retryable=False) on 400."""
     from unittest.mock import MagicMock, patch
 
-    from api.generation.fal_preview_caller import FalPreviewError, call_fal_recipe_preview
+    from api.generation.fal_preview_caller import (
+        FalPreviewError,
+        call_fal_recipe_preview,
+    )
 
     mock_response = MagicMock()
     mock_response.status_code = 400
@@ -560,7 +565,10 @@ def test_call_fal_recipe_preview_raises_on_timeout() -> None:
 
     import httpx as httpx_module
 
-    from api.generation.fal_preview_caller import FalPreviewError, call_fal_recipe_preview
+    from api.generation.fal_preview_caller import (
+        FalPreviewError,
+        call_fal_recipe_preview,
+    )
 
     with patch("httpx.Client") as mock_client_cls:
         mock_client = MagicMock()

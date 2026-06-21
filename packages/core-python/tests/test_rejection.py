@@ -597,8 +597,8 @@ def test_score_image_passed_invariant_always_consistent(
     cases = [
         (0.0, _make_varied_png_bytes()),  # both pass
         (1.0, _make_varied_png_bytes()),  # only nsfw fails
-        (0.0, _make_blank_png_bytes()),   # only artifact fails
-        (1.0, _make_blank_png_bytes()),   # both fail
+        (0.0, _make_blank_png_bytes()),  # only artifact fails
+        (1.0, _make_blank_png_bytes()),  # both fail
     ]
     for nsfw_score, image_bytes in cases:
         stub = StubNsfwClassifier(score=nsfw_score)

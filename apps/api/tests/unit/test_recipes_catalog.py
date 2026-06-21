@@ -271,9 +271,9 @@ async def test_catalog_sort_order_publish_date_desc_display_order_asc() -> None:
         "recipe_day2_ord0",
         "recipe_day3_ord5",
     ]
-    assert returned_ids == expected_ids, (
-        f"Expected sort order {expected_ids!r} but got {returned_ids!r}"
-    )
+    assert (
+        returned_ids == expected_ids
+    ), f"Expected sort order {expected_ids!r} but got {returned_ids!r}"
 
 
 @pytest.mark.unit

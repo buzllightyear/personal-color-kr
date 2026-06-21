@@ -123,9 +123,7 @@ def _parse_fal_response(body: object) -> str:
 
     first = images[0]
     if not isinstance(first, dict):
-        raise FalPreviewError(
-            f"fal preview: {_IMAGES_KEY!r}[0] was not a JSON object"
-        )
+        raise FalPreviewError(f"fal preview: {_IMAGES_KEY!r}[0] was not a JSON object")
 
     url = first.get(_URL_KEY)
     if not isinstance(url, str) or not url:

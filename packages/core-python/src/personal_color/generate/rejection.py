@@ -317,8 +317,7 @@ def _parse_nsfw_response(body: object) -> float:
     """
     if not isinstance(body, dict):
         raise NsfwClassificationError(
-            "fal NSFW response: expected JSON object, got "
-            f"{type(body).__name__}"
+            "fal NSFW response: expected JSON object, got " f"{type(body).__name__}"
         )
 
     prob = body.get("nsfw_probability")
@@ -391,9 +390,7 @@ class FalNsfwClassifier:
 
         try:
             with httpx.Client(timeout=self._timeout) as client:
-                response = client.post(
-                    self._ENDPOINT, headers=headers, json=payload
-                )
+                response = client.post(self._ENDPOINT, headers=headers, json=payload)
         except httpx.TimeoutException:
             raise NsfwClassificationError(
                 "fal NSFW classifier: request timed out", retryable=True
