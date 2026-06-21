@@ -42,6 +42,13 @@ from api.db.session import AsyncSession, get_session, select
 from api.dependencies.auth import require_current_user
 from api.dependencies.generate import GenerateRunner, get_generate_runner
 from api.dependencies.selfie_validation import validate_selfie_upload
+from api.observability.generation_metrics import (
+    OUTCOME_FAILED,
+    OUTCOME_SUCCESS,
+    OUTCOME_UNAVAILABLE,
+    GenerationMetricsRecorder,
+    get_generation_metrics_recorder,
+)
 from personal_color.generate.fal_client import FalGenerationConfig, FalGenerationError
 from personal_color.generate.orchestrator import GenerationBudgetExhaustedError
 from personal_color.generate.watermark import apply_watermark
@@ -107,11 +114,14 @@ async def generate(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_current_user),
     runner: GenerateRunner = Depends(get_generate_runner),
+    metrics: GenerationMetricsRecorder = Depends(get_generation_metrics_recorder),
 ) -> Response:
     """Generate a server-side watermarked AI image and return it as PNG bytes."""
     result = await session.execute(select(Recipe).where(Recipe.recipe_id == recipe_id))
     recipe = result.scalar_one_or_none()
     if recipe is None or recipe.status != RECIPE_STATUS_PUBLISHED:
+        # Client error (bad recipe id) — not a generation attempt, so it is not
+        # counted in the request-level success-rate metric.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=DETAIL_RECIPE_NOT_FOUND
         )
@@ -120,23 +130,27 @@ async def generate(
 
     try:
         generation = await asyncio.to_thread(runner, config, selfie_bytes)
-    except GenerationBudgetExhaustedError:
+    except GenerationBudgetExhaustedError as exc:
+        metrics.record_outcome(OUTCOME_FAILED, retry_count=exc.retry_count)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=DETAIL_GENERATION_FAILED,
         ) from None
     except FalGenerationError:
+        metrics.record_outcome(OUTCOME_FAILED, retry_count=0)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=DETAIL_GENERATION_FAILED,
         ) from None
     except LookupError:
+        metrics.record_outcome(OUTCOME_UNAVAILABLE, retry_count=0)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=DETAIL_GENERATION_UNAVAILABLE,
         ) from None
 
     watermarked = await asyncio.to_thread(apply_watermark, generation.image_bytes)
+    metrics.record_outcome(OUTCOME_SUCCESS, retry_count=generation.retry_count)
 
     return Response(
         content=watermarked,
