@@ -6,11 +6,7 @@ export const metadata: Metadata = {
   description: '1분 셀카 진단 — 퍼스널 컬러 진단',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <body>{children}</body>

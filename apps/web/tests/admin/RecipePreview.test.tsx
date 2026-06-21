@@ -110,8 +110,7 @@ describe('RecipePreview', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve({ image_url: 'https://fal.ai/outputs/img.jpg' }),
+        json: () => Promise.resolve({ image_url: 'https://fal.ai/outputs/img.jpg' }),
       }),
     );
 

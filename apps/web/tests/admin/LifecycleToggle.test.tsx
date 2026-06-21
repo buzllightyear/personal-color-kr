@@ -57,9 +57,7 @@ beforeEach(() => {
 describe('LifecycleToggle — hidden recipe', () => {
   it('shows Publish and Delete buttons', () => {
     const recipe = makeRecipe({ status: 'hidden' });
-    render(
-      <LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />,
-    );
+    render(<LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />);
 
     expect(
       screen.getByRole('button', { name: /publish test-recipe/i }),
@@ -108,9 +106,7 @@ describe('LifecycleToggle — hidden recipe', () => {
 describe('LifecycleToggle — published recipe', () => {
   it('shows Hide and Delete buttons', () => {
     const recipe = makeRecipe({ status: 'published' });
-    render(
-      <LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />,
-    );
+    render(<LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />);
 
     expect(
       screen.getByRole('button', { name: /hide test-recipe/i }),
@@ -159,9 +155,7 @@ describe('LifecycleToggle — published recipe', () => {
 describe('LifecycleToggle — deleted recipe', () => {
   it('shows no action buttons', () => {
     const recipe = makeRecipe({ status: 'deleted' });
-    render(
-      <LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />,
-    );
+    render(<LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />);
 
     expect(
       screen.queryByRole('button', { name: /publish test-recipe/i }),
@@ -246,9 +240,7 @@ describe('LifecycleToggle — delete flow', () => {
       }),
     );
 
-    render(
-      <LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />,
-    );
+    render(<LifecycleToggle token="tk" recipe={recipe} onStatusChange={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: /delete test-recipe/i }));
 

@@ -48,10 +48,7 @@ interface FieldProps {
 function Field({ label, htmlFor, error, children }: FieldProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-      <label
-        htmlFor={htmlFor}
-        style={{ fontSize: '0.875rem', fontWeight: 500 }}
-      >
+      <label htmlFor={htmlFor} style={{ fontSize: '0.875rem', fontWeight: 500 }}>
         {label}
       </label>
       {children}
@@ -105,9 +102,7 @@ export default function RecipeForm({
       ? recipe.publish_date.substring(0, 16) // datetime-local format
       : '',
   );
-  const [displayOrder, setDisplayOrder] = useState(
-    String(recipe?.display_order ?? 0),
-  );
+  const [displayOrder, setDisplayOrder] = useState(String(recipe?.display_order ?? 0));
 
   // Validation / submit state
   const [paramError, setParamError] = useState<string | null>(null);
@@ -186,7 +181,12 @@ export default function RecipeForm({
   return (
     <form
       onSubmit={(e) => void handleSubmit(e)}
-      style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '640px' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        maxWidth: '640px',
+      }}
       aria-label={isEdit ? 'Edit recipe' : 'Create recipe'}
     >
       <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
@@ -250,11 +250,7 @@ export default function RecipeForm({
       </Field>
 
       {/* parameters (JSON) */}
-      <Field
-        label="Parameters (JSON)"
-        htmlFor="field-parameters"
-        error={paramError}
-      >
+      <Field label="Parameters (JSON)" htmlFor="field-parameters" error={paramError}>
         <textarea
           id="field-parameters"
           value={parametersRaw}

@@ -97,7 +97,9 @@ export default function RecipePreview({ token, recipeId }: RecipePreviewProps) {
 
       {!loading && imageUrl !== null && (
         <div style={{ marginTop: '1rem' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* Admin preview renders the raw fal.ai result URL directly; the
+              Next <Image> optimizer is intentionally bypassed for this
+              internal single-operator tool. */}
           <img
             src={imageUrl}
             alt={`Preview for recipe ${recipeId}`}

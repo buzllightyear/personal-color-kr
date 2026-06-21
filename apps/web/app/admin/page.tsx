@@ -19,7 +19,9 @@ export default function AdminPage() {
   return (
     <RecipeList
       token={token}
-      onEdit={(recipeId) => router.push(`/admin/recipes/${encodeURIComponent(recipeId)}`)}
+      onEdit={(recipeId) =>
+        router.push(`/admin/recipes/${encodeURIComponent(recipeId)}`)
+      }
       onNew={() => router.push('/admin/recipes/new')}
     />
   );

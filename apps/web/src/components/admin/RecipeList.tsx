@@ -151,10 +151,7 @@ export default function RecipeList({ token, onEdit, onNew }: RecipeListProps) {
           </thead>
           <tbody>
             {recipes.map((recipe) => (
-              <tr
-                key={recipe.recipe_id}
-                style={{ borderBottom: '1px solid #f3f4f6' }}
-              >
+              <tr key={recipe.recipe_id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'monospace' }}>
                   {recipe.recipe_id}
                 </td>

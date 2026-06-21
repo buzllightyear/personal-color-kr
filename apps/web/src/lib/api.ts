@@ -115,11 +115,9 @@ export function hideRecipe(token: string, recipeId: string): Promise<Recipe> {
 }
 
 export function deleteRecipe(token: string, recipeId: string): Promise<Recipe> {
-  return apiFetch<Recipe>(
-    `/v1/admin/recipes/${encodeURIComponent(recipeId)}`,
-    token,
-    { method: 'DELETE' },
-  );
+  return apiFetch<Recipe>(`/v1/admin/recipes/${encodeURIComponent(recipeId)}`, token, {
+    method: 'DELETE',
+  });
 }
 
 // ---------------------------------------------------------------------------

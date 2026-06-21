@@ -130,7 +130,10 @@ function CredentialPrompt({ onSubmit, error }: CredentialPromptProps) {
             {error}
           </p>
         )}
-        <label htmlFor="admin-token-input" style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+        <label
+          htmlFor="admin-token-input"
+          style={{ fontSize: '0.875rem', fontWeight: 500 }}
+        >
           Admin Token
         </label>
         <input

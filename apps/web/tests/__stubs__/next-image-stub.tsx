@@ -14,7 +14,14 @@ interface ImageProps {
   [key: string]: unknown;
 }
 
-export default function Image({ src, alt, width, height, className, style }: ImageProps) {
+export default function Image({
+  src,
+  alt,
+  width,
+  height,
+  className,
+  style,
+}: ImageProps) {
   return (
     <img
       src={src}

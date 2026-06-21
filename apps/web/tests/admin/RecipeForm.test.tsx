@@ -54,9 +54,7 @@ beforeEach(() => {
 
 describe('RecipeForm — create mode', () => {
   it('renders all required fields', () => {
-    render(
-      <RecipeForm token="tk" onSuccess={vi.fn()} onCancel={vi.fn()} />,
-    );
+    render(<RecipeForm token="tk" onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
     expect(screen.getByLabelText(/recipe id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/model id/i)).toBeInTheDocument();
@@ -70,9 +68,7 @@ describe('RecipeForm — create mode', () => {
 
   it('shows "Create Recipe" as the submit button label', () => {
     render(<RecipeForm token="tk" onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    expect(
-      screen.getByRole('button', { name: /create recipe/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create recipe/i })).toBeInTheDocument();
   });
 
   it('calls createRecipe (POST) and onSuccess on valid submit', async () => {
@@ -175,9 +171,7 @@ describe('RecipeForm — edit mode', () => {
       />,
     );
 
-    expect(
-      screen.getByRole('button', { name: /save changes/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
   });
 
   it('calls updateRecipe (PUT) with the recipe_id in the URL', async () => {
