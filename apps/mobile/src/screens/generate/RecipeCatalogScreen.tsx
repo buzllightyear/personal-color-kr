@@ -52,7 +52,7 @@
  *     prefix queries on `recipe-catalog-item-` match only the Pressable wrappers)
  */
 import * as React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { CatalogRecipe } from '../../fetch-recipe-catalog';
 import { COLORS, SPACING } from '../../theme';
@@ -142,15 +142,55 @@ export function RecipeCatalogScreen(
             testID={`recipe-catalog-item-${recipe.recipeId}`}
             onPress={() => onSelectRecipe(recipe.recipeId)}
             accessibilityRole="button"
-            accessibilityLabel={recipe.recipeId}
+            accessibilityLabel={
+              recipe.title.length > 0 ? recipe.title : recipe.recipeId
+            }
             style={styles.card}
           >
-            <Text
-              testID={`recipe-catalog-label-${recipe.recipeId}`}
-              style={styles.cardLabel}
-            >
-              {recipe.recipeId}
-            </Text>
+            {recipe.thumbnailUrl !== null ? (
+              <Image
+                testID={`recipe-catalog-thumbnail-${recipe.recipeId}`}
+                source={{ uri: recipe.thumbnailUrl }}
+                style={styles.cardThumbnail}
+                resizeMode="cover"
+                accessibilityIgnoresInvertColors
+              />
+            ) : (
+              <View
+                testID={`recipe-catalog-thumbnail-placeholder-${recipe.recipeId}`}
+                style={styles.cardThumbnailPlaceholder}
+              />
+            )}
+            <View style={styles.cardBody}>
+              <Text
+                testID={`recipe-catalog-label-${recipe.recipeId}`}
+                style={styles.cardLabel}
+              >
+                {recipe.title}
+              </Text>
+              {recipe.description !== null && (
+                <Text
+                  testID={`recipe-catalog-description-${recipe.recipeId}`}
+                  style={styles.cardDescription}
+                  numberOfLines={2}
+                >
+                  {recipe.description}
+                </Text>
+              )}
+              {recipe.tags.length > 0 && (
+                <View style={styles.tagRow}>
+                  {recipe.tags.map((tag, i) => (
+                    <View
+                      key={tag}
+                      testID={`recipe-catalog-tag-${recipe.recipeId}-${i}`}
+                      style={styles.tagChip}
+                    >
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </Pressable>
         ))}
       </ScrollView>
@@ -187,9 +227,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.grayscale.border,
   },
+  cardThumbnail: {
+    width: '100%',
+    height: 160,
+    borderRadius: 8,
+    marginBottom: SPACING.sm,
+  },
+  cardThumbnailPlaceholder: {
+    width: '100%',
+    height: 160,
+    borderRadius: 8,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.grayscale.border,
+  },
+  cardBody: {
+    gap: SPACING.xs,
+  },
   cardLabel: {
     fontSize: 15,
     fontWeight: '600',
+    color: COLORS.grayscale.text,
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: COLORS.grayscale.disabled,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginTop: SPACING.xs,
+  },
+  tagChip: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: 99,
+    backgroundColor: COLORS.grayscale.border,
+  },
+  tagText: {
+    fontSize: 11,
     color: COLORS.grayscale.text,
   },
   loadingContainer: {

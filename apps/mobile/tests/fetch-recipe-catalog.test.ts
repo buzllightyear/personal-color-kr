@@ -34,6 +34,10 @@ const WIRE_ITEM_1: CatalogRecipeWireItem = {
   publish_date: '2024-06-01T00:00:00Z',
   display_order: 1,
   created_at: '2024-05-20T10:00:00Z',
+  title: 'Summer Vibes',
+  description: 'Bright summer look',
+  tags: ['summer', 'HOT'],
+  thumbnail_url: 'https://cdn.example.com/summer.png',
 };
 
 const WIRE_ITEM_2: CatalogRecipeWireItem = {
@@ -42,6 +46,10 @@ const WIRE_ITEM_2: CatalogRecipeWireItem = {
   publish_date: '2024-12-01T00:00:00Z',
   display_order: 2,
   created_at: '2024-11-15T08:30:00Z',
+  title: 'Winter Chic',
+  description: null,
+  tags: [],
+  thumbnail_url: null,
 };
 
 const WIRE_LIST: CatalogRecipeListWireResponse = {
@@ -70,7 +78,18 @@ describe('mapCatalogRecipeWireItem — wire → camel projection', () => {
       publishDate: '2024-06-01T00:00:00Z',
       displayOrder: 1,
       createdAt: '2024-05-20T10:00:00Z',
+      title: 'Summer Vibes',
+      description: 'Bright summer look',
+      tags: ['summer', 'HOT'],
+      thumbnailUrl: 'https://cdn.example.com/summer.png',
     });
+  });
+
+  it('preserves null description and thumbnailUrl, and empty tags', () => {
+    const result = mapCatalogRecipeWireItem(WIRE_ITEM_2);
+    expect(result.description).toBeNull();
+    expect(result.thumbnailUrl).toBeNull();
+    expect(result.tags).toEqual([]);
   });
 
   it('preserves null styleReferenceKey (no style image configured)', () => {
@@ -103,6 +122,7 @@ describe('mapCatalogRecipeWireItem — wire → camel projection', () => {
     expect(Object.keys(result)).not.toContain('publish_date');
     expect(Object.keys(result)).not.toContain('display_order');
     expect(Object.keys(result)).not.toContain('created_at');
+    expect(Object.keys(result)).not.toContain('thumbnail_url');
   });
 });
 
@@ -121,6 +141,10 @@ describe('fetchRecipeCatalog — wire → camel list projection', () => {
       publishDate: '2024-06-01T00:00:00Z',
       displayOrder: 1,
       createdAt: '2024-05-20T10:00:00Z',
+      title: 'Summer Vibes',
+      description: 'Bright summer look',
+      tags: ['summer', 'HOT'],
+      thumbnailUrl: 'https://cdn.example.com/summer.png',
     });
     expect(result.recipes[1]).toEqual({
       recipeId: 'winter-chic-2024',
@@ -128,6 +152,10 @@ describe('fetchRecipeCatalog — wire → camel list projection', () => {
       publishDate: '2024-12-01T00:00:00Z',
       displayOrder: 2,
       createdAt: '2024-11-15T08:30:00Z',
+      title: 'Winter Chic',
+      description: null,
+      tags: [],
+      thumbnailUrl: null,
     });
   });
 
@@ -314,12 +342,17 @@ describe('camelCase field projection — full round-trip via fetchRecipeCatalog'
       expect(keys).not.toContain('publish_date');
       expect(keys).not.toContain('display_order');
       expect(keys).not.toContain('created_at');
+      expect(keys).not.toContain('thumbnail_url');
       // Confirm camelCase keys are present
       expect(keys).toContain('recipeId');
       expect(keys).toContain('styleReferenceKey');
       expect(keys).toContain('publishDate');
       expect(keys).toContain('displayOrder');
       expect(keys).toContain('createdAt');
+      expect(keys).toContain('title');
+      expect(keys).toContain('description');
+      expect(keys).toContain('tags');
+      expect(keys).toContain('thumbnailUrl');
     }
   });
 

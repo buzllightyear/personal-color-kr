@@ -54,6 +54,10 @@ export interface CatalogRecipeWireItem {
   readonly publish_date: string | null;
   readonly display_order: number;
   readonly created_at: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly tags: readonly string[];
+  readonly thumbnail_url: string | null;
 }
 
 /**
@@ -85,6 +89,10 @@ export interface CatalogRecipe {
   readonly publishDate: string | null;
   readonly displayOrder: number;
   readonly createdAt: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly tags: readonly string[];
+  readonly thumbnailUrl: string | null;
 }
 
 /**
@@ -113,6 +121,10 @@ export function mapCatalogRecipeWireItem(wire: CatalogRecipeWireItem): CatalogRe
     publishDate: wire.publish_date,
     displayOrder: wire.display_order,
     createdAt: wire.created_at,
+    title: wire.title,
+    description: wire.description,
+    tags: wire.tags,
+    thumbnailUrl: wire.thumbnail_url,
   };
 }
 
