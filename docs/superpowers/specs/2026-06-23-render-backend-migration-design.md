@@ -60,11 +60,16 @@ Supabase Postgres (free, unchanged) — session pooler :5432 (NOT 6543; 6543 bre
 
 ### Secrets (Render dashboard env, `sync:false` — never committed)
 
+**Required** (app boots + auth + catalog need these):
 - `DATABASE_URL` — Supabase session pooler, `postgresql+asyncpg://`, `@`→`%40` URL-encoded if present in password.
 - `JWT_SECRET` — **a fresh random value** (`openssl rand -hex 32`). Fly secret values aren't retrievable via CLI, and the device needs a new build/OTA anyway, so reuse isn't worth chasing; a fresh secret invalidates any existing device JWT → the user re-signs in on next launch (acceptable).
 - `APPLE_BUNDLE_ID` — **`com.method.pov`** (the aud-claim; wrong value → every Apple Sign In 401s `invalid_apple_token`).
-- `SENTRY_DSN_API` — optional; omit for testing.
-- **NOT** `FAL_API_KEY` — `apps/api/tests/test_fal_api_key_absence.py` enforces its absence (Fal.ai is out of FastAPI scope).
+
+**Optional** (set to enable the matching feature; the app boots and serves the catalog without them):
+- `ADMIN_TOKEN` — guards `/v1/admin/recipes`; **needed to seed a published recipe via the admin API / web admin UI** (the catalog is empty otherwise). Alternative: seed via direct SQL on Supabase.
+- `FAL_API_KEY` — enables `/v1/generate` (the core generation product) and admin Fal.ai preview. Consumed only via core-python `image_edit.fal_ai_api_key.load_fal_api_key()` (lazy; raises `LookupError` when unset, so generation 5xxs but the rest of the app is fine). Generation is httpx-to-Fal.ai (no local mediapipe) → memory-light, works on the 512MB free tier. **Note:** `apps/api/tests/test_fal_api_key_absence.py` only asserts the literal string `FAL_API_KEY` never appears in `apps/api/src/**/*.py` (an import-boundary invariant — the key is read inside core-python, not the HTTP layer). That test is unrelated to whether the deployment sets the env var; setting `FAL_API_KEY` on Render does not break it.
+- `SENTRY_DSN_API` — error reporting; omit for testing.
+- `S3_*` / `IMAGE_TTL_DAYS` — gallery object storage; absent → in-memory store (fine for testing, lost on restart/cold-start).
 
 ## Data flow / behavior unchanged
 
