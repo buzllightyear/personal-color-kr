@@ -162,6 +162,10 @@ class CatalogRecipeResponse(BaseModel):
     """
 
     recipe_id: str
+    title: str
+    description: str | None
+    tags: list[str]
+    thumbnail_url: str | None
     style_reference_key: str | None
     publish_date: datetime | None
     display_order: int
