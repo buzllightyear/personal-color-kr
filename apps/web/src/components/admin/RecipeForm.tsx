@@ -103,6 +103,10 @@ export default function RecipeForm({
       : '',
   );
   const [displayOrder, setDisplayOrder] = useState(String(recipe?.display_order ?? 0));
+  const [title, setTitle] = useState(recipe?.title ?? '');
+  const [description, setDescription] = useState(recipe?.description ?? '');
+  const [tagsRaw, setTagsRaw] = useState(recipe?.tags?.join(', ') ?? '');
+  const [thumbnailUrl, setThumbnailUrl] = useState(recipe?.thumbnail_url ?? '');
 
   // Validation / submit state
   const [paramError, setParamError] = useState<string | null>(null);
@@ -138,6 +142,13 @@ export default function RecipeForm({
 
     const parsedPublishDate = publishDate.length > 0 ? `${publishDate}:00Z` : null;
 
+    const parsedTags = tagsRaw
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    const parsedDescription = description.length > 0 ? description : null;
+    const parsedThumbnailUrl = thumbnailUrl.length > 0 ? thumbnailUrl : null;
+
     setSaving(true);
     setSubmitError(null);
 
@@ -147,6 +158,10 @@ export default function RecipeForm({
         const body: RecipeUpdate = {
           model_id: modelId,
           prompt_template: promptTemplate,
+          title,
+          description: parsedDescription,
+          tags: parsedTags,
+          thumbnail_url: parsedThumbnailUrl,
           style_reference_key: styleRefKey.length > 0 ? styleRefKey : null,
           parameters,
           publish_date: parsedPublishDate,
@@ -158,6 +173,10 @@ export default function RecipeForm({
           recipe_id: recipeId,
           model_id: modelId,
           prompt_template: promptTemplate,
+          title,
+          description: parsedDescription,
+          tags: parsedTags,
+          thumbnail_url: parsedThumbnailUrl,
           style_reference_key: styleRefKey.length > 0 ? styleRefKey : null,
           parameters,
           status,
@@ -211,6 +230,19 @@ export default function RecipeForm({
         />
       </Field>
 
+      {/* title */}
+      <Field label="Title *" htmlFor="field-title">
+        <input
+          id="field-title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          placeholder="e.g. 투명 글로우 메이크업"
+          style={inputStyle}
+        />
+      </Field>
+
       {/* model_id */}
       <Field label="Model ID *" htmlFor="field-model-id">
         <input
@@ -245,6 +277,42 @@ export default function RecipeForm({
           value={styleRefKey}
           onChange={(e) => setStyleRefKey(e.target.value)}
           placeholder="https://cdn.example.com/style-ref.jpg or r2://bucket/key"
+          style={inputStyle}
+        />
+      </Field>
+
+      {/* description */}
+      <Field label="Description" htmlFor="field-description">
+        <input
+          id="field-description"
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="조명 없이도 맑아지는 피부"
+          style={inputStyle}
+        />
+      </Field>
+
+      {/* tags (comma-separated) */}
+      <Field label="Tags (comma-separated)" htmlFor="field-tags">
+        <input
+          id="field-tags"
+          type="text"
+          value={tagsRaw}
+          onChange={(e) => setTagsRaw(e.target.value)}
+          placeholder="뷰티보정, HOT"
+          style={inputStyle}
+        />
+      </Field>
+
+      {/* thumbnail_url (public HTTPS URL) */}
+      <Field label="Thumbnail URL" htmlFor="field-thumbnail">
+        <input
+          id="field-thumbnail"
+          type="text"
+          value={thumbnailUrl}
+          onChange={(e) => setThumbnailUrl(e.target.value)}
+          placeholder="https://cdn.example.com/thumb.png"
           style={inputStyle}
         />
       </Field>

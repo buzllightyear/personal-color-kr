@@ -34,6 +34,10 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     status: 'hidden',
     publish_date: null,
     display_order: 5,
+    title: 'Existing Recipe',
+    description: null,
+    tags: [],
+    thumbnail_url: null,
     created_at: '2026-06-21T00:00:00Z',
     updated_at: '2026-06-21T00:00:00Z',
     ...overrides,
@@ -64,6 +68,10 @@ describe('RecipeForm — create mode', () => {
     expect(screen.getByLabelText(/initial status/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/publish date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/display order/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^title/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/tags/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/thumbnail/i)).toBeInTheDocument();
   });
 
   it('shows "Create Recipe" as the submit button label', () => {
@@ -89,6 +97,7 @@ describe('RecipeForm — create mode', () => {
     await user.type(screen.getByLabelText(/recipe id/i), 'new-recipe');
     await user.type(screen.getByLabelText(/model id/i), 'fal-ai/flux/dev');
     await user.type(screen.getByLabelText(/prompt template/i), 'A portrait');
+    await user.type(screen.getByLabelText(/^title/i), 'My Recipe Title');
     await user.click(screen.getByRole('button', { name: /create recipe/i }));
 
     await waitFor(() => {
@@ -113,6 +122,7 @@ describe('RecipeForm — create mode', () => {
     await user.type(screen.getByLabelText(/recipe id/i), 'test');
     await user.type(screen.getByLabelText(/model id/i), 'test');
     await user.type(screen.getByLabelText(/prompt template/i), 'test');
+    await user.type(screen.getByLabelText(/^title/i), 'test');
     await user.click(screen.getByRole('button', { name: /create recipe/i }));
 
     await waitFor(() => {
@@ -130,6 +140,43 @@ describe('RecipeForm — create mode', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends title, tags array, and null description/thumbnail_url in POST body', async () => {
+    const user = userEvent.setup();
+    const createdRecipe = makeRecipe({ recipe_id: 'new-recipe' });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createdRecipe),
+      }),
+    );
+
+    render(<RecipeForm token="tk" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByLabelText(/recipe id/i), 'new-recipe');
+    await user.type(screen.getByLabelText(/model id/i), 'fal-ai/flux/dev');
+    await user.type(screen.getByLabelText(/prompt template/i), 'A portrait');
+    await user.type(screen.getByLabelText(/^title/i), 'My Title');
+    await user.type(screen.getByLabelText(/tags/i), 'a, b');
+    // leave description and thumbnail_url blank → null
+    await user.click(screen.getByRole('button', { name: /create recipe/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const [, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    const body = JSON.parse(opts.body as string) as Record<string, unknown>;
+    expect(body.title).toBe('My Title');
+    expect(body.tags).toEqual(['a', 'b']);
+    expect(body.description).toBeNull();
+    expect(body.thumbnail_url).toBeNull();
   });
 });
 
@@ -209,6 +256,46 @@ describe('RecipeForm — edit mode', () => {
     ];
     expect(url).toMatch(/\/v1\/admin\/recipes\/my-recipe$/);
     expect((opts as RequestInit & { method?: string }).method).toBe('PUT');
+  });
+
+  it('pre-fills tags from recipe and round-trips them in PUT body', async () => {
+    const user = userEvent.setup();
+    const existing = makeRecipe({ recipe_id: 'my-recipe', tags: ['뷰티보정', 'HOT'] });
+    const updatedRecipe = makeRecipe({ recipe_id: 'my-recipe' });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(updatedRecipe),
+      }),
+    );
+
+    render(
+      <RecipeForm
+        token="tk"
+        recipe={existing}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // Tags input should be pre-filled as comma-separated
+    const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
+    expect(tagsInput.value).toBe('뷰티보정, HOT');
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const [, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    const body = JSON.parse(opts.body as string) as Record<string, unknown>;
+    expect(body.tags).toEqual(['뷰티보정', 'HOT']);
   });
 
   it('shows a submit error when the API returns an error', async () => {
