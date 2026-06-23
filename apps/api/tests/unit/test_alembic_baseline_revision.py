@@ -48,6 +48,9 @@ _RECIPES_FILENAME = "2026_06_21_0000-content_gen_recipes_create_recipes_table.py
 _GENERATIONS_FILENAME = (
     "2026_06_22_0000-content_gen_generations_create_generations_table.py"
 )
+_RECIPE_META_FILENAME: str = (
+    "2026_06_23_0000-content_gen_recipe_meta_add_display_metadata.py"
+)
 
 # Pinned revision identifiers — single source of truth for the chain
 # topology. Any test that asserts a specific ``down_revision`` value reads
@@ -58,6 +61,7 @@ _USERS_REVISION_ID = "phase_4_3_users"
 _REFERRALS_REVISION_ID = "phase_4_5_referrals"
 _RECIPES_REVISION_ID = "content_gen_recipes"
 _GENERATIONS_REVISION_ID = "content_gen_generations"
+_RECIPE_META_REVISION_ID: str = "content_gen_recipe_meta"
 
 
 def _collect_py_files() -> list[Path]:
@@ -115,11 +119,13 @@ def test_versions_directory_contains_exactly_five_py_files() -> None:
             _REFERRALS_FILENAME,
             _RECIPES_FILENAME,
             _GENERATIONS_FILENAME,
+            _RECIPE_META_FILENAME,
         ]
     )
     assert actual_names == expected_names, (
-        "Content Generation Phase must ship exactly six migrations: "
-        "baseline, events, users, referrals, recipes, and generations. "
+        "Content Generation Phase must ship exactly seven migrations: "
+        "baseline, events, users, referrals, recipes, generations, and "
+        "recipe_meta. "
         f"Expected files {expected_names!r}; found {actual_names!r}. An extra "
         "file indicates an orphan revision; a missing file indicates a "
         "regression in the migration chain."
@@ -160,6 +166,44 @@ def test_generations_migration_chains_on_recipes() -> None:
     assert down_value.value == _RECIPES_REVISION_ID, (
         f"Generations migration `down_revision` must equal "
         f"{_RECIPES_REVISION_ID!r} (preserves the recipes chain); "
+        f"got {down_value.value!r}."
+    )
+
+
+@pytest.mark.unit
+def test_recipe_meta_migration_chains_on_generations() -> None:
+    """The display-metadata migration chains on ``content_gen_generations``.
+
+    Encodes the chain link as a static AST check: the recipe_meta
+    migration's ``revision`` must equal ``content_gen_recipe_meta`` and its
+    ``down_revision`` must equal ``content_gen_generations`` (the prior head).
+    """
+    recipe_meta_path = _VERSIONS_DIR / _RECIPE_META_FILENAME
+    assert recipe_meta_path.is_file(), (
+        f"Recipe meta migration must live at {recipe_meta_path}; missing file "
+        "indicates the display-metadata migration was not added correctly."
+    )
+
+    tree = ast.parse(recipe_meta_path.read_text(encoding="utf-8"))
+
+    rev_found, rev_value = _extract_module_constant(tree, "revision")
+    assert rev_found and isinstance(rev_value, ast.Constant), (
+        f"Recipe meta migration {recipe_meta_path.name} must assign `revision` "
+        "to a string literal at module scope."
+    )
+    assert rev_value.value == _RECIPE_META_REVISION_ID, (
+        f"Recipe meta migration `revision` id must equal "
+        f"{_RECIPE_META_REVISION_ID!r}; got {rev_value.value!r}."
+    )
+
+    down_found, down_value = _extract_module_constant(tree, "down_revision")
+    assert down_found and isinstance(down_value, ast.Constant), (
+        f"Recipe meta migration {recipe_meta_path.name} must assign "
+        "`down_revision` to a string literal at module scope."
+    )
+    assert down_value.value == _GENERATIONS_REVISION_ID, (
+        f"Recipe meta migration `down_revision` must equal "
+        f"{_GENERATIONS_REVISION_ID!r} (preserves the generations chain); "
         f"got {down_value.value!r}."
     )
 

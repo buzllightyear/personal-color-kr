@@ -68,6 +68,7 @@ _VALID_RECIPE_BODY: dict[str, Any] = {
     "status": "hidden",
     "publish_date": None,
     "display_order": 1,
+    "title": "Aurora Recipe",
 }
 
 
@@ -89,6 +90,10 @@ def _make_recipe(**kwargs: Any) -> Recipe:
     recipe.status = kwargs.get("status", RECIPE_STATUS_HIDDEN)
     recipe.publish_date = kwargs.get("publish_date", None)
     recipe.display_order = kwargs.get("display_order", 0)
+    recipe.title = kwargs.get("title", "Test Recipe")
+    recipe.description = kwargs.get("description", None)
+    recipe.tags = kwargs.get("tags", [])
+    recipe.thumbnail_url = kwargs.get("thumbnail_url", None)
     recipe.created_at = now
     recipe.updated_at = now
     return recipe
@@ -808,3 +813,291 @@ def test_recipe_response_serializes_to_json() -> None:
     assert isinstance(dumped["id"], str)  # UUID serialized as string
     assert isinstance(dumped["created_at"], str)  # datetime serialized as string
     assert dumped["status"] == RECIPE_STATUS_HIDDEN
+
+
+# ---------------------------------------------------------------------------
+# Part 9: Display metadata — create/update/validate (Task 2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_recipe_persists_display_metadata() -> None:
+    """POST /admin/recipes accepts and echoes title/description/tags/thumbnail_url."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "meta_recipe",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "a portrait, {personal_color_modifier}",
+                "title": "투명 글로우 메이크업",
+                "description": "조명 없이도 맑아지는 피부",
+                "tags": ["뷰티보정", "HOT"],
+                "thumbnail_url": "https://cdn.example.com/thumb.png",
+            },
+        )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["title"] == "투명 글로우 메이크업"
+    assert data["description"] == "조명 없이도 맑아지는 피부"
+    assert data["tags"] == ["뷰티보정", "HOT"]
+    assert data["thumbnail_url"] == "https://cdn.example.com/thumb.png"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_recipe_requires_title() -> None:
+    """POST /admin/recipes without title returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "no_title",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "a portrait",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_rejects_http_scheme() -> None:
+    """thumbnail_url with http:// scheme returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_http",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "http://cdn.example.com/x.png",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_rejects_relative_path() -> None:
+    """thumbnail_url with a relative path returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_rel",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "/relative/path.png",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_rejects_storage_key() -> None:
+    """thumbnail_url that is a bare storage key returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_key",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "styles/key.png",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_rejects_scheme_only() -> None:
+    """thumbnail_url that is 'https://' with no host returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_nohost",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "https://",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_rejects_empty_string() -> None:
+    """thumbnail_url that is an empty string returns 422."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_empty",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_accepts_valid_https() -> None:
+    """thumbnail_url with a valid https:// URL returns 201."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_valid",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": "https://cdn.example.com/thumb.png",
+            },
+        )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["thumbnail_url"] == "https://cdn.example.com/thumb.png"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_thumbnail_url_accepts_none() -> None:
+    """thumbnail_url of None (explicit null) is accepted on create."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "thumb_null",
+                "model_id": "fal-ai/flux/dev",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "thumbnail_url": None,
+            },
+        )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["thumbnail_url"] is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_nullable_explicit_null_clears() -> None:
+    """PUT with explicit null clears description and thumbnail_url."""
+    recipe = _make_recipe(
+        recipe_id="clear_me",
+        description="Some description",
+        thumbnail_url="https://cdn.example.com/old.png",
+    )
+    stub = _StubSession({"clear_me": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/clear_me",
+            json={"description": None, "thumbnail_url": None},
+        )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["description"] is None
+    assert data["thumbnail_url"] is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_omitted_nullable_leaves_unchanged() -> None:
+    """PUT that omits description/thumbnail_url leaves them unchanged."""
+    recipe = _make_recipe(
+        recipe_id="preserve_me",
+        description="Keep this",
+        thumbnail_url="https://cdn.example.com/keep.png",
+    )
+    stub = _StubSession({"preserve_me": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/preserve_me",
+            json={"model_id": "fal-ai/flux/pro"},
+        )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["description"] == "Keep this"
+    assert data["thumbnail_url"] == "https://cdn.example.com/keep.png"
+    assert data["model_id"] == "fal-ai/flux/pro"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_thumbnail_url_rejects_invalid() -> None:
+    """PUT with invalid thumbnail_url returns 422."""
+    recipe = _make_recipe(recipe_id="bad_thumb_update")
+    stub = _StubSession({"bad_thumb_update": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/bad_thumb_update",
+            json={"thumbnail_url": "http://not-https.com/img.png"},
+        )
+    assert resp.status_code == 422

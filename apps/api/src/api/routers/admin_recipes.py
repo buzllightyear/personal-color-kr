@@ -155,6 +155,10 @@ async def create_recipe(
         recipe_id=body.recipe_id,
         model_id=body.model_id,
         prompt_template=body.prompt_template,
+        title=body.title,
+        description=body.description,
+        tags=body.tags,
+        thumbnail_url=body.thumbnail_url,
         style_reference_key=body.style_reference_key,
         parameters=body.parameters,
         status=body.status.value,
@@ -242,6 +246,8 @@ async def update_recipe(
     """
     recipe = await _get_recipe_or_404(recipe_id, session)
 
+    fields_set = body.model_fields_set
+
     if body.model_id is not None:
         recipe.model_id = body.model_id
     if body.prompt_template is not None:
@@ -254,6 +260,17 @@ async def update_recipe(
         recipe.publish_date = body.publish_date
     if body.display_order is not None:
         recipe.display_order = body.display_order
+    # title is non-null: only apply when a validated, non-null value is sent
+    if body.title is not None:
+        recipe.title = body.title
+    # tags: list replace; only when the client explicitly sent it
+    if "tags" in fields_set and body.tags is not None:
+        recipe.tags = body.tags
+    # description / thumbnail_url: nullable — an explicitly-sent null CLEARS them
+    if "description" in fields_set:
+        recipe.description = body.description
+    if "thumbnail_url" in fields_set:
+        recipe.thumbnail_url = body.thumbnail_url
 
     # Explicitly bump updated_at so a raw-SQL or ORM path both update it.
     recipe.updated_at = datetime.now(timezone.utc)

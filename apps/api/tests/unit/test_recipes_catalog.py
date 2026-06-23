@@ -87,6 +87,10 @@ def _make_recipe(
     recipe.display_order = display_order
     recipe.created_at = _NOW
     recipe.updated_at = _NOW
+    recipe.title = "Test Recipe"
+    recipe.description = None
+    recipe.tags = []
+    recipe.thumbnail_url = None
     return recipe
 
 
@@ -461,6 +465,10 @@ async def test_catalog_response_schema_fields() -> None:
     assert "publish_date" in item
     assert "display_order" in item
     assert "created_at" in item
+    assert "title" in item
+    assert "description" in item
+    assert "tags" in item
+    assert "thumbnail_url" in item
 
     # Internal generation fields MUST NOT be exposed.
     assert "model_id" not in item

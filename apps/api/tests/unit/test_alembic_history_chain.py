@@ -75,6 +75,7 @@ _USERS_REVISION_ID: str = "phase_4_3_users"
 _REFERRALS_REVISION_ID: str = "phase_4_5_referrals"
 _RECIPES_REVISION_ID: str = "content_gen_recipes"
 _GENERATIONS_REVISION_ID: str = "content_gen_generations"
+_RECIPE_META_REVISION_ID: str = "content_gen_recipe_meta"
 
 
 def _load_script_directory() -> ScriptDirectory:
@@ -104,15 +105,14 @@ def _load_script_directory() -> ScriptDirectory:
 
 
 @pytest.mark.unit
-def test_alembic_history_reports_single_head_at_referrals_revision() -> None:
-    """``alembic heads`` (via ScriptDirectory) returns exactly ``content_gen_generations``.
+def test_alembic_history_reports_single_head_at_recipe_meta_revision() -> None:
+    """``alembic heads`` (via ScriptDirectory) returns exactly ``content_gen_recipe_meta``.
 
     A single head proves the chain is **linear** — no accidental
     branching introduced by a sibling migration that forgot to chain on
-    the existing head. The head's identity (``content_gen_generations``)
-    proves the Content Generation AC4 generations migration has been correctly
-    registered with alembic and has taken over the head position from the
-    recipes migration.
+    the existing head. The head's identity (``content_gen_recipe_meta``)
+    proves the display-metadata migration has been correctly registered with
+    alembic and has taken over the head position from the generations migration.
     """
     script = _load_script_directory()
 
@@ -121,12 +121,12 @@ def test_alembic_history_reports_single_head_at_referrals_revision() -> None:
     # ``tuple`` for the equality assertion so the message reads naturally
     # regardless of the concrete container type alembic chose.
     heads = tuple(script.get_heads())
-    assert heads == (_GENERATIONS_REVISION_ID,), (
+    assert heads == (_RECIPE_META_REVISION_ID,), (
         f"alembic must report exactly one head and it must be "
-        f"{_GENERATIONS_REVISION_ID!r} (the Content Generation generations "
+        f"{_RECIPE_META_REVISION_ID!r} (the Content Generation recipe meta "
         f"migration); got {heads!r}. More than one head indicates the migration "
         f"chain branched (e.g. two migrations both set "
-        f"``down_revision = 'content_gen_recipes'`` without merging); a "
+        f"``down_revision = 'content_gen_generations'`` without merging); a "
         f"different head indicates an additional migration sneaked in "
         f"prematurely."
     )
@@ -179,15 +179,17 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
 
     walk = list(script.walk_revisions())
 
-    assert len(walk) == 6, (
-        f"alembic chain must contain exactly six revisions "
-        f"(baseline + events + users + referrals + recipes + generations); "
+    assert len(walk) == 7, (
+        f"alembic chain must contain exactly seven revisions "
+        f"(baseline + events + users + referrals + recipes + generations + "
+        f"recipe_meta); "
         f"walk_revisions() yielded {len(walk)}: "
         f"{[r.revision for r in walk]!r}. An extra revision indicates an "
         f"orphan migration; fewer revisions indicate a missing chain link."
     )
 
     (
+        recipe_meta_script,
         generations_script,
         recipes_script,
         referrals_script,
@@ -196,14 +198,24 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
         base_script,
     ) = walk
 
-    # ---- Head position: the generations migration sits on top.
-    assert generations_script.revision == _GENERATIONS_REVISION_ID, (
-        f"The head of walk_revisions() must be {_GENERATIONS_REVISION_ID!r} "
-        f"(the Content Generation generations migration); "
-        f"got {generations_script.revision!r}."
+    # ---- Head position: the recipe_meta migration sits on top.
+    assert recipe_meta_script.revision == _RECIPE_META_REVISION_ID, (
+        f"The head of walk_revisions() must be {_RECIPE_META_REVISION_ID!r} "
+        f"(the Content Generation recipe meta migration); "
+        f"got {recipe_meta_script.revision!r}."
+    )
+
+    # ---- Recipe meta migration chains on the generations migration.
+    assert recipe_meta_script.down_revision == _GENERATIONS_REVISION_ID, (
+        f"Recipe meta migration's down_revision must equal "
+        f"{_GENERATIONS_REVISION_ID!r}; got {recipe_meta_script.down_revision!r}."
     )
 
     # ---- Generations migration chains on the recipes migration.
+    assert generations_script.revision == _GENERATIONS_REVISION_ID, (
+        f"Second script in walk must be {_GENERATIONS_REVISION_ID!r}; "
+        f"got {generations_script.revision!r}."
+    )
     assert generations_script.down_revision == _RECIPES_REVISION_ID, (
         f"Generations migration's down_revision must equal "
         f"{_RECIPES_REVISION_ID!r}; got {generations_script.down_revision!r}."

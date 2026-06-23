@@ -36,6 +36,7 @@ vi.mock('react-native', async () => {
     Text: makeHost('Text'),
     Pressable: makeHost('Pressable'),
     ScrollView: makeHost('ScrollView'),
+    Image: makeHost('Image'),
     StyleSheet: {
       create: (s: Record<string, unknown>): Record<string, unknown> => s,
       flatten: (s: unknown): unknown => s,
@@ -66,6 +67,10 @@ const RECIPE_A: CatalogRecipe = {
   publishDate: '2024-06-01T00:00:00Z',
   displayOrder: 1,
   createdAt: '2024-05-20T10:00:00Z',
+  title: 'Summer Vibes',
+  description: 'Bright summer look',
+  tags: ['summer', 'HOT'],
+  thumbnailUrl: 'https://cdn.example.com/summer.png',
 };
 
 const RECIPE_B: CatalogRecipe = {
@@ -74,6 +79,10 @@ const RECIPE_B: CatalogRecipe = {
   publishDate: '2024-06-01T00:00:00Z',
   displayOrder: 2,
   createdAt: '2024-05-18T08:00:00Z',
+  title: 'Winter Chic',
+  description: null,
+  tags: [],
+  thumbnailUrl: null,
 };
 
 const RECIPE_C: CatalogRecipe = {
@@ -82,6 +91,10 @@ const RECIPE_C: CatalogRecipe = {
   publishDate: '2024-05-01T00:00:00Z',
   displayOrder: 3,
   createdAt: '2024-04-15T09:00:00Z',
+  title: 'Autumn Warm',
+  description: 'Warm autumn palette',
+  tags: ['autumn'],
+  thumbnailUrl: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -223,13 +236,97 @@ describe('RecipeCatalogScreen — render', () => {
     ).toBeTruthy();
   });
 
-  it('renders the recipe ID as the card label text', () => {
+  it('renders the recipe title as the card label text', () => {
     const tree = render(
       React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
     );
     const label = findHostByTestId(tree, `recipe-catalog-label-${RECIPE_A.recipeId}`);
     expect(label).toBeTruthy();
-    expect(label?.props.children).toBe(RECIPE_A.recipeId);
+    expect(label?.props.children).toBe(RECIPE_A.title);
+  });
+
+  it('renders title text on the card', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
+    );
+    const allTexts = tree.root.findAll(
+      (node) => typeof node.type === 'string' && node.type === 'Text',
+    );
+    const textValues = allTexts.map((t) => t.props.children).filter(Boolean);
+    expect(textValues).toContain(RECIPE_A.title);
+  });
+
+  it('renders description when non-null', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
+    );
+    const desc = findHostByTestId(
+      tree,
+      `recipe-catalog-description-${RECIPE_A.recipeId}`,
+    );
+    expect(desc).toBeTruthy();
+    expect(desc?.props.children).toBe(RECIPE_A.description);
+  });
+
+  it('does not render description node when description is null', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_B] })),
+    );
+    const desc = findHostByTestId(
+      tree,
+      `recipe-catalog-description-${RECIPE_B.recipeId}`,
+    );
+    expect(desc).toBeNull();
+  });
+
+  it('renders a tag chip when tags are non-empty', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
+    );
+    const chip = findHostByTestId(tree, `recipe-catalog-tag-${RECIPE_A.recipeId}-0`);
+    expect(chip).toBeTruthy();
+  });
+
+  it('does not render any tag chips when tags array is empty', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_B] })),
+    );
+    const chips = tree.root.findAll(
+      (node) =>
+        typeof node.props?.testID === 'string' &&
+        (node.props.testID as string).startsWith(
+          `recipe-catalog-tag-${RECIPE_B.recipeId}-`,
+        ),
+    );
+    expect(chips).toHaveLength(0);
+  });
+
+  it('renders the thumbnail Image when thumbnailUrl is set', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
+    );
+    const img = findHostByTestId(tree, `recipe-catalog-thumbnail-${RECIPE_A.recipeId}`);
+    expect(img).toBeTruthy();
+    expect(img?.type).toBe('Image');
+  });
+
+  it('renders a placeholder block when thumbnailUrl is null', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_B] })),
+    );
+    const placeholder = findHostByTestId(
+      tree,
+      `recipe-catalog-thumbnail-placeholder-${RECIPE_B.recipeId}`,
+    );
+    expect(placeholder).toBeTruthy();
+  });
+
+  it('uses title as accessibilityLabel on each card (with recipeId fallback for empty title)', () => {
+    const tree = render(
+      React.createElement(RecipeCatalogScreen, makeProps({ recipes: [RECIPE_A] })),
+    );
+    const card = findHostByTestId(tree, `recipe-catalog-item-${RECIPE_A.recipeId}`);
+    expect(card?.props.accessibilityLabel).toBe(RECIPE_A.title);
   });
 
   it('renders all recipe cards as Pressable host elements', () => {

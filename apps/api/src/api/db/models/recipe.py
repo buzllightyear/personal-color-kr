@@ -154,6 +154,44 @@ class Recipe(Base):
         nullable=True,
     )
 
+    # ----- title: catalog display title (operator-authored) -----
+    # Shown as the card title in the public catalog. NOT NULL. The migration
+    # adds it with a transient server_default of '' (to populate existing
+    # rows), backfills those rows from recipe_id, then DROPS the default so
+    # the column is operator-required. The ORM model therefore declares NO
+    # server_default — new rows must always supply title (API enforces
+    # min_length=1).
+    title: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    # ----- description: optional catalog subtitle -----
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # ----- tags: classification chips (string array) -----
+    # JSONB array of strings (same storage pattern as ``parameters``).
+    # Doubles as the seed for future themed collections. ``default=list``
+    # gives transient ORM instances an empty list; ``server_default='[]'``
+    # covers raw-SQL inserts and the add-column backfill.
+    tags: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+        server_default="[]",
+    )
+
+    # ----- thumbnail_url: public HTTPS URL of an example result -----
+    # Operator-curated marketing image (non-PII), served as a public URL
+    # (no auth endpoint). NULL until the operator attaches one.
+    thumbnail_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
     # ----- parameters: model-specific fal.ai parameter set -----
     # Arbitrary JSON object passed verbatim to the fal.ai model at
     # generation time (e.g. ``{"num_inference_steps": 30, "seed": 42}``).

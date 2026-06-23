@@ -12,6 +12,10 @@ export interface Recipe {
   recipe_id: string;
   model_id: string;
   prompt_template: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  thumbnail_url: string | null;
   style_reference_key: string | null;
   parameters: Record<string, unknown>;
   status: RecipeStatus;
@@ -31,6 +35,10 @@ export interface RecipeCreate {
   recipe_id: string;
   model_id: string;
   prompt_template: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  thumbnail_url: string | null;
   style_reference_key: string | null;
   parameters: Record<string, unknown>;
   status: RecipeStatus;
@@ -42,6 +50,10 @@ export interface RecipeCreate {
 export interface RecipeUpdate {
   model_id?: string;
   prompt_template?: string;
+  title?: string;
+  description?: string | null;
+  tags?: string[];
+  thumbnail_url?: string | null;
   style_reference_key?: string | null;
   parameters?: Record<string, unknown>;
   publish_date?: string | null;
