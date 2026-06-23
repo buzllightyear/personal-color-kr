@@ -142,6 +142,29 @@ describe('RecipeForm — create mode', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it('shows "Title is required" error and does NOT call fetch when title is whitespace-only', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<RecipeForm token="tk" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByLabelText(/recipe id/i), 'new-recipe');
+    await user.type(screen.getByLabelText(/model id/i), 'fal-ai/flux/dev');
+    await user.type(screen.getByLabelText(/prompt template/i), 'A portrait');
+    // whitespace-only passes the HTML required constraint but fails our JS trim guard
+    await user.type(screen.getByLabelText(/^title/i), '   ');
+    await user.click(screen.getByRole('button', { name: /create recipe/i }));
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      const messages = alerts.map((a) => a.textContent ?? '');
+      expect(messages.some((m) => /title is required/i.test(m))).toBe(true);
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('sends title, tags array, and null description/thumbnail_url in POST body', async () => {
     const user = userEvent.setup();
     const createdRecipe = makeRecipe({ recipe_id: 'new-recipe' });

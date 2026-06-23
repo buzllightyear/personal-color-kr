@@ -181,7 +181,7 @@ export function RecipeCatalogScreen(
                 <View style={styles.tagRow}>
                   {recipe.tags.map((tag, i) => (
                     <View
-                      key={tag}
+                      key={`${tag}-${i}`}
                       testID={`recipe-catalog-tag-${recipe.recipeId}-${i}`}
                       style={styles.tagChip}
                     >

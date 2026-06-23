@@ -140,6 +140,11 @@ export default function RecipeForm({
       return;
     }
 
+    if (title.trim().length === 0) {
+      setSubmitError('Title is required');
+      return;
+    }
+
     const parsedPublishDate = publishDate.length > 0 ? `${publishDate}:00Z` : null;
 
     const parsedTags = tagsRaw
