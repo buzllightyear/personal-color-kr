@@ -105,15 +105,14 @@ def _load_script_directory() -> ScriptDirectory:
 
 
 @pytest.mark.unit
-def test_alembic_history_reports_single_head_at_referrals_revision() -> None:
-    """``alembic heads`` (via ScriptDirectory) returns exactly ``content_gen_generations``.
+def test_alembic_history_reports_single_head_at_recipe_meta_revision() -> None:
+    """``alembic heads`` (via ScriptDirectory) returns exactly ``content_gen_recipe_meta``.
 
     A single head proves the chain is **linear** — no accidental
     branching introduced by a sibling migration that forgot to chain on
-    the existing head. The head's identity (``content_gen_generations``)
-    proves the Content Generation AC4 generations migration has been correctly
-    registered with alembic and has taken over the head position from the
-    recipes migration.
+    the existing head. The head's identity (``content_gen_recipe_meta``)
+    proves the display-metadata migration has been correctly registered with
+    alembic and has taken over the head position from the generations migration.
     """
     script = _load_script_directory()
 

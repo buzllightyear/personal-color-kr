@@ -61,7 +61,7 @@ _USERS_REVISION_ID = "phase_4_3_users"
 _REFERRALS_REVISION_ID = "phase_4_5_referrals"
 _RECIPES_REVISION_ID = "content_gen_recipes"
 _GENERATIONS_REVISION_ID = "content_gen_generations"
-_RECIPE_META_REVISION_ID = "content_gen_recipe_meta"
+_RECIPE_META_REVISION_ID: str = "content_gen_recipe_meta"
 
 
 def _collect_py_files() -> list[Path]:
