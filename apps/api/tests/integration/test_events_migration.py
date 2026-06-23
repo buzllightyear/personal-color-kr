@@ -63,7 +63,7 @@ _EVENTS_REVISION: str = "phase_4_2_events"
 # The Content Generation phase extended the chain past Phase 4.5: AC1/AC5
 # added ``content_gen_recipes`` and AC4 added ``content_gen_generations`` on
 # top. ``alembic upgrade head`` now stamps alembic_version to the latter.
-_HEAD_REVISION: str = "content_gen_generations"
+_HEAD_REVISION: str = "content_gen_recipe_meta"
 
 # Generous timeout — the events migration emits two ``CREATE INDEX``
 # statements but no data backfill; 60s protects against a wedged asyncpg
