@@ -22,6 +22,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -31,6 +32,23 @@ from api.db.models.recipe import (
     RECIPE_STATUS_PUBLISHED,
     is_valid_transition,
 )
+
+
+def _validate_https_url(value: str | None) -> str | None:
+    """Reject anything that isn't a public ``https://`` URL.
+
+    None passes (field is nullable). Empty/blank strings are rejected — the
+    web form converts blanks to ``null`` before sending, so a blank reaching
+    the API is a bug, not "cleared". Parses scheme + host so a bare
+    ``"https://"`` (no host) and relative paths / storage keys are rejected,
+    not just non-https schemes.
+    """
+    if value is None:
+        return None
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ValueError("thumbnail_url must be a public https:// URL with a host")
+    return value
 
 
 class RecipeStatusEnum(str, Enum):
@@ -51,6 +69,14 @@ class RecipeCreate(BaseModel):
     recipe_id: str = Field(..., min_length=1, description="Human-readable unique ID")
     model_id: str = Field(..., min_length=1, description="fal.ai model identifier")
     prompt_template: str = Field(..., min_length=1, description="Prompt template")
+    title: str = Field(..., min_length=1, description="Catalog display title")
+    description: str | None = Field(None, description="Optional catalog subtitle")
+    tags: list[str] = Field(
+        default_factory=list, description="Classification tags / chips"
+    )
+    thumbnail_url: str | None = Field(
+        None, description="Public HTTPS URL of the example thumbnail"
+    )
     style_reference_key: str | None = Field(
         None, description="Object-storage key for the style reference image"
     )
@@ -62,6 +88,8 @@ class RecipeCreate(BaseModel):
     )
     publish_date: datetime | None = Field(None, description="Catalog publish date")
     display_order: int = Field(0, description="Featured-section sort weight")
+
+    _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
 
     @field_validator("status", mode="before")
     @classmethod
@@ -84,10 +112,16 @@ class RecipeUpdate(BaseModel):
 
     model_id: str | None = Field(None, min_length=1)
     prompt_template: str | None = Field(None, min_length=1)
+    title: str | None = Field(None, min_length=1)
+    description: str | None = None
+    tags: list[str] | None = None
+    thumbnail_url: str | None = None
     style_reference_key: str | None = None
     parameters: dict[str, Any] | None = None
     publish_date: datetime | None = None
     display_order: int | None = None
+
+    _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
 
 
 class RecipeResponse(BaseModel):
@@ -97,6 +131,10 @@ class RecipeResponse(BaseModel):
     recipe_id: str
     model_id: str
     prompt_template: str
+    title: str
+    description: str | None
+    tags: list[str]
+    thumbnail_url: str | None
     style_reference_key: str | None
     parameters: dict[str, Any]
     status: RecipeStatusEnum
