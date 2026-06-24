@@ -42,6 +42,7 @@ import {
 } from '../../../src/fetch-recipe-catalog';
 import { getAuthToken } from '../../../src/config/auth-token';
 import { getApiBaseUrl } from '../../../src/config/api-base-url';
+import { clearTokenOnUnauthorized } from '../../../src/clear-token-on-unauthorized';
 import { RecipeCatalogScreen } from '../../../src/screens/generate/RecipeCatalogScreen';
 
 export default function CatalogTab(): React.ReactElement {
@@ -65,7 +66,11 @@ export default function CatalogTab(): React.ReactElement {
           setRecipes(result.recipes);
           setLoading(false);
         }
-      } catch {
+      } catch (err) {
+        // Self-heal: a 401 means the stored token is invalid (expired / rotated
+        // secret) — discard it so the step-7 gate re-shows on next mount and the
+        // user re-authenticates, instead of being stuck on a permanent error.
+        await clearTokenOnUnauthorized(err);
         if (!cancelled) {
           setError(true);
           setLoading(false);

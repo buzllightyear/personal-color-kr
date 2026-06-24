@@ -26,9 +26,7 @@ import { useFunnelState } from '../../src/hooks/use-funnel-state';
 import { pickSelfieUri } from '../../src/pick-selfie';
 import { readAuthToken } from '../../src/storage/auth-token-storage';
 import { runSignIn } from '../../src/run-sign-in';
-
-/** Single user-facing message for any non-cancel sign-in failure. */
-const SIGN_IN_ERROR_MESSAGE = '로그인에 실패했어요. 다시 시도해 주세요.';
+import { signInErrorMessage } from '../../src/sign-in-error-message';
 
 export default function DiagnosisInputRoute(): React.ReactElement {
   const router = useRouter();
@@ -56,7 +54,10 @@ export default function DiagnosisInputRoute(): React.ReactElement {
         if (result.status === 'signed_in') {
           setAuth({ status: 'signed_in', userId: result.userId });
         } else if (result.status === 'error') {
-          setErrorMessage(SIGN_IN_ERROR_MESSAGE);
+          // Distinguish "couldn't reach the backend" (httpStatus null — usually
+          // a transient outage / cold start) from a genuine backend rejection
+          // (a non-200 status), so the user isn't told to blame their login.
+          setErrorMessage(signInErrorMessage(result.httpStatus));
         }
         // `canceled` is a silent no-op: the user dismissed the sheet, so the
         // gate stays put with no error shown.

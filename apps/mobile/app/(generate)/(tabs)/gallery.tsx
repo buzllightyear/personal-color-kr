@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getApiBaseUrl } from '../../../src/config/api-base-url';
 import { getAuthToken } from '../../../src/config/auth-token';
+import { clearTokenOnUnauthorized } from '../../../src/clear-token-on-unauthorized';
 import {
   createGalleryTransport,
   fetchGallery,
@@ -60,7 +61,11 @@ export default function GalleryTab(): React.ReactElement {
           setItems(result.items);
           setLoading(false);
         }
-      } catch {
+      } catch (err) {
+        // Self-heal: a 401 means the stored token is invalid (expired / rotated
+        // secret) — discard it so the step-7 gate re-shows and the user
+        // re-authenticates, instead of being stuck on a permanent error.
+        await clearTokenOnUnauthorized(err);
         if (!cancelled) {
           setError(true);
           setLoading(false);

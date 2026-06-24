@@ -20,6 +20,7 @@
  * injected transport so the wire → camel projection is unit-testable without a
  * live HTTP client; `createGalleryTransport` is the thin real `fetch` factory.
  */
+import { ApiError } from './api-error';
 import { getApiBaseUrl } from './config/api-base-url';
 
 // ---------------------------------------------------------------------------
@@ -141,7 +142,10 @@ export function createGalleryTransport(
       },
     });
     if (!response.ok) {
-      throw new Error(`GET ${GALLERY_PATH} failed with status ${response.status}`);
+      throw new ApiError(
+        response.status,
+        `GET ${GALLERY_PATH} failed with status ${response.status}`,
+      );
     }
     return (await response.json()) as GalleryListWireResponse;
   };
