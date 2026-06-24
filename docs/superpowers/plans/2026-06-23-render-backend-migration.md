@@ -11,8 +11,10 @@
 ## Global Constraints
 
 - **Testing-only host.** Render free is transitional; at launch migrate to Fly (resume w/ card) or Railway (≥1GB so `/v1/diagnose` works, no cold starts). Do NOT delete `fly.toml` or the `Dockerfile`.
-- **No application code changes.** Touch only: `render.yaml` (new), `apps/mobile/eas.json`, `.env.example`, `docs/deploy-api-render.md` (new), `docs/deploy-api-fly.md` (header note), and the two new test files. Do NOT modify `apps/api/src`, `packages/core-python/src`, the `Dockerfile`, or `fly.toml`.
+- **Near-zero application code changes.** Touch only: `render.yaml` (new), `apps/mobile/eas.json`, `apps/mobile/src/config/api-base-url.ts` (the one-line dot-notation fix below — REQUIRED for OTA to work), `.env.example`, `docs/deploy-api-render.md` (new), `docs/deploy-api-fly.md` (header note), and the new test files. Do NOT modify `apps/api/src`, `packages/core-python/src`, the `Dockerfile`, or `fly.toml`.
+- **CRITICAL — OTA inlining requires dot notation (codex review R1).** `apps/mobile/src/config/api-base-url.ts` currently reads `process.env[API_BASE_URL_ENV_KEY]` (bracket access via a `const` key). Expo's `babel-preset-expo` only statically inlines **literal** `process.env.EXPO_PUBLIC_*` dot-member expressions into the JS bundle; a computed/bracket access is NOT inlined and resolves to `undefined` at runtime in a built/OTA'd app. As written, re-pointing `eas.json` + `eas update` would ship an **empty** API origin to the device — the migration's core premise silently fails. **Fix:** change `getApiBaseUrl()` to read `process.env.EXPO_PUBLIC_API_BASE_URL` directly (dot notation); keep the empty-string-on-unset contract. This is added as **Task 2 Step 0** (with its own failing-then-passing test) before the `eas.json` rewire.
 - **Dockerfile is already portable** — `CMD` binds `${PORT:-8000}`; migrations are intentionally NOT in `CMD`. The migrate-on-start lives ONLY in `render.yaml`'s `dockerCommand` (single free instance ⇒ no migration race), preserving the Dockerfile for multi-instance hosts.
+- **Accepted tradeoff — migration is a boot dependency (codex R1 high).** Render's preferred place for migrations is `preDeployCommand`, which runs the DB step in a separate phase so a migration/DB failure doesn't take down a previously-healthy instance. Here `alembic upgrade head` is chained into `dockerCommand` instead, so on every cold start/restart the process needs a live Supabase connection *before* uvicorn binds `$PORT` — if Supabase is paused or unreachable, `/v1/health` itself never comes up (no degraded-but-serving state). This is **knowingly accepted** for the free testing host because: (a) `preDeployCommand` is a separate Render feature with its own free-plan caveats, (b) the catalog flow is unusable without the DB anyway, and (c) the runbook's first prerequisite is un-pausing Supabase. The launch host (Fly/Railway) SHOULD move migration to a dedicated release/pre-deploy phase. The Blueprint comment records this.
 - **Secrets are never committed** — `render.yaml` `envVars` use `sync: false` (values set in the Render dashboard). Required: `DATABASE_URL`, `JWT_SECRET`, `APPLE_BUNDLE_ID=com.method.pov`. Optional: `ADMIN_TOKEN`, `FAL_API_KEY`, `SENTRY_DSN_API`, `S3_*`/`IMAGE_TTL_DAYS`.
 - **`FAL_API_KEY` is allowed as a deployment secret.** `apps/api/tests/test_fal_api_key_absence.py` only forbids the literal string in `apps/api/src/**/*.py` (the key is read inside core-python). Setting it on Render does not break that test.
 - **eas.json URL** is `https://pov-api.onrender.com` (the chosen service name). If the real Render URL differs (name collision), the operator updates that one value; the guard test is pattern-based (`https://<sub>.onrender.com`, all profiles identical) so it stays green.
@@ -29,8 +31,10 @@
 | `render.yaml` | Render Blueprint: free Docker web service, migrate-then-serve, health check, secret env var declarations | **Create** |
 | `apps/api/tests/unit/test_render_blueprint.py` | Pins the Blueprint's load-bearing fields (free plan, health path, dockerCommand semantics, required secrets `sync:false`) | **Create** |
 | `.env.example` | Dev-facing API base URL comment | Modify (comment only) |
+| `apps/mobile/src/config/api-base-url.ts` | Bracket→dot env access so Expo inlines the URL into the OTA bundle (R1 critical) | Modify (1 line) |
 | `apps/mobile/eas.json` | EAS build profiles' `EXPO_PUBLIC_API_BASE_URL` | Modify (4 profiles) |
 | `apps/mobile/tests/eas-api-base-url.test.ts` | Guard: no `fly.dev`, all profiles share one `*.onrender.com` URL | **Create** |
+| `apps/mobile/tests/api-base-url-inlining.test.ts` | Guard: source uses literal `process.env.EXPO_PUBLIC_API_BASE_URL` dot access (inlinable), not bracket | **Create** |
 | `docs/deploy-api-render.md` | Render deploy runbook + launch-time revert path | **Create** |
 | `docs/deploy-api-fly.md` | Deprecation header pointing to the Render runbook | Modify (header only) |
 
@@ -119,6 +123,11 @@ Create `render.yaml` at the repo root:
 #
 # Builds the host-agnostic root Dockerfile. Migrations run here (single free
 # instance => no race) via dockerCommand, NOT in the Dockerfile CMD.
+# TRADEOFF (accepted, testing-only): chaining `alembic upgrade head` into
+# dockerCommand makes a live Supabase connection a BOOT dependency -- if the DB
+# is paused/unreachable, /v1/health never comes up. The launch host should move
+# migration to a dedicated pre-deploy/release phase (Render: preDeployCommand)
+# so DB issues don't take down a healthy instance.
 services:
   - type: web
     name: pov-api
@@ -182,13 +191,68 @@ git commit -m "feat(deploy): add Render Blueprint (free Docker, migrate-on-deplo
 
 ## Task 2: Re-point mobile API base URL to Render + guard test
 
+> **URL is a PLACEHOLDER until confirmed (codex R1+R2 high).** The Render
+> service is not created until the operator runs the runbook (Task 3 writes the
+> runbook; service creation is a post-merge operator step), so Task 1/2 commit
+> `https://pov-api.onrender.com` as a **deliberate, best-guess placeholder**, not
+> a confirmed value. This is acceptable ONLY because the correction loop is
+> explicit: Task 4 §4 requires the operator to confirm the real subdomain and
+> land a one-line `eas.json`/`.env.example`/runbook follow-up if it differs, and
+> §5 OTA verification cannot pass against a wrong URL. The guard test is
+> pattern-based (`*.onrender.com`), so it will NOT catch a wrong-but-well-formed
+> subdomain — confirmation is manual and is a blocking acceptance gate, not a CI
+> gate. If you happen to know the real URL before this task (e.g. the operator
+> pre-created the service), substitute it everywhere now and skip the follow-up.
+
 **Files:**
+- Modify: `apps/mobile/src/config/api-base-url.ts` (1 line — bracket→dot, R1 critical)
+- Create: `apps/mobile/tests/api-base-url-inlining.test.ts`
 - Create: `apps/mobile/tests/eas-api-base-url.test.ts`
 - Modify: `apps/mobile/eas.json` (the 4 build profiles)
 
 **Interfaces:**
-- Consumes: the Render service URL chosen in Task 1 (`https://pov-api.onrender.com`).
-- Produces: every `eas.json` build profile's `env.EXPO_PUBLIC_API_BASE_URL` set to the same `https://<sub>.onrender.com` value; a guard test enforcing it.
+- Consumes: the Render service URL confirmed in Task 3 step 1 (placeholder `https://pov-api.onrender.com` until then).
+- Produces: `getApiBaseUrl()` reading an inlinable dot-notation env access; every `eas.json` build profile's `env.EXPO_PUBLIC_API_BASE_URL` set to the same `https://<sub>.onrender.com` value; guard tests enforcing both.
+
+- [ ] **Step 0: Fix the env access so Expo actually inlines it (R1 critical)**
+
+First write the failing source-guard test `apps/mobile/tests/api-base-url-inlining.test.ts`:
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const source = readFileSync(
+  new URL('../src/config/api-base-url.ts', import.meta.url),
+  'utf-8',
+);
+
+describe('getApiBaseUrl env access is inlinable by Expo', () => {
+  it('uses literal dot-notation process.env access (babel-preset-expo inlines only this form)', () => {
+    expect(source).toContain('process.env.EXPO_PUBLIC_API_BASE_URL');
+  });
+
+  it('does not use bracket/computed env access (NOT inlined into the bundle)', () => {
+    expect(source).not.toMatch(/process\.env\[/);
+  });
+});
+```
+
+Run `cd apps/mobile && pnpm vitest run tests/api-base-url-inlining.test.ts` — expect FAIL (current source uses `process.env[API_BASE_URL_ENV_KEY]`).
+
+Then edit `apps/mobile/src/config/api-base-url.ts` so `getApiBaseUrl()` reads the env var by **literal dot notation**, preserving the empty-string-on-unset / trailing-slash-trim contract:
+
+```typescript
+export function getApiBaseUrl(): string {
+  const raw = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (raw === undefined || raw.length === 0) {
+    return '';
+  }
+  return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+}
+```
+
+Keep `API_BASE_URL_ENV_KEY` exported (other modules/tests reference it) — it just no longer gates the runtime read. Re-run the inlining test (PASS) and the existing config/transport tests (still green: the empty-string fallback is unchanged in the vitest node env, where the var is unset).
 
 - [ ] **Step 1: Write the failing guard test**
 
@@ -264,8 +328,13 @@ Expected: clean. (The new `.ts` test is type-checked + prettier-checked; `eas.js
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/eas.json apps/mobile/tests/eas-api-base-url.test.ts
-git commit -m "chore(mobile): point EXPO_PUBLIC_API_BASE_URL at Render + guard test"
+# MUST include the Step 0 source fix + its guard test, or the OTA-inlining fix
+# is silently dropped from the branch (codex R2 critical).
+git add apps/mobile/src/config/api-base-url.ts \
+        apps/mobile/tests/api-base-url-inlining.test.ts \
+        apps/mobile/eas.json \
+        apps/mobile/tests/eas-api-base-url.test.ts
+git commit -m "fix(mobile): inlinable dot-notation API base URL + point at Render + guard tests"
 ```
 
 ---
@@ -348,13 +417,30 @@ The catalog (`GET /v1/recipes`) returns published recipes only. Either:
   `title`, a `published` status, and a public `thumbnail_url`.
 
 ## 7. Ship the app to your device (OTA — no rebuild)
-`EXPO_PUBLIC_API_BASE_URL` is inlined into the JS bundle at build time, so an
-OTA update carries the new URL **and** the catalog feature to the installed
-TestFlight build (runtime 54 must match):
+`EXPO_PUBLIC_API_BASE_URL` is inlined into the JS bundle **only because
+`getApiBaseUrl()` now reads it by literal dot notation** (see the R1 fix in
+`apps/mobile/src/config/api-base-url.ts`; bracket access is never inlined). The
+remaining trap is *which* environment EAS Update reads from: `eas update
+--environment production` resolves **EAS-stored Environment Variables** (the EAS
+dashboard / `eas env:*`), **NOT** `eas.json`'s `build.production.env` (codex R2
+critical). Since this plan keeps the URL in `eas.json` (not EAS-stored env), the
+reliable, unambiguous command **inlines the value into the update process env**,
+which `babel-preset-expo` then bakes into the published bundle:
 ```bash
-cd apps/mobile && eas update --channel production -m "point at Render + catalog"
+cd apps/mobile
+# Verify the URL actually lands in the bundle BEFORE shipping it:
+EXPO_PUBLIC_API_BASE_URL=$APP pnpm run typecheck   # sanity: still compiles
+# Publish the OTA bundle with the origin inlined into the update env:
+EXPO_PUBLIC_API_BASE_URL=$APP eas update --channel production -m "point at Render + catalog"
 ```
-Open the app → Apple Sign In → the generate/catalog tab → cards render.
+(Alternative: register the value as an EAS Environment Variable first —
+`eas env:create --name EXPO_PUBLIC_API_BASE_URL --value "$APP" --environment production`
+— and only then `eas update --channel production --environment production`. Do
+NOT rely on `--environment production` alone reading `eas.json` — it does not.)
+Then **verify on-device, not just in CI**: open the app → Apple Sign In → the
+generate/catalog tab → cards render. Confirm the requests hit Render (check
+`$APP` access logs or a network/Sentry breadcrumb showing the `onrender.com`
+origin) — a green guard test does NOT prove the device is talking to Render.
 (If `runtimeVersion` drifted or a native module changed, do a full `eas build`
 instead.)
 
@@ -392,9 +478,16 @@ git commit -m "docs(deploy): Render runbook + deprecate Fly runbook for the test
 
 ---
 
-## Task 4: Full gates + PR
+## Task 4: Full gates + PR + post-merge move verification
 
 **Files:** none (verification + PR).
+
+> **Acceptance is the backend MOVE, not the merge (codex R1 high).** The goal is
+> "device testing can resume," so merging the config is necessary but not
+> sufficient. Steps 4–5 below are **blocking acceptance** for the migration to be
+> considered done — they require operator accounts/creds and run post-merge
+> against the live Render service + `eas.json`'s confirmed URL. A green CI is not
+> "done"; a device fetching the catalog from `*.onrender.com` is.
 
 - [ ] **Step 1: Run the full per-language gates**
 
@@ -412,8 +505,29 @@ git push -u origin chore/backend-render-migration
 
 ```bash
 gh pr create --title "chore(deploy): migrate backend to Render (testing host) — Fly trial ended" \
-  --body "Fly app \`pov-api\` is suspended (free trial ended). Adds a free, no-card **Render** Docker Blueprint (\`render.yaml\`) that builds the existing root Dockerfile, runs \`alembic upgrade head\` then uvicorn on \$PORT (single free instance ⇒ no migration race), with Supabase unchanged. Re-points mobile \`EXPO_PUBLIC_API_BASE_URL\` to the Render URL (guard test enforces no fly.dev + one shared *.onrender.com URL). Adds a Render runbook + deprecates the Fly runbook for the testing phase. No app code / Dockerfile / fly.toml changes. Testing-only — launch reverts to Fly/Railway (≥1GB for /v1/diagnose). Known limits: 512MB (diagnose may OOM), cold starts. See docs/superpowers/specs/2026-06-23-render-backend-migration-design.md."
+  --body "Fly app \`pov-api\` is suspended (free trial ended). Adds a free, no-card **Render** Docker Blueprint (\`render.yaml\`) that builds the existing root Dockerfile, runs \`alembic upgrade head\` then uvicorn on \$PORT (single free instance ⇒ no migration race; migration is an accepted boot dependency for the testing host), with Supabase unchanged. Re-points mobile \`EXPO_PUBLIC_API_BASE_URL\` to the Render URL (guard test enforces no fly.dev + one shared *.onrender.com URL) and fixes \`getApiBaseUrl()\` to dot-notation env access so Expo actually inlines the URL into the OTA bundle. Adds a Render runbook + deprecates the Fly runbook for the testing phase. Testing-only — launch reverts to Fly/Railway (≥1GB for /v1/diagnose). Known limits: 512MB (diagnose may OOM), cold starts. Post-merge operator steps (create service, set secrets, resume Supabase, seed recipe, \`eas update\`) gate device verification — see runbook + design spec docs/superpowers/specs/2026-06-23-render-backend-migration-design.md."
 ```
+
+> **Note — replace the guessed URL before merge.** If the real Render subdomain
+> is not `pov-api.onrender.com`, update `eas.json` / `.env.example` / runbook / this
+> PR body to the confirmed `*.onrender.com` first (Task 2 blocking precondition).
+
+- [ ] **Step 4: Post-merge — deploy + smoke the Render service (blocking acceptance)**
+
+After merge, the operator runs the runbook (`docs/deploy-api-render.md`) §1–§4:
+create the Blueprint service, set the secrets, un-pause Supabase, deploy, then
+smoke `GET $APP/v1/health` → `{"status":"ok"}` and `GET $APP/v1/recipes` → 401.
+Confirm the migration (`alembic upgrade head`) ran in the deploy logs. If the real
+URL ≠ `pov-api.onrender.com`, land a follow-up one-line `eas.json` correction.
+
+- [ ] **Step 5: Post-merge — OTA verify on-device (blocking acceptance)**
+
+Seed a published recipe (runbook §6), publish the OTA bundle with the origin
+inlined into the update env (`EXPO_PUBLIC_API_BASE_URL=$APP eas update --channel
+production …`, runbook §7 — `--environment` alone does NOT read `eas.json`),
+then on the installed TestFlight build: Apple Sign In → catalog tab → cards
+render, with logs/breadcrumb confirming the `onrender.com` origin. Only then is
+the migration "done."
 
 ---
 
@@ -421,4 +535,12 @@ gh pr create --title "chore(deploy): migrate backend to Render (testing host) �
 
 - **Spec coverage:** Render free Docker service (Task 1 `render.yaml`); `$PORT` bind + migrate-via-`dockerCommand` (Task 1 + its test); Supabase unchanged (no DB task — intentional); secrets `sync:false` incl. corrected `FAL_API_KEY`-optional framing (Task 1 yaml comments + secret asserts); mobile URL re-point + guard test (Task 2); runbook + Fly deprecation + launch revert path (Task 3); no app-code change (constraint, honored — only config/docs/tests touched).
 - **Type/name consistency:** the chosen URL `https://pov-api.onrender.com` is used identically in `render.yaml` service name, `.env.example`, `eas.json`, and the runbook; the guard regex `https://<sub>.onrender.com` matches it; the Blueprint test asserts the exact `dockerCommand` tokens (`alembic upgrade head`, `uvicorn api.main:app`, `$PORT`) that the yaml contains.
-- **Deferred (not in this plan):** creating the Render account/service, setting dashboard secrets, un-pausing Supabase, seeding a recipe, and running `eas update` are operator steps in the runbook (require the user's accounts/creds) — not code, so not tasks.
+- **Deferred (not in this plan):** creating the Render account/service, setting dashboard secrets, un-pausing Supabase, seeding a recipe, and running `eas update` are operator steps in the runbook (require the user's accounts/creds) — but per Task 4 §4–§5 they are now **blocking acceptance** for the migration to count as done, not silently dropped.
+- **OTA correctness (R1 critical):** the URL only reaches the device because `getApiBaseUrl()` now uses literal dot-notation env access (Task 2 Step 0) and the OTA is published with the production environment resolved (`eas update … --environment production`). Both are guarded/tested.
+
+---
+
+## Revisions
+
+- 2026-06-24 R2: codex review R2 — applied 2 critical + 1 high (R2 also confirmed 3 R1 items closed). (C) Task 2 commit `git add` omitted the Step 0 source fix + inlining test → would push a branch without the OTA fix; commit now stages all four files. (C) `eas update --environment production` reads EAS-stored env vars, NOT `eas.json build.*.env` → runbook §7 + Task 4 §5 now use the inline `EXPO_PUBLIC_API_BASE_URL=$APP eas update …` form (with the `eas env:create` alternative documented). (H) Made the committed `pov-api.onrender.com` an explicit placeholder tied to the Task 4 §4 confirm-or-correct loop.
+- 2026-06-24 R1: codex review R1 — applied 2 critical + 3 high. (C) OTA inlining was broken (bracket env access not inlined by Expo) → added Task 2 Step 0 dot-notation fix + inlining guard test; (C) `eas update` now passes `--environment production` + bundle/device verification. (H) URL-before-service-exists made a blocking precondition; (H) Task 4 gained post-merge deploy-smoke + OTA on-device blocking acceptance; (H) migration-as-boot-dependency explicitly accepted + documented (`preDeployCommand` flagged for launch host). Codex confirmed `runtime:docker`/`dockerCommand` correct and the `parents[4]` / `../eas.json` paths correct (no change).
