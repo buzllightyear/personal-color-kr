@@ -1,3 +1,11 @@
+> **⚠️ DEPRECATED for the testing phase (2026-06-23).** The Fly app `pov-api`
+> is suspended (free trial ended). The backend currently runs on Render — see
+> [`deploy-api-render.md`](./deploy-api-render.md). Revisit Fly at launch (it
+> needs a credit card; ≥1GB for `/v1/diagnose`). This runbook is kept for that
+> launch-time revert.
+
+---
+
 # Phase 7.4 — Production deploy runbook (Fly.io API + iOS launch)
 
 The launch critical path is **backend-first**: the mobile app is inert until a
