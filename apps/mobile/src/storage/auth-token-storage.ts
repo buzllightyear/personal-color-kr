@@ -28,8 +28,19 @@ import * as SecureStore from 'expo-secure-store';
  * SecureStore namespaced key for the backend access token. The `pck.auth.*`
  * prefix (personal-color-kr) makes the key grep-discoverable and collision-safe
  * against the AsyncStorage `pck.referral.*` / `pck.post_payment.*` keys.
+ *
+ * `.v2` suffix (2026-06-24): the backend moved Fly → Render, which rotated
+ * `JWT_SECRET`, so every token minted against the old backend is now invalid
+ * (401). iOS Keychain persists SecureStore items across app DELETION + reinstall,
+ * so a stale `.accessToken` token survives uninstall, auto-passes the
+ * `diagnosis-input` sign-in gate (it checks token *presence*, not validity), and
+ * then 401s every authed call (catalog/gallery) with no way to re-auth in-app.
+ * Bumping the key namespace is the only reliable client-side invalidation: the
+ * new build reads `.v2` (empty) → the gate shows → the user re-auths against
+ * Render and gets a valid token. Follow-up (tracked): clear the token on a 401
+ * from an authed endpoint so future secret rotations / expiries self-heal.
  */
-export const AUTH_TOKEN_STORE_KEY = 'pck.auth.accessToken' as const;
+export const AUTH_TOKEN_STORE_KEY = 'pck.auth.accessToken.v2' as const;
 
 /**
  * Minimal structural slice of `expo-secure-store` this module drives —
