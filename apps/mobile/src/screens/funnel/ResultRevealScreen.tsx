@@ -114,7 +114,13 @@
  *     mode the CTA is removed from the tree entirely.
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type PressableStateCallbackType,
+} from 'react-native';
 import { FUNNEL_SCREENS } from 'core-ts/funnel';
 
 import { FunnelHeadline } from '../../components/FunnelHeadline';
@@ -257,6 +263,20 @@ void requirePrimaryCta();
  */
 export const SHARE_UNLOCK_CTA_LABEL = '친구와 공유하고 잠금 해제';
 
+/**
+ * Secondary CTA label that enters the content-generation home (recipe
+ * catalog). The diagnosis result is the moment the user has just signed in
+ * (the Apple Sign In gate is funnel step 7, upstream of this step 9), so this
+ * is the earliest point a real JWT exists — which the auth-gated catalog
+ * (`GET /v1/recipes`) needs. The catalog is deliberately decoupled from the
+ * funnel's share-to-unlock / payment path: browsing trends is free after
+ * sign-in; payment gates *generation*, not browsing.
+ */
+export const TRENDS_ENTRY_CTA_LABEL = '트렌드 시작하기';
+
+/** Stable testID for the secondary trends-entry CTA. */
+export const TRENDS_ENTRY_CTA_TEST_ID = 'result-reveal-trends-cta';
+
 export interface ResultRevealScreenProps {
   /**
    * Phase 2.1 share_token-driven preview mode. When `true`, the primary
@@ -304,10 +324,27 @@ export interface ResultRevealScreenProps {
    * fake-scan behaviour is preserved. Defaults to `null`.
    */
   readonly diagnosisResult?: DiagnosisResult | null;
+  /**
+   * Invoked when the user presses the secondary "트렌드 시작하기" CTA, which
+   * enters the content-generation home (recipe catalog). Parent wires this to
+   * `router.push('/(generate)/(tabs)/catalog')`. Rendered whenever
+   * `isPreviewMode === false` (both premium and non-premium branches) — the
+   * only branch without it is the read-only share-recipient preview. Optional
+   * with a no-op default so the screen stays renderable in unit tests without
+   * wiring navigation (mirrors {@link diagnosisResult}); the route always
+   * supplies the real handler.
+   */
+  readonly onBrowseTrends?: () => void;
 }
 
 export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactElement {
-  const { isPreviewMode, isPremium, onUnlock, diagnosisResult = null } = props;
+  const {
+    isPreviewMode,
+    isPremium,
+    onUnlock,
+    diagnosisResult = null,
+    onBrowseTrends = (): void => undefined,
+  } = props;
 
   // Headline source: prefer the live diagnosed category from the real
   // `/v1/diagnose` round-trip; fall back to the static teaser
@@ -325,6 +362,12 @@ export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactE
   // contract for Sub-AC 11.1 ("CTA visible only when isPreviewMode=false AND
   // isPremium=false") in one place.
   const shouldRenderUnlockCta = !isPreviewMode && !isPremium;
+
+  // The secondary trends-entry CTA (→ recipe catalog) renders on every
+  // non-preview branch: both the default (pre-payment) user and the premium
+  // user can browse trends. Only the read-only share-recipient preview
+  // (`isPreviewMode === true`) omits it.
+  const shouldRenderTrendsCta = !isPreviewMode;
 
   return (
     <FunnelScreenLayout
@@ -356,7 +399,48 @@ export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactE
           />
         </View>
       )}
+      {shouldRenderTrendsCta && (
+        <View style={styles.trendsCtaWrapper}>
+          <TrendsEntryButton onPress={onBrowseTrends} />
+        </View>
+      )}
     </FunnelScreenLayout>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Secondary "트렌드 시작하기" CTA — the in-app entry into the content-generation
+// home (recipe catalog). Kept screen-local (like the locked assets below): it
+// renders only on step 9, so a shared component would be a one-call-site
+// abstraction. An understated monochrome OUTLINE button (paper fill, ink line)
+// so it stays visually subordinate to the solid primary share-to-unlock CTA.
+// ---------------------------------------------------------------------------
+
+interface TrendsEntryButtonProps {
+  readonly onPress: () => void;
+}
+
+function TrendsEntryButton(props: TrendsEntryButtonProps): React.ReactElement {
+  const { onPress } = props;
+  // Function-form `style` to dip the fill on press without an animation lib —
+  // mirrors the FunnelPrimaryButton press-feedback idiom.
+  const buttonStyle = React.useCallback(
+    (state: PressableStateCallbackType) =>
+      state.pressed
+        ? [styles.trendsButton, styles.trendsButtonPressed]
+        : styles.trendsButton,
+    [],
+  );
+  return (
+    <Pressable
+      onPress={onPress}
+      style={buttonStyle}
+      testID={TRENDS_ENTRY_CTA_TEST_ID}
+      accessibilityRole="button"
+      accessibilityLabel={TRENDS_ENTRY_CTA_LABEL}
+    >
+      <Text style={styles.trendsButtonLabel}>{TRENDS_ENTRY_CTA_LABEL}</Text>
+    </Pressable>
   );
 }
 
@@ -565,5 +649,29 @@ const styles = StyleSheet.create({
   },
   ctaWrapper: {
     paddingBottom: SPACING.xl,
+  },
+  trendsCtaWrapper: {
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xl,
+  },
+  // Secondary outline CTA — monochrome editorial, subordinate to the solid
+  // primary. Same 18pt vertical tap target + near-square corners as the
+  // primary button; differentiated by paper fill + ink hairline border.
+  trendsButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 2,
+    backgroundColor: INK.paper,
+    borderWidth: 1,
+    borderColor: INK.line,
+    alignItems: 'center',
+  },
+  trendsButtonPressed: {
+    backgroundColor: INK.wash,
+  },
+  trendsButtonLabel: {
+    fontFamily: FONT.medium,
+    fontSize: 16,
+    color: INK.primary,
   },
 });
