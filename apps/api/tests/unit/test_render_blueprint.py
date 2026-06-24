@@ -40,6 +40,12 @@ def test_render_blueprint_migrates_then_serves_on_injected_port() -> None:
     assert "uvicorn api.main:app" in cmd
     # Render injects $PORT; the command must bind it, not a hardcoded port.
     assert "$PORT" in cmd
+    # Migration must complete before the server starts.
+    assert cmd.index("alembic upgrade head") < cmd.index(
+        "uvicorn api.main:app"
+    ), "migration must run before the server starts"
+    # A mistyped host silently breaks the Render health check.
+    assert "--host 0.0.0.0" in cmd
 
 
 def test_render_blueprint_declares_required_secrets_uncommitted() -> None:
