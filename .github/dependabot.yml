@@ -1,0 +1,43 @@
+# Deliberate, reviewed dependency updates — the "bump deliberately via PR" half
+# of the toolchain principle (see docs/decisions/0001-toolchain-pinning.md).
+# Dependabot opens update PRs that must pass the same CI gate before merge; we
+# never auto-chase "latest" in place. GitHub-native (no external app to install).
+version: 2
+updates:
+  # JS/TS workspaces (pnpm). Pointing at the repo root covers the pnpm
+  # workspace; Dependabot reads pnpm-lock.yaml. Patch+minor are grouped into a
+  # single weekly PR to keep noise down; majors come as individual PRs so each
+  # breaking bump is reviewed on its own.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      js-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions versions (e.g. pnpm/action-setup, actions/checkout) — these
+  # drift silently and we just had to touch the pnpm setup, so keep them current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types:
+          - minor
+          - patch
+
+  # Python backend deps (packages/core-python pyproject.toml).
+  - package-ecosystem: pip
+    directory: /packages/core-python
+    schedule:
+      interval: weekly
+    groups:
+      py-minor-patch:
+        update-types:
+          - minor
+          - patch
