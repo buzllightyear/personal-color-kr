@@ -10,7 +10,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.onrender.com",
         "SENTRY_ORG": "method-c3",
         "SENTRY_PROJECT": "react-native",
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
@@ -25,7 +25,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.onrender.com",
         "SENTRY_ORG": "method-c3",
         "SENTRY_PROJECT": "react-native",
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
@@ -38,7 +38,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.onrender.com",
         "SENTRY_ORG": "method-c3",
         "SENTRY_PROJECT": "react-native",
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"
@@ -51,7 +51,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.fly.dev",
+        "EXPO_PUBLIC_API_BASE_URL": "https://pov-api.onrender.com",
         "SENTRY_ORG": "method-c3",
         "SENTRY_PROJECT": "react-native",
         "SENTRY_DSN_MOBILE": "https://16b8cab11e5e8cd901ebdc67713b0728@o4511587490070528.ingest.us.sentry.io/4511587498590208"

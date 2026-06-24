@@ -1,0 +1,35 @@
+# Render Blueprint — TESTING-ONLY backend host (free, no credit card).
+# The production launch host is Fly or Railway (>=1GB so /v1/diagnose's
+# mediapipe works + no cold starts); see docs/deploy-api-render.md and
+# docs/superpowers/specs/2026-06-23-render-backend-migration-design.md.
+#
+# Builds the host-agnostic root Dockerfile. Migrations run here (single free
+# instance => no race) via dockerCommand, NOT in the Dockerfile CMD.
+# TRADEOFF (accepted, testing-only): chaining `alembic upgrade head` into
+# dockerCommand makes a live Supabase connection a BOOT dependency -- if the DB
+# is paused/unreachable, /v1/health never comes up. The launch host should move
+# migration to a dedicated pre-deploy/release phase (Render: preDeployCommand)
+# so DB issues don't take down a healthy instance.
+services:
+  - type: web
+    name: pov-api
+    runtime: docker
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /v1/health
+    dockerCommand: sh -c "cd /app/apps/api && alembic upgrade head && cd /app && uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      # Required — set the values in the Render dashboard (never committed).
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: APPLE_BUNDLE_ID
+        sync: false
+      # Optional — uncomment/set in the dashboard to enable the feature:
+      #   ADMIN_TOKEN   -> /v1/admin/recipes (seed published recipes)
+      #   FAL_API_KEY   -> /v1/generate + admin Fal.ai preview
+      #   SENTRY_DSN_API-> error reporting
