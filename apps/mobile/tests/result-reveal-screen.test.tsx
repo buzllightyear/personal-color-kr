@@ -38,6 +38,7 @@ vi.mock('react-native', async () => {
     View: makeHost('View'),
     Text: makeHost('Text'),
     Pressable: makeHost('Pressable'),
+    ScrollView: makeHost('ScrollView'),
     StyleSheet: {
       create: (s: Record<string, unknown>): Record<string, unknown> => s,
       flatten: (s: unknown): unknown => s,

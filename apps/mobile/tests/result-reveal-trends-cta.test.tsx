@@ -35,6 +35,7 @@ vi.mock('react-native', async () => {
     View: makeHost('View'),
     Text: makeHost('Text'),
     Pressable: makeHost('Pressable'),
+    ScrollView: makeHost('ScrollView'),
     StyleSheet: {
       create: (s: Record<string, unknown>): Record<string, unknown> => s,
       flatten: (s: unknown): unknown => s,
@@ -135,6 +136,27 @@ describe('ResultRevealScreen — trends-entry CTA', () => {
     );
     expect(findHostByTestId(tree, TRENDS_CTA_TEST_ID)).toBeNull();
     expect(findTextNodesWithLabel(tree, TRENDS_CTA_LABEL)).toHaveLength(0);
+  });
+
+  it('renders the CTAs inside a ScrollView so they cannot clip off a fixed viewport', () => {
+    // Structural guard for the layout-clipping bug: FunnelScreenLayout is a
+    // non-scrolling frame, and three locked-asset cards + two CTAs can exceed a
+    // phone viewport — without a ScrollView the trends CTA renders in the tree
+    // (so the visibility tests above pass) yet is clipped off-screen on device.
+    // react-test-renderer has no layout engine, so we assert the scroll
+    // container is present rather than measuring pixels.
+    const tree = render(
+      React.createElement(ResultRevealScreen, {
+        isPreviewMode: false,
+        isPremium: false,
+        onUnlock: NO_OP,
+        onBrowseTrends: NO_OP,
+      }),
+    );
+    const scrollViews = tree.root.findAll(
+      (node) => typeof node.type === 'string' && node.type === 'ScrollView',
+    );
+    expect(scrollViews.length).toBeGreaterThanOrEqual(1);
   });
 
   it('invokes onBrowseTrends exactly once when the trends CTA is pressed', () => {

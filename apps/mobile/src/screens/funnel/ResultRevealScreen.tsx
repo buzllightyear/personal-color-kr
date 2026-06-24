@@ -116,6 +116,7 @@
 import * as React from 'react';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -374,36 +375,55 @@ export function ResultRevealScreen(props: ResultRevealScreenProps): React.ReactE
       testID="result-reveal-screen"
       accessibilityLabel="진단 결과 부분 공개"
     >
-      <FunnelHeadline
-        headline={headline}
-        subhead={SCREEN.subhead}
-        testIDPrefix="result-reveal"
-      />
-      {SCREEN.bodyCopy !== null && (
-        <Text style={styles.bodyCopy} testID="result-reveal-body-copy">
-          {SCREEN.bodyCopy}
-        </Text>
-      )}
-      <View style={styles.assetStack} testID="result-reveal-locked-asset-list">
-        {LOCKED_ASSETS.map((asset) => (
-          <LockedAsset key={asset.assetKey} config={asset} isPremium={isPremium} />
-        ))}
-      </View>
-      {shouldRenderUnlockCta && (
-        <View style={styles.ctaWrapper}>
-          <FunnelPrimaryButton
-            label={SHARE_UNLOCK_CTA_LABEL}
-            onPress={onUnlock}
-            testID="result-reveal-unlock-cta"
-            accessibilityLabel={SHARE_UNLOCK_CTA_LABEL}
-          />
+      {/*
+       * Scrollable: the three locked-asset placeholders plus the CTA(s) can
+       * exceed a fixed phone viewport (especially with the secondary trends
+       * CTA below the primary). FunnelScreenLayout is a non-scrolling frame, so
+       * without this the last CTA clips off the bottom edge — unreachable on
+       * device even though it renders in the tree. `flexGrow: 1` lets the
+       * content still fill the viewport (and the asset stack push the CTAs
+       * toward the bottom) when it is shorter than the screen.
+       */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <FunnelHeadline
+          headline={headline}
+          subhead={SCREEN.subhead}
+          testIDPrefix="result-reveal"
+        />
+        {SCREEN.bodyCopy !== null && (
+          <Text style={styles.bodyCopy} testID="result-reveal-body-copy">
+            {SCREEN.bodyCopy}
+          </Text>
+        )}
+        <View style={styles.assetStack} testID="result-reveal-locked-asset-list">
+          {LOCKED_ASSETS.map((asset) => (
+            <LockedAsset key={asset.assetKey} config={asset} isPremium={isPremium} />
+          ))}
         </View>
-      )}
-      {shouldRenderTrendsCta && (
-        <View style={styles.trendsCtaWrapper}>
-          <TrendsEntryButton onPress={onBrowseTrends} />
-        </View>
-      )}
+        {/* Sticky-footer spacer: absorbs slack so the CTAs sit at the bottom
+            when content is shorter than the viewport, and collapses to 0 (the
+            content scrolls) when it overflows. */}
+        <View style={styles.flexSpacer} />
+        {shouldRenderUnlockCta && (
+          <View style={styles.ctaWrapper}>
+            <FunnelPrimaryButton
+              label={SHARE_UNLOCK_CTA_LABEL}
+              onPress={onUnlock}
+              testID="result-reveal-unlock-cta"
+              accessibilityLabel={SHARE_UNLOCK_CTA_LABEL}
+            />
+          </View>
+        )}
+        {shouldRenderTrendsCta && (
+          <View style={styles.trendsCtaWrapper}>
+            <TrendsEntryButton onPress={onBrowseTrends} />
+          </View>
+        )}
+      </ScrollView>
     </FunnelScreenLayout>
   );
 }
@@ -585,8 +605,17 @@ const styles = StyleSheet.create({
     color: INK.primary,
     paddingTop: SPACING.md,
   },
-  assetStack: {
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  flexSpacer: {
+    flex: 1,
+    minHeight: SPACING.lg,
+  },
+  assetStack: {
     paddingTop: SPACING.lg,
     gap: SPACING.lg,
   },
