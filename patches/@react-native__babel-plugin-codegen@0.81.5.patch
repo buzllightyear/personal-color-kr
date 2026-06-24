@@ -1,0 +1,55 @@
+diff --git a/index.js b/index.js
+index a11ddd97f3189aef5797ce3554544dba73a37a4c..4fc65a51d50570b567af0ca7b7b08e6eb7563373 100644
+--- a/index.js
++++ b/index.js
+@@ -105,6 +105,20 @@ function isCodegenDeclaration(declaration) {
+ module.exports = function ({parse, types: t}) {
+   return {
+     pre(state) {
++      // PATCH (pnpm monorepo): babel-preset-expo + @react-native/babel-preset
++      // can register this plugin twice, so its visitors run a SECOND time over
++      // an AST the first pass already rewrote. That second pass crashes RN 0.81
++      // `*NativeComponent` flow files — either reading `.loc` of a now-detached
++      // default-export node ("Cannot read properties of null (reading 'loc')"),
++      // or throwing a bogus "'Commands' is a reserved export" on generated code.
++      // All plugin passes share one `state` (BabelFile) and every `pre()` runs
++      // before the single merged traversal, so the first instance claims the
++      // file and any later instance is made fully inert.
++      if (state.__rnCodegenClaimed) {
++        this._skipCodegen = true;
++        return;
++      }
++      state.__rnCodegenClaimed = true;
+       this.code = state.code;
+       this.filename = state.opts.filename;
+       this.defaultExport = null;
+@@ -113,6 +127,9 @@ module.exports = function ({parse, types: t}) {
+     },
+     visitor: {
+       ExportNamedDeclaration(path) {
++        if (this._skipCodegen) {
++          return;
++        }
+         if (this.codeInserted) {
+           return;
+         }
+@@ -164,6 +181,9 @@ module.exports = function ({parse, types: t}) {
+         }
+       },
+       ExportDefaultDeclaration(path, state) {
++        if (this._skipCodegen) {
++          return;
++        }
+         if (isCodegenDeclaration(path.node.declaration)) {
+           this.defaultExport = path;
+         }
+@@ -171,6 +191,9 @@ module.exports = function ({parse, types: t}) {
+ 
+       Program: {
+         exit(path) {
++          if (this._skipCodegen) {
++            return;
++          }
+           if (this.defaultExport) {
+             const viewConfig = generateViewConfig(this.filename, this.code);
+ 

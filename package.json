@@ -16,6 +16,9 @@
   "pnpm": {
     "overrides": {
       "@types/react": "19.1.17"
+    },
+    "patchedDependencies": {
+      "@react-native/babel-plugin-codegen@0.81.5": "patches/@react-native__babel-plugin-codegen@0.81.5.patch"
     }
   },
   "devDependencies": {
