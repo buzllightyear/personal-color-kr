@@ -46,6 +46,13 @@ def test_render_blueprint_migrates_then_serves_on_injected_port() -> None:
     ), "migration must run before the server starts"
     # A mistyped host silently breaks the Render health check.
     assert "--host 0.0.0.0" in cmd
+    # Render already runs dockerCommand through its own shell. An explicit
+    # `sh -c "..."` wrapper double-wraps it, so the whole `cd ... && uvicorn`
+    # chain is parsed as one command name -> Exited with status 127. Keep the
+    # command raw (no self-added shell wrapper).
+    assert not cmd.lstrip().startswith(
+        "sh -c"
+    ), "do not wrap dockerCommand in `sh -c` -- Render double-wraps it (status 127)"
 
 
 def test_render_blueprint_declares_required_secrets_uncommitted() -> None:
