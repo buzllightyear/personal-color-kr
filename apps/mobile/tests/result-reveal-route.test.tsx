@@ -164,6 +164,21 @@ describe('result-reveal route wrapper', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it('navigates to /(generate)/(tabs)/catalog when the trends CTA is pressed', () => {
+    // The trends-entry CTA is the in-app door into the content-generation
+    // home (recipe catalog). The route wires `onBrowseTrends` to the literal
+    // grouped path; assert the exact string (not `catalog` or `/catalog`) so
+    // an expo-router group-path regression is caught here.
+    mockSearchParams.current = {};
+    mockPush.mockClear();
+    const tree = renderRoute(false);
+    const cta = findHostByTestId(tree, 'result-reveal-trends-cta');
+    expect(cta).toBeTruthy();
+    const onPress = cta?.props.onPress as () => void;
+    act(() => onPress());
+    expect(mockPush).toHaveBeenCalledWith('/(generate)/(tabs)/catalog');
+  });
+
   it('hides the share-to-unlock CTA when payment.isPremium is true (Sub-AC 11.1 wiring)', () => {
     // Phase 2.4: when the FunnelStateProvider payment slice already has
     // `isPremium: true` (set by the placeholder payment flow on step 12),

@@ -110,6 +110,7 @@ export default function ResultRevealRoute(): JSX.Element {
       isPreviewMode={isPreviewMode}
       isPremium={isPremium}
       onUnlock={() => router.push('/(funnel)/referral-gate')}
+      onBrowseTrends={() => router.push('/(generate)/(tabs)/catalog')}
       diagnosisResult={diagnosis.result}
     />
   );
