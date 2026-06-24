@@ -75,6 +75,13 @@ jobs:
       - name: Install Node.js dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Route reachability
+        # Ratchet guard (docs/decisions/0002): fail if any Expo Router group
+        # under apps/mobile/app/ has no inbound navigation — i.e. a fully-built
+        # surface that is unreachable on device (the content-gen catalog class).
+        # Pure node, no deps; runs early for a fast structural signal.
+        run: node scripts/check-route-reachability.mjs
+
       - name: Install Python dependencies
         # `pyproject.toml` only declares runtime deps (python-dotenv). We
         # install pytest separately since it is a CI-only requirement.

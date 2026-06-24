@@ -98,6 +98,7 @@ The product surface beside diagnosis. Operator curates **recipes**, users turn a
 
 ## Conventions & gotchas
 
+- **Decisions & completeness.** Cross-cutting decisions live as ADRs in `docs/decisions/` (toolchain pinning → 0001; feature reachability + the ratchet/critic/DoD strategy → 0002). Before calling a user-facing feature "done", run `docs/review-checklist.md` (reachability, integration, tracked deferrals). New Expo Router groups are reachability-gated in CI (`scripts/check-route-reachability.mjs`) — a built-but-unwired group fails the build.
 - **`exactOptionalPropertyTypes: true`** is on at the root tsconfig. Use `| null` (not `| undefined`) for "absent" fields, and conditionally **spread** optional props (`{...(x !== undefined ? { x } : {})}`) rather than passing `undefined`.
 - **Mobile vitest runs in a `node` env** and cannot parse native modules. Native imports are aliased to inert stubs in `apps/mobile/vitest.config.ts` (`use-app-fonts`, `react-native-svg`, `expo-image-picker`, `expo-linking`, `expo-apple-authentication`, `expo-secure-store`, `expo-media-library`, `expo-file-system`). A new native dependency that gets imported in rendered code needs a stub + alias there.
 - **Async capture/press handlers**: tap-and-assert tests must use `await act(async () => { onPress(); })` (react-test-renderer) since handlers now await.
