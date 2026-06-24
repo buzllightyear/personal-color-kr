@@ -3,13 +3,15 @@
 # mediapipe works + no cold starts); see docs/deploy-api-render.md and
 # docs/superpowers/specs/2026-06-23-render-backend-migration-design.md.
 #
-# Builds the host-agnostic root Dockerfile. Migrations run here (single free
-# instance => no race) via dockerCommand, NOT in the Dockerfile CMD.
-# NOTE: do NOT wrap dockerCommand in `sh -c "..."` -- Render already runs the
-# dockerCommand through its own shell, so an explicit `sh -c` double-wraps it
-# and the whole `cd ... && ... uvicorn` chain is parsed as one command name ->
-# `Exited with status 127` (`sh: 1: ...: not found`). Write the raw chained
-# command; Render's shell expands $PORT and handles `&&`.
+# Builds the host-agnostic root Dockerfile. Migrations run at boot (single free
+# instance => no race) via the start script, NOT in the Dockerfile CMD.
+# IMPORTANT: dockerCommand must be a single, space-free absolute PATH. Render
+# treats the dockerCommand string as one command, so an `&&`-chained inline
+# command (`cd ... && alembic upgrade head && uvicorn ...`) is parsed as a
+# single command name and fails with `Exited with status 127`
+# (`sh: 1: ...: not found`). The migrate-then-serve sequence therefore lives in
+# apps/api/render-start.sh (an executable script copied into the image at
+# /app/apps/api/render-start.sh).
 # TRADEOFF (accepted, testing-only): chaining `alembic upgrade head` into
 # dockerCommand makes a live Supabase connection a BOOT dependency -- if the DB
 # is paused/unreachable, /v1/health never comes up. The launch host should move
@@ -25,7 +27,7 @@ services:
     plan: free
     region: singapore
     healthCheckPath: /v1/health
-    dockerCommand: "cd /app/apps/api && alembic upgrade head && cd /app && uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+    dockerCommand: /app/apps/api/render-start.sh
     envVars:
       # Required — set the values in the Render dashboard (never committed).
       - key: DATABASE_URL

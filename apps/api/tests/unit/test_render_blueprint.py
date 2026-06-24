@@ -8,6 +8,7 @@ mirror the migration design spec
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,11 @@ import yaml
 # apps/api/tests/unit/test_render_blueprint.py -> repo root is 4 parents up.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RENDER_YAML = _REPO_ROOT / "render.yaml"
+_START_SCRIPT = _REPO_ROOT / "apps" / "api" / "render-start.sh"
+
+# Where the start script lands inside the image (Dockerfile COPYs apps/api to
+# /app/apps/api); render.yaml's dockerCommand must point at this exact path.
+_START_SCRIPT_IMAGE_PATH = "/app/apps/api/render-start.sh"
 
 
 def _service() -> dict[str, Any]:
@@ -34,25 +40,38 @@ def test_render_blueprint_is_a_free_docker_web_service() -> None:
     assert svc["healthCheckPath"] == "/v1/health"
 
 
-def test_render_blueprint_migrates_then_serves_on_injected_port() -> None:
+def test_render_blueprint_dockercommand_is_the_single_path_start_script() -> None:
     cmd: str = _service()["dockerCommand"]
-    assert "alembic upgrade head" in cmd
-    assert "uvicorn api.main:app" in cmd
-    # Render injects $PORT; the command must bind it, not a hardcoded port.
-    assert "$PORT" in cmd
+    # Render treats dockerCommand as a single command, so a `&&`-chained inline
+    # command is parsed as one command name -> Exited with status 127. The
+    # dockerCommand must be a single, space-free path to the start script.
+    assert cmd == _START_SCRIPT_IMAGE_PATH, (
+        "dockerCommand must be the bare start-script path "
+        f"{_START_SCRIPT_IMAGE_PATH!r} (Render mangles chained/quoted commands)"
+    )
+    assert "&&" not in cmd
+    assert " " not in cmd
+
+
+def test_render_start_script_migrates_then_serves_on_injected_port() -> None:
+    script = _START_SCRIPT.read_text()
+    assert script.startswith("#!/bin/sh"), "start script needs a /bin/sh shebang"
+    assert "alembic upgrade head" in script
+    assert "uvicorn api.main:app" in script
+    # Render injects $PORT; bind it, not a hardcoded port.
+    assert "PORT" in script
+    # A mistyped host silently breaks the Render health check.
+    assert "--host 0.0.0.0" in script
     # Migration must complete before the server starts.
-    assert cmd.index("alembic upgrade head") < cmd.index(
+    assert script.index("alembic upgrade head") < script.index(
         "uvicorn api.main:app"
     ), "migration must run before the server starts"
-    # A mistyped host silently breaks the Render health check.
-    assert "--host 0.0.0.0" in cmd
-    # Render already runs dockerCommand through its own shell. An explicit
-    # `sh -c "..."` wrapper double-wraps it, so the whole `cd ... && uvicorn`
-    # chain is parsed as one command name -> Exited with status 127. Keep the
-    # command raw (no self-added shell wrapper).
-    assert not cmd.lstrip().startswith(
-        "sh -c"
-    ), "do not wrap dockerCommand in `sh -c` -- Render double-wraps it (status 127)"
+
+
+def test_render_start_script_is_executable() -> None:
+    # Render runs the script by bare path, so it must carry the exec bit
+    # (committed mode 755) -- otherwise: permission denied at boot.
+    assert os.access(_START_SCRIPT, os.X_OK), "render-start.sh must be executable"
 
 
 def test_render_blueprint_declares_required_secrets_uncommitted() -> None:
