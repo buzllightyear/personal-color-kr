@@ -25,6 +25,7 @@
  */
 import * as React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { GenerationErrorKind } from '../../request-generation';
 import { COLORS, SPACING } from '../../theme';
@@ -82,7 +83,7 @@ export function GenerationScreen(props: GenerationScreenProps): React.ReactEleme
   const { status, imageDataUri, errorKind, onGenerate, onRetry } = props;
 
   return (
-    <View testID="generation-screen" style={styles.container}>
+    <SafeAreaView testID="generation-screen" edges={['top']} style={styles.container}>
       <Text style={styles.title}>{_COPY.title}</Text>
 
       {status === 'idle' && (
@@ -129,7 +130,7 @@ export function GenerationScreen(props: GenerationScreenProps): React.ReactEleme
           )}
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

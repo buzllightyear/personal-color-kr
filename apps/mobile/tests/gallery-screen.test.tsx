@@ -9,6 +9,17 @@ import * as React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { describe, expect, it, vi } from 'vitest';
 
+// SafeAreaView passthrough — the screen wraps its root in the safe-area-context
+// SafeAreaView (top inset). The node env has no native module, so render it as
+// a plain host that forwards props/children (edges/testID flow through).
+vi.mock('react-native-safe-area-context', async () => {
+  const reactActual: typeof import('react') = await vi.importActual('react');
+  return {
+    SafeAreaView: (props: Record<string, unknown> & { children?: React.ReactNode }) =>
+      reactActual.createElement('SafeAreaView', props, props?.children),
+  };
+});
+
 vi.mock('react-native', async () => {
   const reactActual: typeof import('react') = await vi.importActual('react');
   const makeHost =
