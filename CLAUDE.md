@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `packages/core-ts` | TypeScript (vitest) | Shared **funnel content/order + analytics contracts**; consumed by mobile via subpath exports |
 | `packages/core-python` | Python (pytest) | Diagnosis ML pipeline **+ the fal.ai content-generation pipeline** (`personal_color.generate`); installed editably into `apps/api` |
 
-TS workspaces use **pnpm** (pnpm 9, `lockfileVersion 9.0`). Python uses editable `pip install -e`.
+TS workspaces use **pnpm** (pnpm 10, pinned via the root `packageManager: "pnpm@10.x"` field; `lockfileVersion 9.0`). Python uses editable `pip install -e`. **Use pnpm 10 locally** (corepack honors `packageManager`) — a lockfile written by pnpm 9 stores `patchedDependencies` with a different hash algorithm and CI's `pnpm install --frozen-lockfile` then rejects it (`ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`). pnpm 10 also does **not** run dependency build scripts unless allowlisted: `pnpm.onlyBuiltDependencies` lists the four that need it (`@sentry/cli`, `esbuild`, `sharp`, `unrs-resolver`) — adding a dep with a postinstall/native build step means adding it there too, or vitest/eslint/web-build silently break.
 
 ## Commands
 
@@ -58,7 +58,7 @@ cd apps/mobile && EXPO_PUBLIC_API_BASE_URL=http://localhost:8000 npx expo start 
 
 The API reads the **root `.env`** at startup (`src/api/config/env.py`); `DATABASE_URL` (asyncpg URL — must use `postgresql+asyncpg://`) and `JWT_SECRET` are required. `uvicorn` boots without them but DB and auth endpoints then fail. The integration test tier uses `DATABASE_URL_TEST`. Content generation additionally reads `FAL_API_KEY` (required to actually call fal.ai), `ADMIN_TOKEN` (admin routes), and the optional `S3_*` / `IMAGE_TTL_DAYS` (absent → in-memory image store); all default-absent so the app still boots — see `.env.example`.
 
-Always run `eas`/`expo` commands from `apps/mobile`, never the repo root — running from root creates a stray root `app.json` stub and trips npm-vs-pnpm detection. Do **not** add a `packageManager` field (it conflicts with the pnpm 9 CI setup).
+Always run `eas`/`expo` commands from `apps/mobile`, never the repo root — running from root creates a stray root `app.json` stub and trips npm-vs-pnpm detection. The root `packageManager: "pnpm@10.x"` field is intentional (it pins one pnpm major across CI, EAS Build, and local via corepack) — keep it; do not remove it. Note `eas update` re-injects an `updates.url` / `runtimeVersion` / `usesAppleSignIn` block into `apps/mobile/app.json`, but `app.config.ts` is canonical and already sets all of those (the OTA URL is derived from `extra.eas.projectId`), so that injected block is redundant churn — revert it.
 
 ## Architecture
 
