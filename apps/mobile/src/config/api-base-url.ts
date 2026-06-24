@@ -45,7 +45,7 @@ export const API_BASE_URL_ENV_KEY = 'EXPO_PUBLIC_API_BASE_URL' as const;
  *   an empty string when the env var is unset / blank.
  */
 export function getApiBaseUrl(): string {
-  const raw = process.env[API_BASE_URL_ENV_KEY];
+  const raw = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (raw === undefined || raw.length === 0) {
     return '';
   }
