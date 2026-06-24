@@ -24,6 +24,7 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { getApiBaseUrl } from '../../src/config/api-base-url';
 import { getAuthToken } from '../../src/config/auth-token';
+import { clearTokenOnUnauthorized } from '../../src/clear-token-on-unauthorized';
 import { pickSelfie } from '../../src/pick-selfie';
 import {
   createGenerationTransport,
@@ -73,6 +74,9 @@ export default function GenerateRoute(): React.ReactElement {
       setImageDataUri(result.imageDataUri);
       setStatus('success');
     } catch (err) {
+      // Self-heal: a 401 (unauthorized) means the stored token is invalid —
+      // discard it so the step-7 gate re-shows and the user re-authenticates.
+      await clearTokenOnUnauthorized(err);
       setErrorKind(err instanceof GenerationRequestError ? err.kind : 'unknown');
       setStatus('error');
     }

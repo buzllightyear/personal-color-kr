@@ -34,6 +34,7 @@
  *   fields; only the fields needed for catalog display and recipe
  *   selection are projected here.
  */
+import { ApiError } from './api-error';
 import { getApiBaseUrl } from './config/api-base-url';
 
 // ---------------------------------------------------------------------------
@@ -220,7 +221,8 @@ export function createRecipeCatalogTransport(
     });
 
     if (!response.ok) {
-      throw new Error(
+      throw new ApiError(
+        response.status,
         `GET ${RECIPE_CATALOG_PATH} failed with status ${response.status}`,
       );
     }

@@ -70,6 +70,10 @@ import DiagnosisInputRoute from '../app/(funnel)/diagnosis-input';
 import { FunnelStateProvider } from '../src/providers/FunnelStateProvider';
 import { APPLE_SIGN_IN_BUTTON_TEST_ID } from '../src/components/funnel/AppleSignInButton';
 import { DIAGNOSIS_SIGN_IN_GATE_ERROR_TEST_ID } from '../src/screens/funnel/DiagnosisSignInGateScreen';
+import {
+  SIGN_IN_NETWORK_MESSAGE,
+  SIGN_IN_REJECTED_MESSAGE,
+} from '../src/sign-in-error-message';
 
 interface TestInstance {
   readonly props: Record<string, unknown>;
@@ -129,11 +133,24 @@ describe('diagnosis-input route — Apple Sign In gate', () => {
     expect(findHostByTestId(tree, 'diagnosis-sign-in-gate-screen')).toBeNull();
   });
 
-  it('shows the error copy and stays on the gate when sign-in fails', async () => {
+  it('shows the rejection copy on a backend rejection (httpStatus present)', async () => {
     runSignInMock.mockResolvedValue({ status: 'error', httpStatus: 401 });
     const tree = await renderRoute();
     await pressAppleButton(tree);
-    expect(findHostByTestId(tree, DIAGNOSIS_SIGN_IN_GATE_ERROR_TEST_ID)).toBeTruthy();
+    const errorNode = findHostByTestId(tree, DIAGNOSIS_SIGN_IN_GATE_ERROR_TEST_ID);
+    expect(errorNode).toBeTruthy();
+    expect(errorNode?.props.children).toBe(SIGN_IN_REJECTED_MESSAGE);
+    expect(findHostByTestId(tree, 'diagnosis-input-screen')).toBeNull();
+  });
+
+  it('shows the connectivity copy when the backend was unreachable (httpStatus null)', async () => {
+    runSignInMock.mockResolvedValue({ status: 'error', httpStatus: null });
+    const tree = await renderRoute();
+    await pressAppleButton(tree);
+    const errorNode = findHostByTestId(tree, DIAGNOSIS_SIGN_IN_GATE_ERROR_TEST_ID);
+    expect(errorNode).toBeTruthy();
+    expect(errorNode?.props.children).toBe(SIGN_IN_NETWORK_MESSAGE);
+    expect(errorNode?.props.children).not.toBe(SIGN_IN_REJECTED_MESSAGE);
     expect(findHostByTestId(tree, 'diagnosis-input-screen')).toBeNull();
   });
 
