@@ -50,7 +50,7 @@ jobs:
       DATABASE_URL_TEST: postgresql+asyncpg://pck:pck_dev_only@127.0.0.1:5432/pck_test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
         # No `version:` here — pnpm/action-setup@v4 reads the pinned version
