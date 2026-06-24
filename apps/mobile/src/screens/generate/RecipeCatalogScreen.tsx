@@ -53,6 +53,7 @@
  */
 import * as React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { CatalogRecipe } from '../../fetch-recipe-catalog';
 import { COLORS, SPACING } from '../../theme';
@@ -133,7 +134,11 @@ export function RecipeCatalogScreen(
   }
 
   return (
-    <View testID="recipe-catalog-screen" style={styles.container}>
+    <SafeAreaView
+      testID="recipe-catalog-screen"
+      edges={['top']}
+      style={styles.container}
+    >
       <Text style={styles.heading}>트렌드 레시피</Text>
       <ScrollView contentContainerStyle={styles.list} testID="recipe-catalog-list">
         {sorted.map((recipe) => (
@@ -194,7 +199,7 @@ export function RecipeCatalogScreen(
           </Pressable>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

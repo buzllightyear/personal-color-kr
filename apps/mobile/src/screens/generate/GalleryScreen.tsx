@@ -22,6 +22,7 @@
  */
 import * as React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS, SPACING } from '../../theme';
 
@@ -81,7 +82,7 @@ export function GalleryScreen(props: GalleryScreenProps): React.ReactElement {
   }
 
   return (
-    <View testID="gallery-screen" style={styles.container}>
+    <SafeAreaView testID="gallery-screen" edges={['top']} style={styles.container}>
       <Text style={styles.heading}>내 갤러리</Text>
       <ScrollView contentContainerStyle={styles.list} testID="gallery-list">
         {items.map((item) => (
@@ -109,7 +110,7 @@ export function GalleryScreen(props: GalleryScreenProps): React.ReactElement {
           </View>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
