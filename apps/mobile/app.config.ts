@@ -587,6 +587,19 @@ export default function defineExpoConfig({
       buildSentryPluginEntry(),
     ],
     runtimeVersion: EXPO_RUNTIME_VERSION,
+    // expo-updates (OTA) configuration. WITHOUT an explicit `updates.url`,
+    // `expo-updates` builds with `EXUpdatesEnabled = false` — the app never
+    // polls for OTA, so `eas update` publishes are silently never received
+    // (this is exactly what forced repeated native rebuilds). The URL is the
+    // EAS Update endpoint for this project (`extra.eas.projectId`). Set here in
+    // the canonical dynamic config — NOT injected ad-hoc into app.json by
+    // `eas update:configure` (that injection kept getting reverted as "churn").
+    // The delivery channel (production/preview/...) is selected per build by
+    // `eas.json`'s `build.<profile>.channel`; runtimeVersion above gates which
+    // updates a given binary accepts.
+    updates: {
+      url: 'https://u.expo.dev/534c9536-36e3-4df7-ac31-88d95971d330',
+    },
     ios: {
       // MERGE the static app.json `ios` block (NOT replace it). app.json owns
       // ios.config.usesNonExemptEncryption, ios.infoPlist (camera/photo usage
