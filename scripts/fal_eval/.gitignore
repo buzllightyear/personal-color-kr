@@ -1,0 +1,9 @@
+# NEVER commit test selfies, generated outputs, scoring artifacts, env, or keys.
+# selfies/ + real_holdout/ contain consented faces (privacy); out/ is paid output.
+selfies/
+real_holdout/
+out/
+.venv/
+__pycache__/
+*.pyc
+.env

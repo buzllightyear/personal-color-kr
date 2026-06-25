@@ -1,0 +1,7 @@
+# fal eval harness deps (isolated venv — NOT part of the product packages)
+fal-client>=0.5            # official SDK: upload_file + subscribe (queue/poll)
+insightface>=0.7.3         # ArcFace face embeddings (buffalo_l bundle)
+onnxruntime>=1.17          # CPU inference backend for insightface
+opencv-python-headless>=4.9
+numpy>=1.26
+pillow>=10.0
