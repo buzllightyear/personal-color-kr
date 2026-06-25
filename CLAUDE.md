@@ -96,6 +96,24 @@ The product surface beside diagnosis. Operator curates **recipes**, users turn a
 - **Storage + gallery**: the watermarked result (never the original selfie — zero-PII) is persisted to object storage + a `generations` row (`expires_at = now + IMAGE_TTL_DAYS`, default 30). Object storage is an `ObjectStorage` seam (`api/storage/`): `S3ObjectStorage` (httpx + hand-rolled SigV4, **no boto3**) when `S3_*` env is set, else an in-memory fallback so the flow works locally. `GET /v1/gallery` lists non-expired rows; `GET /v1/gallery/{id}/image` streams the bytes through an authenticated, ownership-scoped endpoint (**no presigned URLs**). TTL: read-time filter hides expired rows; `api.services.generation_sweep.run_sweep()` (out-of-band cron) reclaims rows + objects.
 - **Metric (AC3)**: each `POST /v1/generate` tags the Sentry transaction with `generation.outcome` + `retry_count` (`api/observability/generation_metrics.py`) for a rolling success rate.
 
+## When you touch X, also update Y
+
+This repo's cross-file obligations, gathered as one index — change the left and you **must** also touch the middle, or the right breaks (often silently, past a green local run). Each row is detailed inline where its subsystem is described above; this table just makes the pairs hard to miss.
+
+| Change | Also update | If you don't |
+|---|---|---|
+| Add a dep with a postinstall / native build step | `pnpm.onlyBuiltDependencies` in the root `package.json` | pnpm 10 skips its build script → `vitest` / `eslint` / web build silently break |
+| Add a runtime dep to `apps/api/pyproject.toml` `[project].dependencies` | the allowlist in `apps/api/tests/test_diff_no_new_runtime_deps.py` | `test_diff_no_new_runtime_deps` fails — the dep set must equal the AC19 allowlist exactly |
+| Import a native module from rendered `apps/mobile` code | add a stub under `tests/__stubs__/` + a `resolve.alias` in `apps/mobile/vitest.config.ts` | mobile vitest crashes at module load (Flow / native syntax is unparseable in the `node` env) |
+| Add a top-level Expo Router `(group)` under `apps/mobile/app/` | wire an inbound `router.push('/(group)/…')` with the explicit group token, **or** add an `ALLOWLIST` entry (with a reason) in `scripts/check-route-reachability.mjs` | CI **Route reachability** step fails — built-but-unwired orphan (docs/decisions/0002) |
+| Add/change a field on a mobile contract type (`src/contracts/funnel-state.ts`, `src/contracts/post-payment-views.ts`) | the matching `tests/funnel-state-contract.test.ts` / `tests/post-payment-views-contract.test.ts` | the compile-level contract test stops type-checking → `pnpm --filter mobile typecheck` / vitest red |
+| Need different funnel copy/order/screens (core-ts `FUNNEL_SCREENS`, `FUNNEL_KEBAB_SLUGS_ORDERED`) | **override at the app layer** — don't mutate core-ts; a deliberate core-ts value change must update `packages/core-ts/tests/funnel/screens.test.ts` | the frozen-content test fails |
+| Add a core-ts module meant to be imported by mobile | register the subpath in `packages/core-ts/package.json` `exports` | `import … from 'core-ts/<sub>'` fails to resolve (typecheck + runtime) |
+| Need `sqlalchemy*` (`select`, `func`, `Select`, …) outside `apps/api/src/api/db/` | re-export it from `api.db.session` first, then import from there — never `from sqlalchemy …` | `tests/test_sqlalchemy_import_boundary.py::test_sqlalchemy_imports_live_only_inside_db_boundary` fails (AC11 grep gate) |
+| Add/alter an ORM model under `apps/api/src/api/db/models/` | add an Alembic revision under `api/db/migrations/versions/` (`target_metadata = Base.metadata`) | the schema drifts from the model — CI **Alembic upgrade head** + the integration tier run migrations, not `create_all`, so the new column never reaches Postgres |
+| Read a new server-side env var in `apps/api` | add an accessor in `apps/api/src/api/config/env.py` + document it in `.env.example` | convention, no CI gate — an undocumented absent-default var silently no-ops in prod and reads bypass the single seam |
+| Add a recipe field | model `api/db/models/recipe.py` (+ migration), Pydantic `api/schemas/recipes.py`, handlers `api/routers/admin_recipes.py`, admin UI `apps/web` (`src/types/recipe.ts` + `src/components/admin/RecipeForm.tsx`), mobile mapper `apps/mobile/src/fetch-recipe-catalog.ts` (+ catalog card) | no single gate catches a *missed* surface — the field just won't round-trip (operator can't set it, or the card never shows it) |
+
 ## Conventions & gotchas
 
 - **Decisions & completeness.** Cross-cutting decisions live as ADRs in `docs/decisions/` (toolchain pinning → 0001; feature reachability + the ratchet/critic/DoD strategy → 0002). Before calling a user-facing feature "done", run `docs/review-checklist.md` (reachability, integration, tracked deferrals). New Expo Router groups are reachability-gated in CI (`scripts/check-route-reachability.mjs`) — a built-but-unwired group fails the build.
