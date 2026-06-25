@@ -32,6 +32,30 @@ from api.db.models.recipe import (
     RECIPE_STATUS_PUBLISHED,
     is_valid_transition,
 )
+from api.generation.approved_models import (
+    APPROVED_EDIT_MODELS,
+    is_approved_edit_model,
+)
+
+
+def _validate_edit_model(value: str | None) -> str | None:
+    """Reject any model id that isn't a validated image-EDIT model.
+
+    ``None`` passes (the update schema makes ``model_id`` optional). A
+    text-to-image model id (e.g. ``fal-ai/flux/dev``) has no ``image_url``
+    field, so the pipeline's selfie upload is silently ignored and the user
+    gets a stranger — see :mod:`api.generation.approved_models`. Only the
+    curated, eval-validated edit models may back a recipe.
+    """
+    if value is None:
+        return None
+    if not is_approved_edit_model(value):
+        raise ValueError(
+            f"model_id {value!r} is not a validated image-edit model "
+            "(a text-to-image model silently ignores the selfie). "
+            f"Use one of: {sorted(APPROVED_EDIT_MODELS)}."
+        )
+    return value
 
 
 def _validate_https_url(value: str | None) -> str | None:
@@ -90,6 +114,7 @@ class RecipeCreate(BaseModel):
     display_order: int = Field(0, description="Featured-section sort weight")
 
     _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
+    _validate_model_id = field_validator("model_id")(_validate_edit_model)
 
     @field_validator("status", mode="before")
     @classmethod
@@ -122,6 +147,7 @@ class RecipeUpdate(BaseModel):
     display_order: int | None = None
 
     _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
+    _validate_model_id = field_validator("model_id")(_validate_edit_model)
 
 
 class RecipeResponse(BaseModel):

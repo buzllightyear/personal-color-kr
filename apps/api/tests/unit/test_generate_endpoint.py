@@ -76,12 +76,18 @@ def _passed_verdict() -> RejectionVerdict:
     )
 
 
-def _make_recipe(*, recipe_id: str, status: str = RECIPE_STATUS_PUBLISHED) -> Recipe:
+def _make_recipe(
+    *,
+    recipe_id: str,
+    status: str = RECIPE_STATUS_PUBLISHED,
+    model_id: str = "fal-ai/flux/dev/image-to-image",
+    prompt_template: str = "An editorial portrait, soft studio light",
+) -> Recipe:
     recipe = Recipe()
     recipe.id = uuid.uuid4()
     recipe.recipe_id = recipe_id
-    recipe.model_id = "fal-ai/flux/dev"
-    recipe.prompt_template = "An editorial portrait, soft studio light"
+    recipe.model_id = model_id
+    recipe.prompt_template = prompt_template
     recipe.style_reference_key = None
     recipe.parameters = {"num_inference_steps": 28}
     recipe.status = status
@@ -200,7 +206,7 @@ async def test_generate_returns_watermarked_png_on_success() -> None:
     out = Image.open(io.BytesIO(resp.content))
     assert out.size == (64, 64)
     # The handler forwarded the recipe-derived config + selfie to the runner.
-    assert captured["config"].model_id == "fal-ai/flux/dev"
+    assert captured["config"].model_id == "fal-ai/flux/dev/image-to-image"
     assert captured["config"].prompt == "An editorial portrait, soft studio light"
     assert captured["config"].parameters == {"num_inference_steps": 28}
     assert captured["selfie"] == _png_bytes((10, 10, 10))
@@ -289,6 +295,71 @@ async def test_generate_non_published_recipe_returns_404(status: str) -> None:
         )
     assert resp.status_code == 404
     assert resp.json()["detail"] == "recipe_not_found"
+
+
+@pytest.mark.asyncio
+async def test_generate_text_to_image_model_returns_503() -> None:
+    """A recipe carrying a text-to-image model id fails loud (no silent stranger).
+
+    ``fal-ai/flux/dev`` (t2i) has no ``image_url`` field, so the uploaded selfie
+    would be silently ignored. The defense-in-depth guard rejects such a recipe
+    with 503 ``generation_unavailable`` and never calls the runner.
+    """
+
+    def _runner(
+        config: FalGenerationConfig, selfie_bytes: bytes
+    ) -> OrchestrationResult:
+        raise AssertionError("runner must not be called for a t2i-misconfigured recipe")
+
+    app = _build_app(
+        [_make_recipe(recipe_id="r-001", model_id="fal-ai/flux/dev")], _runner
+    )
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={"selfie": ("s.png", _png_bytes(), "image/png")},
+        )
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "generation_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_generate_strips_unfilled_personal_color_placeholder() -> None:
+    """The literal ``{personal_color_modifier}`` slot is removed before fal.
+
+    Diagnosis output is intentionally not injected into the prompt, so the
+    placeholder must not be shipped verbatim — the config the runner receives
+    carries the tidied prompt with no brace token.
+    """
+    captured: dict[str, Any] = {}
+
+    def _runner(
+        config: FalGenerationConfig, selfie_bytes: bytes
+    ) -> OrchestrationResult:
+        captured["config"] = config
+        return OrchestrationResult(
+            image_bytes=_png_bytes(),
+            retry_count=0,
+            last_verdict=_passed_verdict(),
+        )
+
+    recipe = _make_recipe(
+        recipe_id="r-001",
+        prompt_template="fresh summer look, clean skin, {personal_color_modifier}",
+    )
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={"selfie": ("s.png", _png_bytes(), "image/png")},
+        )
+    assert resp.status_code == 200
+    assert "{personal_color_modifier}" not in captured["config"].prompt
+    assert captured["config"].prompt == "fresh summer look, clean skin"
 
 
 @pytest.mark.asyncio
