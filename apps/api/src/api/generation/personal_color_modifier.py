@@ -12,6 +12,9 @@ recipe.personal_color_modifiers.
 
 from __future__ import annotations
 
+import re
+from typing import Final
+
 # ---------------------------------------------------------------------------
 # Category normalization mapping
 # ---------------------------------------------------------------------------
@@ -105,10 +108,46 @@ def apply_personal_color_to_prompt(
     return prompt_template.replace("{personal_color_modifier}", modifier)
 
 
+_MODIFIER_PLACEHOLDER: Final[str] = "{personal_color_modifier}"
+_WHITESPACE_RE: Final[re.Pattern[str]] = re.compile(r"\s+")
+_DANGLING_COMMA_RE: Final[re.Pattern[str]] = re.compile(r"\s*,\s*,")
+
+
+def strip_unfilled_modifier(prompt_template: str) -> str:
+    """Remove an unfilled ``{personal_color_modifier}`` placeholder and tidy up.
+
+    The trend-recipe generation path intentionally does **not** inject
+    personal-color diagnosis output into the prompt (the diagnosis is a
+    one-time acquisition hook, decoupled from generation — see CLAUDE.md). The
+    recipe ``prompt_template`` still carries a literal
+    ``{personal_color_modifier}`` slot, so it must be *removed* before the
+    prompt is sent to fal: shipping the literal brace token verbatim pollutes
+    the generation. The dangling separator the removal leaves behind
+    (``"..., {personal_color_modifier}"`` → ``"..."``) is collapsed too, and a
+    template without the placeholder is returned unchanged (modulo whitespace
+    normalization).
+
+    Parameters
+    ----------
+    prompt_template:
+        The recipe prompt template, possibly containing the placeholder.
+
+    Returns
+    -------
+    str
+        The prompt with the placeholder removed and separators tidied.
+    """
+    cleaned = prompt_template.replace(_MODIFIER_PLACEHOLDER, "")
+    cleaned = _WHITESPACE_RE.sub(" ", cleaned)
+    cleaned = _DANGLING_COMMA_RE.sub(",", cleaned)
+    return cleaned.strip().strip(",").strip()
+
+
 __all__ = [
     "EN_TO_KR",
     "KR_TO_EN",
     "normalize_to_korean",
     "resolve_modifier_from_recipe",
     "apply_personal_color_to_prompt",
+    "strip_unfilled_modifier",
 ]

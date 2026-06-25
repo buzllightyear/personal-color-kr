@@ -61,7 +61,7 @@ _BASE_URL = "http://testserver"
 
 _VALID_RECIPE_BODY: dict[str, Any] = {
     "recipe_id": "recipe_aurora_v1",
-    "model_id": "fal-ai/flux/dev",
+    "model_id": "fal-ai/flux/dev/image-to-image",
     "prompt_template": "A {personal_color_modifier} editorial portrait",
     "style_reference_key": None,
     "parameters": {"num_inference_steps": 30},
@@ -558,13 +558,53 @@ async def test_update_recipe_fields() -> None:
     ) as client:
         resp = await client.put(
             "/v1/admin/recipes/update_me",
-            json={"model_id": "new-model"},
+            json={"model_id": "fal-ai/flux-2/edit"},
         )
 
     assert resp.status_code == 200
-    assert resp.json()["model_id"] == "new-model"
+    assert resp.json()["model_id"] == "fal-ai/flux-2/edit"
     # recipe_id stays unchanged
     assert resp.json()["recipe_id"] == "update_me"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_recipe_rejects_text_to_image_model() -> None:
+    """POST with a text-to-image model id returns 422 (selfie would be ignored)."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "t2i_recipe",
+                "model_id": "fal-ai/flux/dev",  # text-to-image: no image_url field
+                "prompt_template": "a portrait",
+                "title": "Test",
+            },
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_rejects_text_to_image_model() -> None:
+    """PUT with a text-to-image model id returns 422."""
+    recipe = _make_recipe(recipe_id="update_me")
+    stub = _StubSession({"update_me": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/update_me",
+            json={"model_id": "fal-ai/flux/dev"},
+        )
+    assert resp.status_code == 422
 
 
 @pytest.mark.unit
@@ -579,7 +619,7 @@ async def test_update_recipe_returns_404_for_unknown_id() -> None:
     ) as client:
         resp = await client.put(
             "/v1/admin/recipes/ghost",
-            json={"model_id": "new-model"},
+            json={"model_id": "fal-ai/flux/dev/image-to-image"},
         )
 
     assert resp.status_code == 404
@@ -834,7 +874,7 @@ async def test_create_recipe_persists_display_metadata() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "meta_recipe",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "a portrait, {personal_color_modifier}",
                 "title": "투명 글로우 메이크업",
                 "description": "조명 없이도 맑아지는 피부",
@@ -864,7 +904,7 @@ async def test_create_recipe_requires_title() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "no_title",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "a portrait",
             },
         )
@@ -885,7 +925,7 @@ async def test_thumbnail_url_rejects_http_scheme() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_http",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "http://cdn.example.com/x.png",
@@ -908,7 +948,7 @@ async def test_thumbnail_url_rejects_relative_path() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_rel",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "/relative/path.png",
@@ -931,7 +971,7 @@ async def test_thumbnail_url_rejects_storage_key() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_key",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "styles/key.png",
@@ -954,7 +994,7 @@ async def test_thumbnail_url_rejects_scheme_only() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_nohost",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "https://",
@@ -977,7 +1017,7 @@ async def test_thumbnail_url_rejects_empty_string() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_empty",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "",
@@ -1000,7 +1040,7 @@ async def test_thumbnail_url_accepts_valid_https() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_valid",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": "https://cdn.example.com/thumb.png",
@@ -1024,7 +1064,7 @@ async def test_thumbnail_url_accepts_none() -> None:
             "/v1/admin/recipes",
             json={
                 "recipe_id": "thumb_null",
-                "model_id": "fal-ai/flux/dev",
+                "model_id": "fal-ai/flux/dev/image-to-image",
                 "prompt_template": "portrait",
                 "title": "Test",
                 "thumbnail_url": None,
@@ -1076,13 +1116,13 @@ async def test_update_recipe_omitted_nullable_leaves_unchanged() -> None:
     ) as client:
         resp = await client.put(
             "/v1/admin/recipes/preserve_me",
-            json={"model_id": "fal-ai/flux/pro"},
+            json={"model_id": "fal-ai/flux/dev/image-to-image"},
         )
     assert resp.status_code == 200, resp.text
     data = resp.json()
     assert data["description"] == "Keep this"
     assert data["thumbnail_url"] == "https://cdn.example.com/keep.png"
-    assert data["model_id"] == "fal-ai/flux/pro"
+    assert data["model_id"] == "fal-ai/flux/dev/image-to-image"
 
 
 @pytest.mark.unit

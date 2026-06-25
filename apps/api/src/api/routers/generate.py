@@ -48,6 +48,8 @@ from api.dependencies.auth import require_current_user
 from api.dependencies.generate import GenerateRunner, get_generate_runner
 from api.dependencies.selfie_validation import validate_selfie_upload
 from api.dependencies.storage import get_object_storage
+from api.generation.approved_models import is_approved_edit_model
+from api.generation.personal_color_modifier import strip_unfilled_modifier
 from api.observability.generation_metrics import (
     OUTCOME_FAILED,
     OUTCOME_SUCCESS,
@@ -168,7 +170,11 @@ def _build_config(recipe: Recipe) -> FalGenerationConfig:
     )
     return FalGenerationConfig(
         model_id=recipe.model_id,
-        prompt=recipe.prompt_template,
+        # Strip the unfilled {personal_color_modifier} slot — diagnosis output is
+        # intentionally NOT injected here (see CLAUDE.md), so the literal brace
+        # token must not be shipped verbatim to fal where it would pollute the
+        # prompt.
+        prompt=strip_unfilled_modifier(recipe.prompt_template),
         parameters=dict(recipe.parameters or {}),
         style_reference_url=style_url,
     )
@@ -202,6 +208,23 @@ async def generate(
         # counted in the request-level success-rate metric.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=DETAIL_RECIPE_NOT_FOUND
+        )
+
+    if not is_approved_edit_model(recipe.model_id):
+        # Defense in depth: the admin schema rejects non-edit model ids at write
+        # time, but a recipe that predates that guard (or was written straight to
+        # the DB) may still carry a text-to-image model id that would silently
+        # ignore the selfie and return a stranger. Fail loud instead.
+        _LOGGER.error(
+            "recipe_misconfigured recipe_id=%s model_id=%s "
+            "(not a validated image-edit model; selfie would be ignored)",
+            recipe_id,
+            recipe.model_id,
+        )
+        metrics.record_outcome(OUTCOME_UNAVAILABLE, retry_count=0)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=DETAIL_GENERATION_UNAVAILABLE,
         )
 
     config = _build_config(recipe)

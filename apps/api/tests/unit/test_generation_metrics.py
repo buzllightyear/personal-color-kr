@@ -56,7 +56,7 @@ def _recipe() -> Recipe:
     r = Recipe()
     r.id = uuid.uuid4()
     r.recipe_id = "r-001"
-    r.model_id = "fal-ai/flux/dev"
+    r.model_id = "fal-ai/flux/dev/image-to-image"
     r.prompt_template = "p"
     r.style_reference_key = None
     r.parameters = {}

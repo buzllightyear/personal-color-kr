@@ -256,7 +256,7 @@ export default function RecipeForm({
           value={modelId}
           onChange={(e) => setModelId(e.target.value)}
           required
-          placeholder="e.g. fal-ai/flux/dev"
+          placeholder="e.g. fal-ai/flux/dev/image-to-image"
           style={inputStyle}
         />
       </Field>

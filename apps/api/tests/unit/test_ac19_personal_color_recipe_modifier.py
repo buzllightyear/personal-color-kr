@@ -15,6 +15,7 @@ from api.generation.personal_color_modifier import (
     apply_personal_color_to_prompt,
     normalize_to_korean,
     resolve_modifier_from_recipe,
+    strip_unfilled_modifier,
 )
 
 # ---------------------------------------------------------------------------
@@ -143,3 +144,43 @@ def test_recipe_without_category_returns_none() -> None:
     partial_modifiers = {"봄": "warm tone"}  # Only 봄, no 겨울
     result = resolve_modifier_from_recipe("겨울", partial_modifiers)
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Generation path: strip the unfilled placeholder (diagnosis NOT injected)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "template, expected",
+    [
+        # Trailing placeholder (the seed-recipe shape): drop it + the separator.
+        (
+            "fresh summer look, clean skin, {personal_color_modifier}",
+            "fresh summer look, clean skin",
+        ),
+        # Mid-prompt placeholder: collapse the doubled separator.
+        ("glow, {personal_color_modifier}, soft light", "glow, soft light"),
+        # Leading placeholder: drop it + the dangling leading comma.
+        ("{personal_color_modifier}, dewy skin", "dewy skin"),
+        # Inline (no comma): leave a single clean space.
+        ("a {personal_color_modifier} portrait", "a portrait"),
+        # No placeholder: returned unchanged.
+        ("plain editorial portrait", "plain editorial portrait"),
+    ],
+)
+def test_strip_unfilled_modifier(template: str, expected: str) -> None:
+    """The literal placeholder is removed and dangling separators tidied."""
+    assert strip_unfilled_modifier(template) == expected
+
+
+@pytest.mark.unit
+def test_strip_unfilled_modifier_never_ships_brace_token() -> None:
+    """No brace token survives, regardless of placement."""
+    for template in (
+        "{personal_color_modifier}",
+        "x, {personal_color_modifier}",
+        "{personal_color_modifier}, x",
+    ):
+        assert "{personal_color_modifier}" not in strip_unfilled_modifier(template)
