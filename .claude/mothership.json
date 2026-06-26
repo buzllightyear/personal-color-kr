@@ -1,0 +1,17 @@
+{
+  "mothership_path": "/Users/opty/Vault",
+  "vault_path": "ObsidianVault/PARA-Zettelkasten/",
+  "project_type": "dev",
+  "created": "2026-06-27",
+  "maturity": "seed",
+  "reflux": {
+    "criteria": [
+      "의사결정 + 이유",
+      "도메인 지식 (6개월 후에도 유효)",
+      "재사용 가능한 패턴/프레임워크",
+      "교훈/실패 기록",
+      "관계 (사람, 조직, 도구)"
+    ],
+    "method": "manual + flush-suggest"
+  }
+}
