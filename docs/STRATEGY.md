@@ -1,7 +1,7 @@
 # STRATEGY — 본질·해자·이론적 토대 (living doc)
 
 - **Status:** Living — 매 전략 세션마다 덧붙이고(add) 깎는다(trim).
-- **Origin:** 2026-06-27 모선(Vault) 지식 채굴 세션의 종합. 이전엔 대화·메모에 흩어져 매 세션 재유도되던 것을 코드 옆 git-버전 문서로 고정.
+- **Origin:** 2026-06-27 모선(Vault) 지식 채굴 세션의 종합. 이전엔 대화·메모에 흩어져 매 세션 재유도되던 것을 코드 옆 git-버전 문서로 고정. §1–5 초안 후 같은 날 전략 대화에서 §6(트렌드-커머스 방향) + §3 함의5 추가.
 - **왜 여기 있나:** current-state의 ground truth는 코드다. 전략 해석은 감가하는 "외부 조림"이라 집이 없으면 증발한다. 이 문서가 집이고, add/trim이 곧 전략 자체에 조림 루프를 적용하는 것 — 감가 대신 적립.
 
 ## 읽는 법 — 인식론적 층화 (epistemic stratification)
@@ -32,6 +32,7 @@
 - **Wrapper-First 5요소** = 페르소나 정확도 × UX 발명 × 통합 속도 × 커뮤니티 화력. "모델 자체가 아니라 통합·맥락 큐레이션이 무기." Higgsfield가 이 전략의 외부 실물 구현체. `[external, 유통기한: 패턴은 durable하나 개별 전술은 모방됨]`
 - **운영 해자 = 상대적 응답루프 cycle-time × hit-rate.** 병목 = **Sense + Learn**, *Author 아님*. `[thesis]`
 - **행동 선호 데이터** (save/share/delete — **얼굴 아님**) + **privacy-as-counter-position.** `[thesis]`
+- **엔진 = 트렌드-처리 능력 ("페르소나 정확도"의 정밀화).** 자산은 정적 "페르소나를 안다"가 아니라 **early-sense → structure → output** 루프(사진·패션 트렌드를 일찍 파악→분석/구조화→결과물). personal-color-kr ↔ tting.ai = *같은 엔진의 다른 출력 형태*. `[thesis]` (§3 함의5, §6)
 
 **대비 — 우리가 일부러 버린 길:** Higgsfield의 #1 retention 해자 = Soul ID(얼굴 8~12장 학습→persistent reference_id→영구 재사용+유료게이트). 우리는 face-collection을 privacy로 OUT. 그래서 해자는 나머지 4요소 + 프라이버시에서 와야만 한다. `[thesis ← external 대비]`
 
@@ -50,6 +51,12 @@
 
 함의 4 — **딸깍 vs 세공.** "AI 디자이너 가치 = 딸깍 환상의 해체 + 세공이라는 답." = 우리 "non-slop / authenticity-sense" 포지셔닝의 출처. `[external → thesis]`
 
+함의 5 — **트렌드-처리 능력의 삼분 (어디에 *인간* 시간을 쓰나).** 사용자 자산 = early-sense → structure → output 루프(= 조림 그 자체). 셋의 내구성이 다르다: `[external → thesis]`
+- **early-sense (일찍 파악)** — 영구 해자. 내면화 조림 + 신선한 입력 풀 + 꼬리 판별자 취향. 모델이 학습할 통로 없음.
+- **structure (분석/구조화)** — 감가. AI가 이미 트렌드 구조화를 잘함(외부 조림). 단 early-sense와 *분리불가하게 엮인 만큼만* 해자.
+- **output (결과물)** — 렌트. fal이 만듦.
+- → **대체불가 인간 시간은 early-sense + 입력 풀 신선도에**, structure·output은 시스템/AI에 위임. "나는 트렌드를 구조화한다"를 해자로 착각 금지(AI에 잠식).
+
 ## 4. 현 상태 대조 (code-verified, 2026-06-27)
 
 Moat 가설의 3절반을 코드에 대조:
@@ -66,9 +73,21 @@ Moat 가설의 3절반을 코드에 대조:
 
 ## 5. 열린 결정·우선순위
 
-- **D1 — Learn 루프 계측** (recipe-태그 save/share/delete → `/v1/events`). 인프라 있음, 사업자등록에 **안 막힘**, **적립자산**(§3 함의2). 가장 레버리지 큼. `[decision: 우선순위 1 후보]`
+- **D1 — Learn 루프 계측 = 커머스-판단 엔진** (recipe/제품-태그 save/share/click/구매 → `/v1/events`). 인프라 있음, 사업자등록에 **안 막힘**, **적립자산**(§3 함의2·5; §6). early-sense 레버리지를 hit-rate로 *검증* + 머천다이징 판단(§6 (c))을 *복리*. 가장 레버리지 큼. `[decision: 우선순위 1]`
 - **D2 — server-side Prompt Enhancer** (정적 template → selfie/트렌드별 craft 토큰 동적 조립). 단기 lead-time, **단 감가자산** — eval이 `crafted` wrapper의 lift를 검증한 *뒤*에 박는 게 측정먼저 정합. `[decision: D1 뒤 / eval 게이트]`
 - **D3 — AI티: 버그 vs 피처.** 우리는 realism-first(AI티=버그). 야나두 등 한국 사례는 meme-first(AI티=피처)로도 성공. 일부 트렌드 레시피가 AI-aesthetic을 의도적으로 살릴 여지? `[decision: 미정, 전략 분기]`
+
+## 6. 방향 — 트렌드-커머스 (shop-the-look)
+
+`[thesis — 신선한 베팅: 모선 미검증, vanity 방향보다 불확실]` `[decision: vanity → 커머스 무게중심 이동]`
+
+엔진(§2 트렌드-처리 능력, §3 함의5)의 **출력 형태**를 vanity 셀피(이미지)에서 **트렌드-큐레이션 shop-the-look**(커머스)로 이동. 현 vanity 빌드 폐기 아님 — 생성기·갤러리는 *시연 메커니즘*으로 재사용.
+
+- **왜 더 큰 해자:** 트렌드-감을 최대로 씀; 데이터 = 제품-전환 선호(**얼굴 아님**, privacy 정합 — Soul-ID 막은 게 여기선 이점); BM = 어필리에이트/커머스(충동-sub보다 깊음); personal 재결합("트렌드 × 네 컬러 × 살 제품")으로 §본질의 진단-decoupling authenticity 모순 해소; KR 커머스 = 문화 텃밭(글로벌 VTON이 KR-native하게 못 함).
+- **커머스 칸 내 위치 (서브모드 분해):** (1) 순수 VTON 유틸 = 충실도·카탈로그 게임, 인큐번트(구글·아마존·무신사) 텃밭 → **회피**. **(2) 트렌드-큐레이션 shop-the-look = 우리 자리** — VTON 시연 = table-stakes, 큐레이션 = 해자. (3) 큐레이션-어필리에이트(경량) = 공급 부담 ↓, 먼저 검증 가능.
+- **세 판단 분해:** (a) 사진-미감 트렌드 [현 레시피가 운동] (b) 패션-제품 트렌드 [shop-the-look 요구] (c) 머천다이징·전환 [당장 없어도 됨]. 패션은 트렌드⊃수요라 (a/b)→구매 연결이 타이트하나, **(b) ≠ (c)**.
+- **Learn 루프 = 커머스-판단 엔진(§5 D1):** 저장→클릭→구매 전환 데이터가 (a/b)감을 (c)머천다이징으로 *복리* + early-sense 레버리지를 hit-rate로 *검증*. retention 도구가 아니라 해자 적립점.
+- **남은 gap / 리스크:** ① 모선 미검증(신선 베팅, 불확실). ② 의상 시연 품질 = table-stakes인데 `fal_eval`엔 *의상 충실도* 디스크리미네이터 없음(얼굴 naturalness만). ③ 공급/어필리에이트 운영이 사용자 자산 아닐 수 있음 — (3) 경량이 부담 최소화. ④ **early-sense의 *레버리지*(선점할 만큼 이른가)는 미검증** — Learn hit-rate가 유일한 검증기.
 
 ---
 
