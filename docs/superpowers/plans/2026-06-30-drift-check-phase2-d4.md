@@ -210,6 +210,18 @@ def test_trailing_zero_normalization_satisfiable():
     assert is_satisfiable(parse_specifier("<=9.1") + parse_specifier(">=9.1.0")) is True
 
 
+def test_trailing_zero_equivalence_in_tight_bound_selection():
+    # max()/min() over raw tuples can pick a different-length but equal version;
+    # these prove the inclusivity verdict stays correct across that normalization.
+    assert is_satisfiable(parse_specifier("==9.1") + parse_specifier("==9.1.0")) is True   # same point
+    assert is_satisfiable(parse_specifier("==9.1") + parse_specifier(">9.1.0")) is False    # 9.1 not > 9.1.0
+    assert is_satisfiable(parse_specifier(">9.1") + parse_specifier("<=9.1.0")) is False    # (9.1, 9.1] empty
+    # mixed-length, multiple lower+upper bounds collapse to the right interval [9.1.5, 9.3)
+    assert is_satisfiable(
+        parse_specifier(">=9.1,>=9.1.5") + parse_specifier("<10,<9.3")
+    ) is True
+
+
 def test_exclusive_bound_touching_is_unsatisfiable():
     # nothing is both `<9.1` and `>=9.1`
     assert is_satisfiable(parse_specifier("<9.1") + parse_specifier(">=9.1")) is False
@@ -356,6 +368,12 @@ def test_yaml_pin_ignores_prose_mention():
     assert extract_yaml_pin(text, "pytest") is None
 
 
+def test_yaml_pin_respects_left_token_boundary():
+    # "pytest" as a substring of another token must not match
+    text = "install 'notpytest<9.1' and 'my-pytest<9.1'\n"
+    assert extract_yaml_pin(text, "pytest") is None
+
+
 def test_toml_pin_extracts_from_dep_group():
     text = '[dependency-groups]\ndev = ["httpx>=0.28.1", "pytest>=9.1.1", "pytest-asyncio>=1.4.0"]\n'
     assert extract_toml_pin(text, "pytest", "dev") == ">=9.1.1"
@@ -433,8 +451,10 @@ def extract_yaml_pin(text: str, package: str) -> str | None:
 
     The operator must immediately follow the package name (no space), as in
     ``'pytest<9.1'`` — this excludes prose mentions like ``pytest is pinned <9.1``.
+    The left ``(?<![\w.-])`` lookbehind anchors the package as a whole token, so a
+    substring like ``notpytest<9`` / ``my-pytest<9`` does not match.
     """
-    m = re.search(re.escape(package) + _OP + r"([0-9]+(?:\.[0-9]+)*)", text)
+    m = re.search(r"(?<![\w.-])" + re.escape(package) + _OP + r"([0-9]+(?:\.[0-9]+)*)", text)
     return f"{m.group(1)}{m.group(2)}" if m else None
 
 
@@ -467,7 +487,10 @@ def _extract(repo_root: Path, source: SeamSource, package: str) -> str | None:
     path = repo_root / source.file
     if not path.is_file():
         return None
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None  # read/decode failure → None → NEEDS_MANUAL_REVIEW (never crash, never lose the run)
     if source.kind == "yaml-regex":
         return extract_yaml_pin(text, package)
     if source.kind == "toml-dep-group":
@@ -573,6 +596,8 @@ Replace the body of `scripts/drift_check/report.py` with the following (the exis
 """Render D1 + D4 findings to a surfaced markdown report (pure)."""
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from scripts.drift_check.models import ConfigFinding, Finding
 
 _STATES = ("PROPAGATED", "PROPAGATION_MISSING", "NEEDS_MANUAL_REVIEW")
@@ -645,7 +670,7 @@ def _render_d4(config_findings: list[ConfigFinding]) -> str:
 
 def render(
     findings: list[Finding],
-    config_findings: list[ConfigFinding] = (),
+    config_findings: Sequence[ConfigFinding] = (),
     markers_scanned: int | None = None,
 ) -> str:
     return "\n\n".join([_render_d1(findings, markers_scanned), _render_d4(list(config_findings))])
@@ -711,10 +736,15 @@ def _seed_config_seam(root: Path, ci_spec: str, toml_spec: str) -> None:
 
 
 def test_run_check_flags_missing_propagation(tmp_path: Path):
+    # NO config seam seeded (no ci.yml / pyproject.toml) → D4 must surface a clean
+    # NEEDS_MANUAL_REVIEW row without crashing or perturbing the D1 result.
     _seed_repo(tmp_path, claude_body="no reference here")
     md, findings, config_findings = run_check(repo_root=tmp_path, memory_dir=tmp_path / "mem")
-    assert [f.state for f in findings] == ["PROPAGATION_MISSING"]
+    assert [f.state for f in findings] == ["PROPAGATION_MISSING"]  # D1 unchanged
     assert "PROPAGATION_MISSING" in md
+    assert [c.state for c in config_findings] == ["NEEDS_MANUAL_REVIEW"]  # D4 missing-config
+    assert "D4 config-seam" in md
+    assert "NEEDS_MANUAL_REVIEW" in md
 
 
 def test_run_check_surfaces_config_seam_mismatch(tmp_path: Path):
