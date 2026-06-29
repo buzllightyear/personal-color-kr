@@ -49,3 +49,8 @@ yarn.lock
 .openchrome/
 .ouroboros/
 .ouroboros_eval_artifact.md
+
+# drift-check surfaced output (regenerated; not committed — spec §7)
+docs/drift-report.md
+docs/superpowers/**/*.review.md
+.claude/codex-app-server-logs/

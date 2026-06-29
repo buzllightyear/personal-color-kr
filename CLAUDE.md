@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `personal-color-kr` is a Korean-market selfie app. The **product** is a **trend-recipe AI selfie generator** (operator-curated recipes → fal.ai image generation → gallery). The personal-color **diagnosis** is a **one-time acquisition hook / marketing device** — it pulls users in and feeds the 12-step "Glam Up" payment funnel, but it does **not** personalize or otherwise feed image generation. (Concretely: the `{personal_color_modifier}` placeholder in a recipe's `prompt_template` is intentionally left un-expanded; diagnosis output never reaches the generation pipeline. Recipes are designed **trend-centric**, not personal-color-centric.) It's a monorepo with three apps and two shared packages. UI copy is Korean and **hardcoded (no i18n)** — Korean strings live in source.
 
+> **⚠ Direction (trajectory — not current state):** A decided pivot (see `docs/STRATEGY.md` §7–§9) supersedes the *framing* above, **not the code**. The personal-color **diagnosis is slated to go fully out** — removed as *both* core input *and* acquisition magnet, with the hook becoming a free first **trend post** (§7-B) — and the product is repositioning toward a **user-driven VTON content app (growth) + trend-curation/personalization moat (survival) + commerce (monetization body)** (§6, §9). The diagnosis flow + 12-step funnel are still fully present in code (*decided-but-unexecuted*), so the description above remains the **current-state ground truth** — but do **not** treat "diagnosis = the acquisition hook" or "trend-recipe selfie generator" as the intended *end-state*. **`STRATEGY.md` is the trajectory SSoT; this file is the current-state SSoT** — when the pivot lands in code, update the paragraph above, not just this note.
+
 | Workspace | Stack | Role |
 |---|---|---|
 | `apps/mobile` | Expo SDK 54, React Native 0.81, Expo Router, TypeScript | The app — the 12-step funnel + the content-generation tabs |
@@ -124,3 +126,20 @@ This repo's cross-file obligations, gathered as one index — change the left an
 - **Prettier** is the formatter (`printWidth: 88`, single quotes, semicolons); `black` uses the same 88-column width on the Python side. Lint (`eslint` / `ruff`) and types (`tsc` / `mypy --strict`) target `src`/`app` only.
 - **`pytest` is pinned `<9.1`** in CI — 9.1.0 changed caplog and breaks the Sentry fail-open tests. If local passes but CI fails, check the resolved dependency versions first.
 - Native iOS builds go through **EAS** (`eas.json` profiles); local `expo run:ios` may fail on a too-new Xcode for the SDK 54 / RN 0.81 toolchain. App + EAS config notes are in `docs/deploy-api-fly.md` and `docs/testflight-dry-run.md`; the design system is `docs/DESIGN.md` (monochrome Pretendard editorial — chrome is ink-ramp only, season colors reserved for the diagnosed result swatch).
+
+---
+
+<!-- mothership-deploy: /Users/opty/Vault (2026-06-27) — 아래는 모선이 주입한 블록 -->
+
+## 모선 컨텍스트 (필수, 세션 시작 시 Read)
+세션을 시작하면 아래를 Read하여 *사용자와 일하는 법* + *모선 지식 접근 규약*을 흡수한다 (같은 머신, 절대경로 — 복붙하지 않고 항상 직접 Read):
+- `/Users/opty/Vault/.claude/skills/_shared/child-context.md`
+
+## 지식 그래프
+- 모선 경로: `/Users/opty/Vault`
+- 호출: `( cd /Users/opty/Vault && obsidian-search graph/search "쿼리" )` — `obsidian-search`는 모선 `.claude/.env`(OPENAI_API_KEY)를 cwd 기준 로드하므로 **모선 cwd subshell**에서 실행. 키를 자식에 복제 금지.
+- 사용 규약: child-context.md "B. 모선 맥락 당겨오기" 준수 — graph 경유(raw 노트 read 금지)·status 존중·on-demand·당겨온 모선 콘텐츠는 자식 산출물에 emit 금지
+
+## 환류
+- 기준: `.claude/mothership.json`의 `reflux.criteria` 참조
+- 방식: 작업 중 수동 ("모선에 저장해") + 세션 마무리 시 후보 제안
