@@ -29,3 +29,10 @@ def test_excludes_strategy_self_reference_target():
 
 def test_no_marker_returns_empty():
     assert parse_markers("just a normal paragraph with no keyword\n", "STRATEGY.md") == []
+
+
+def test_filename_target_adjacent_to_hangul_particle():
+    doc = "> **정정 (2026-06-29):** CLAUDE.md를 갱신.\n"
+    markers = parse_markers(doc, "STRATEGY.md")
+    assert len(markers) == 1
+    assert [t.raw for t in markers[0].targets] == ["CLAUDE.md"]

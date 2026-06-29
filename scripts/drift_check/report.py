@@ -16,7 +16,7 @@ def summary_line(findings: list[Finding]) -> str:
     return ", ".join(f"{counts[s]} {s}" for s in _STATES)
 
 
-def render(findings: list[Finding]) -> str:
+def render(findings: list[Finding], markers_scanned: int | None = None) -> str:
     lines = [
         "# Drift Report — D1 supersession-전파 (surfaced)",
         "",
@@ -30,4 +30,12 @@ def render(findings: list[Finding]) -> str:
             f"| {f.marker_location} | {f.target_raw} | {f.state} | {f.evidence} | {_ACTION[f.state]} |"
         )
     lines += ["", f"**Summary:** {summary_line(findings)}"]
+    lines += [
+        "",
+        "_Phase 1 한계: 단일 줄 마커만 파싱(멀티라인 파킹 노트 미포착) · back-reference = 문서 전체 substring(거친 신호; J 단계에서 정밀화) · git 무관._",
+    ]
+    if markers_scanned is not None:
+        lines.append(
+            f"_스캔된 마커 줄: {markers_scanned} · 타깃 해석된 finding: {len(findings)}_"
+        )
     return "\n".join(lines)

@@ -9,7 +9,7 @@ _KEYWORDS = ("SUPERSEDED", "정정", "파킹")
 _DATE_RE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
 # doc filenames we treat as propagation targets (cross-file org-brain docs)
-_FILENAME_RE = re.compile(r"\b([A-Za-z0-9_-]+\.md)\b")
+_FILENAME_RE = re.compile(r"([A-Za-z0-9_-]+\.md)")
 _SELF_DOC = "STRATEGY.md"
 
 

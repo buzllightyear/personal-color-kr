@@ -21,7 +21,7 @@ def run_check(repo_root: Path, memory_dir: Path | None = None) -> tuple[str, lis
     findings: list[Finding] = []
     for marker in markers:
         findings.extend(evaluate(marker, repo_root=repo_root, memory_dir=mem))
-    return render(findings), findings
+    return render(findings, markers_scanned=len(markers)), findings
 
 
 def main(argv: list[str] | None = None) -> int:

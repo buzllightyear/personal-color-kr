@@ -20,3 +20,14 @@ def test_render_is_markdown_with_states_and_surfaced_notice():
     assert "STRATEGY.md:5" in md
     # code-wins guard: never proposes code edits
     assert "코드 변경" not in md
+
+
+def test_render_empty_findings_contains_limitations_note():
+    md = render([])
+    assert "단일 줄 마커" in md
+
+
+def test_render_with_markers_scanned_shows_provenance():
+    md = render([_f("PROPAGATED")], markers_scanned=6)
+    assert "스캔된 마커" in md
+    assert "코드 변경" not in md
