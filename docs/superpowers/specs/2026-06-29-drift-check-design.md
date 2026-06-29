@@ -63,7 +63,7 @@ personal-color-kr의 **지식층(docs)이 코드·서로와 어긋나는 것(spe
 ```
 scripts/drift_check/
   markers.py             # doc → list[Marker(location, date, plane, targets: list[Target(canonical_path, section_id?, source_syntax)])]   (pure parse)  [Phase 1]
-  version_specifiers.py  # parse_specifier / is_compatible  (pure, no I/O)  [Phase 2 D4]
+  version_specifiers.py  # parse_specifier / is_satisfiable  (pure, no I/O)  [Phase 2 D4]
   config_seams.py        # 선언된 seam(데이터) + 추출기 + evaluate → list[ConfigFinding]  [Phase 2 D4]
   tags.py                # STRATEGY → list[GroundTruthClaim(text, refs[], date)]  (pure parse)  [D2 — 보류, §12.5/R3]
   git_probe.py           # "path가 date 이후 변경됨?" git 래퍼 (thin)  [Phase 3]
@@ -152,9 +152,9 @@ code↔code 게이트 중복 ✗ · 판단 슬롯(생애 brain) 판별 ✗ · �
 `<9.1`(상계 9.1 배타)과 `>=9.1.1`(하계 9.1.1 포함)은 9.1.1>9.1이라 교집합 공집합 → 모순. 로컬 `uv sync`는 CI가 의도적으로 금지한 버전을 받음.
 
 ### 14.3 컴포넌트 (각 유닛 순수·작게)
-- **`scripts/drift_check/version_specifiers.py`** — *순수, I/O 없음.* `parse_specifier("pytest<9.1") → [("<", (9,1))]`; `is_compatible(clauses_a, clauses_b) → bool | None`. 모든 절을 단일 구간 `[lo, hi)`로 합쳐 `lo < hi`(또는 동일 점·양쪽 inclusive)면 feasible. 지원 연산자 `< <= > >= ==`; 그 외(`!= ~= ===` 등) → `None`(→ NEEDS_MANUAL_REVIEW, 추측 금지). 진리표 단위테스트.
+- **`scripts/drift_check/version_specifiers.py`** — *순수, I/O 없음.* `parse_specifier("<9.1") → [("<", (9,1))]`(지원 연산자 `< <= > >= ==`; 그 외 `!= ~= ===` 등·파싱불가 → `None` → NEEDS_MANUAL_REVIEW, 추측 금지); `is_satisfiable(clauses) → bool`(두 명세의 절을 합친 단일 리스트가 인자) — 모든 절을 단일 구간 `[lo, hi)`로 합쳐 `lo < hi`(또는 동일 점·양쪽 inclusive)면 True. 진리표 단위테스트.
 - **`scripts/drift_check/config_seams.py`** — seam **선언**(데이터) + source별 추출기(`kind` = `yaml-regex` | `toml-dep-group`) + `evaluate(repo_root) → list[ConfigFinding]`. I/O seam.
-- **`scripts/drift_check/models.py`** (+frozen 3) — `SeamSource(file, kind, locator)`, `ConfigSeam(name, package, source_a, source_b)`, `ConfigFinding(seam_name, value_a, value_b, state, evidence)`. State ∈ `CONFIG_CONSISTENT` / `CONFIG_SEAM_MISMATCH` / `NEEDS_MANUAL_REVIEW`. **D1 `Finding`과 분리**(seam-쌍 vs marker→target).
+- **`scripts/drift_check/models.py`** (+frozen 3) — `SeamSource(file, kind, group=None)`, `ConfigSeam(name, package, source_a, source_b)`, `ConfigFinding(seam_name, value_a, value_b, state, evidence)`. State ∈ `CONFIG_CONSISTENT` / `CONFIG_SEAM_MISMATCH` / `NEEDS_MANUAL_REVIEW`. **D1 `Finding`과 분리**(seam-쌍 vs marker→target).
 - **`report.py`** — D1 섹션 렌더를 헬퍼로 추출, **D4 config-seam 섹션** 추가, summary에 D4 합산.
 - **`run.py`** — D1 다음 D4 실행, 둘 다 `render`에 전달.
 
@@ -162,7 +162,7 @@ code↔code 게이트 중복 ✗ · 판단 슬롯(생애 brain) 판별 ✗ · �
 ```
 ci.yml + pyproject.toml
   → config_seams.evaluate(repo_root)
-    → 각 SeamSource 추출(regex / tomllib) → version_specifiers.is_compatible
+    → 각 SeamSource 추출(regex / tomllib) → version_specifiers.parse_specifier + is_satisfiable
       → list[ConfigFinding] ──→ report.render(d1_findings, config_findings, …)
                                   → docs/drift-report.md (D1 섹션 + D4 섹션)
 ```
@@ -174,6 +174,6 @@ ci.yml + pyproject.toml
 - seam은 **선언적 데이터**로 추가 — 두 번째 seam 추가가 싸야 함(config-seam은 *범주*). v1은 seam 1개·kind 2개.
 
 ### 14.6 테스트
-- **단위:** `is_compatible` 진리표(공집합 `<9.1`∧`>=9.1.1` / 비공집합 `>=9.1`∧`<10` / 점 `==9.1.1`∧`>=9.1` / 미지원 `~=`→`None`); 추출기(ci.yml 픽스처 regex, pyproject 픽스처 tomllib).
+- **단위:** `is_satisfiable` 진리표(공집합 `<9.1`∧`>=9.1.1` / 비공집합 `>=9.1`∧`<10` / 점 `==9.1.1`∧`>=9.1` / trailing-zero 등가 / 미지원 `~=`→`parse_specifier None`); 추출기(ci.yml 픽스처 regex, pyproject 픽스처 tomllib).
 - **골든 픽스처:** mismatch 쌍→`CONFIG_SEAM_MISMATCH`, consistent 쌍→`CONFIG_CONSISTENT`, 파싱불가 쌍→`NEEDS_MANUAL_REVIEW`.
 - **라이브 스모크:** 실제 repo에서 pytest seam이 run #1에 `CONFIG_SEAM_MISMATCH`로 surface(= 도구가 또 값을 함, D1의 진단정체성 적발과 동형).
