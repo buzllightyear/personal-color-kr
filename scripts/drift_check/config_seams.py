@@ -32,13 +32,16 @@ def extract_toml_pin(text: str, package: str, group: str | None) -> str | None:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError:
         return None
-    deps = data.get("dependency-groups", {}).get(group or "", [])
+    groups = data.get("dependency-groups", {})
+    if not isinstance(groups, dict):
+        return None
+    deps = groups.get(group or "", [])
+    if not isinstance(deps, list):
+        return None
     for entry in deps:
         if isinstance(entry, str) and entry.startswith(package):
             spec = entry[len(package) :].strip()
-            if (
-                spec[:1] in "<>=!~"
-            ):  # operator follows → this package's pin (not a sibling)
+            if spec and spec[0] in "<>=!~":  # operator-led → this is the pin
                 return spec
     return None
 
@@ -62,7 +65,7 @@ def _extract(repo_root: Path, source: SeamSource, package: str) -> str | None:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
-        return None  # read/decode failure → None → NEEDS_MANUAL_REVIEW (never crash, never lose the run)
+        return None  # read/decode failure → NEEDS_MANUAL_REVIEW
     if source.kind == "yaml-regex":
         return extract_yaml_pin(text, package)
     if source.kind == "toml-dep-group":

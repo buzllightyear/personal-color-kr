@@ -63,7 +63,7 @@ def test_render_includes_d4_section_when_config_findings():
     assert "코드 변경" not in md  # surfaced·no code-edit proposal
 
 
-def test_render_backward_compatible_d1_only_still_starts_with_title():
+def test_render_backward_compatible_default_args_start_with_title():
     md = render([_f("PROPAGATION_MISSING")])
     assert md.startswith("# Drift Report")
     assert "PROPAGATION_MISSING" in md

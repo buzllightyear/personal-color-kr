@@ -50,9 +50,7 @@ def main(argv: list[str] | None = None) -> int:
             f"drift-check: {summary_line(findings)} | "
             f"{config_summary_line(config_findings)}  → {out_path}"
         )
-    except (
-        Exception
-    ) as exc:  # noqa: BLE001 — surfaced·non-blocking: I/O 실패도 gate 금지(spec §1/§7)
+    except Exception as exc:  # noqa: BLE001 — surfaced·비차단: 실패도 gate 금지
         print(
             f"drift-check: skipped (non-blocking) — {type(exc).__name__}: {exc}",
             file=sys.stderr,
@@ -60,7 +58,5 @@ def main(argv: list[str] | None = None) -> int:
     return 0  # surfaced · never blocks (항상 exit 0)
 
 
-if (
-    __name__ == "__main__"
-):  # `python3 -m scripts.drift_check.run` 진입점(없으면 import 후 조용히 종료)
+if __name__ == "__main__":  # python3 -m scripts.drift_check.run 진입점
     raise SystemExit(main())

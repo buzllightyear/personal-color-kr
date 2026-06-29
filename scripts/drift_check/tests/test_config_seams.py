@@ -75,3 +75,15 @@ def test_evaluate_unsupported_operator_is_manual_review(tmp_path: Path):
     f = evaluate(tmp_path)[0]
     assert f.state == "NEEDS_MANUAL_REVIEW"
     assert f.value_b == "~=9.1"
+
+
+def test_toml_pin_non_table_dependency_groups_returns_none():
+    # structurally valid TOML but dependency-groups is a scalar → must not raise
+    text = 'dependency-groups = "oops"\n'
+    assert extract_toml_pin(text, "pytest", "dev") is None
+
+
+def test_toml_pin_bare_unpinned_package_returns_none():
+    # a bare "pytest" entry has no version operator → not extractable
+    text = '[dependency-groups]\ndev = ["pytest", "pytest-asyncio>=1.4.0"]\n'
+    assert extract_toml_pin(text, "pytest", "dev") is None
