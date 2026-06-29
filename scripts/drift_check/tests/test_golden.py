@@ -16,14 +16,21 @@ def test_golden_reproduces_known_propagation_states(tmp_path: Path):
     mem = tmp_path / "mem"
     mem.mkdir()
     (mem / "app-identity-decision.md").write_text(
-        (_FIX / "mem" / "app-identity-decision.md").read_text(encoding="utf-8"), encoding="utf-8"
+        (_FIX / "mem" / "app-identity-decision.md").read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
 
-    _, findings = run_check(repo_root=tmp_path, memory_dir=mem)
+    _, findings, _ = run_check(repo_root=tmp_path, memory_dir=mem)
     # exactly 3 targets — guards against _FILENAME_RE double-matching a wikilink's .md
     assert len(findings) == 3
     by_target = {f.target_raw: f.state for f in findings}
-    assert set(by_target) == {"CLAUDE.md", "[[app-identity-decision]]", "[[ghost-note]]"}
-    assert by_target["CLAUDE.md"] == "PROPAGATION_MISSING"          # pre-fix: no back-ref
-    assert by_target["[[app-identity-decision]]"] == "PROPAGATED"   # has back-ref (negative control)
-    assert by_target["[[ghost-note]]"] == "NEEDS_MANUAL_REVIEW"     # unresolvable
+    assert set(by_target) == {
+        "CLAUDE.md",
+        "[[app-identity-decision]]",
+        "[[ghost-note]]",
+    }
+    assert by_target["CLAUDE.md"] == "PROPAGATION_MISSING"  # pre-fix: no back-ref
+    assert (
+        by_target["[[app-identity-decision]]"] == "PROPAGATED"
+    )  # has back-ref (negative control)
+    assert by_target["[[ghost-note]]"] == "NEEDS_MANUAL_REVIEW"  # unresolvable
