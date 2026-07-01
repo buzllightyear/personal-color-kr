@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.20.0",
-    "@expo/metro-runtime": "~6.1.2",
+    "@expo/metro-runtime": "~57.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native/assets-registry": "0.81.5",
     "@sentry/cli": "2.55.0",
