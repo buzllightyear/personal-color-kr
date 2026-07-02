@@ -45,10 +45,11 @@ from api.db.models.recipe import RECIPE_STATUS_PUBLISHED, Recipe
 from api.db.models.user import User
 from api.db.session import AsyncSession, get_session, select
 from api.dependencies.auth import require_current_user
+from api.dependencies.garment_validation import validate_optional_garment_upload
 from api.dependencies.generate import GenerateRunner, get_generate_runner
 from api.dependencies.selfie_validation import validate_selfie_upload
 from api.dependencies.storage import get_object_storage
-from api.generation.approved_models import is_approved_edit_model
+from api.generation.approved_models import is_approved_edit_model, reference_mode_for
 from api.generation.personal_color_modifier import strip_unfilled_modifier
 from api.observability.generation_metrics import (
     OUTCOME_FAILED,
@@ -58,7 +59,11 @@ from api.observability.generation_metrics import (
     get_generation_metrics_recorder,
 )
 from api.storage.object_storage import ObjectStorage
-from personal_color.generate.fal_client import FalGenerationConfig, FalGenerationError
+from personal_color.generate.fal_client import (
+    FalGenerationConfig,
+    FalGenerationError,
+    GenerationInputs,
+)
 from personal_color.generate.orchestrator import GenerationBudgetExhaustedError
 from personal_color.generate.watermark import apply_watermark
 
@@ -79,6 +84,11 @@ DETAIL_GENERATION_FAILED: Final[str] = "generation_failed"
 
 #: HTTP 503 detail when the fal.ai API key is not configured server-side.
 DETAIL_GENERATION_UNAVAILABLE: Final[str] = "generation_unavailable"
+
+#: HTTP 422 detail when a garment photo is sent for a recipe whose model is
+#: single-reference (no payload slot for a second image — silently dropping
+#: the garment would break the "my garment" product promise, so fail loud).
+DETAIL_GARMENT_NOT_SUPPORTED: Final[str] = "garment_not_supported"
 
 #: Response header carrying the number of auto-retries consumed before the
 #: accepted candidate (0 = first attempt passed). Useful for client telemetry
@@ -177,6 +187,10 @@ def _build_config(recipe: Recipe) -> FalGenerationConfig:
         prompt=strip_unfilled_modifier(recipe.prompt_template),
         parameters=dict(recipe.parameters or {}),
         style_reference_url=style_url,
+        # Payload key shape (image_url vs image_urls[]) is a model-family
+        # property, decided here from the allowlist so the fal client stays
+        # model-agnostic.
+        reference_mode=reference_mode_for(recipe.model_id),
     )
 
 
@@ -194,6 +208,7 @@ def _build_config(recipe: Recipe) -> FalGenerationConfig:
 async def generate(
     recipe_id: str = Form(..., description="Published recipe id to generate from"),
     selfie_bytes: bytes = Depends(validate_selfie_upload),
+    garment_bytes: bytes | None = Depends(validate_optional_garment_upload),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_current_user),
     runner: GenerateRunner = Depends(get_generate_runner),
@@ -227,10 +242,23 @@ async def generate(
             detail=DETAIL_GENERATION_UNAVAILABLE,
         )
 
+    if garment_bytes is not None and reference_mode_for(recipe.model_id) == "single":
+        # The single-reference payload has no slot for a second image;
+        # silently dropping the garment would break the "my garment" product
+        # promise (STRATEGY §10). Fail loud before any fal spend.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=DETAIL_GARMENT_NOT_SUPPORTED,
+        )
+
     config = _build_config(recipe)
+    # Garment bytes (like the selfie) are handler-local only: uploaded to
+    # fal's short-lived temp storage inside core-python, never our object
+    # storage, never logged (docs/INVARIANTS.md #1).
+    inputs = GenerationInputs(selfie_bytes=selfie_bytes, garment_bytes=garment_bytes)
 
     try:
-        generation = await asyncio.to_thread(runner, config, selfie_bytes)
+        generation = await asyncio.to_thread(runner, config, inputs)
     except GenerationBudgetExhaustedError as exc:
         metrics.record_outcome(OUTCOME_FAILED, retry_count=exc.retry_count)
         raise HTTPException(

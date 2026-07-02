@@ -44,6 +44,7 @@ from typing import Final, Protocol, runtime_checkable
 from personal_color.generate.fal_client import (
     FalGenerationConfig,
     FalGenerationError,
+    GenerationInputs,
     generate_from_recipe,
 )
 from personal_color.generate.rejection import (
@@ -71,12 +72,12 @@ class GenerateFn(Protocol):
     def __call__(
         self,
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
     ) -> bytes:
-        """Generate an image from a recipe config and return raw bytes."""
+        """Generate an image from a recipe config + user images, return raw bytes."""
         ...
 
 
@@ -158,7 +159,7 @@ class GenerationBudgetExhaustedError(Exception):
 
 def orchestrate_generation(
     config: FalGenerationConfig,
-    selfie_bytes: bytes,
+    inputs: GenerationInputs,
     *,
     api_key: str,
     nsfw_classifier: NsfwClassifier,
@@ -190,8 +191,10 @@ def orchestrate_generation(
     ----------
     config:
         Recipe-derived generation parameters.
-    selfie_bytes:
-        Raw selfie image bytes.
+    inputs:
+        Per-request user images (selfie + optional garment).  Forwarded
+        verbatim — the SAME instance — to every generation attempt, so
+        retries never drop the garment.
     api_key:
         fal.ai API key.  Forwarded verbatim to ``_generate_fn``; never logged.
     nsfw_classifier:
@@ -256,7 +259,7 @@ def orchestrate_generation(
         try:
             raw_bytes: bytes = generate(
                 config,
-                selfie_bytes,
+                inputs,
                 api_key=api_key,
                 timeout=remaining,
             )

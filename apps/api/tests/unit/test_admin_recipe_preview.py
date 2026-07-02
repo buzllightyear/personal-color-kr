@@ -650,6 +650,38 @@ def test_call_fal_recipe_preview_includes_style_reference_when_provided() -> Non
 
 
 @pytest.mark.unit
+def test_call_fal_recipe_preview_multi_mode_sends_image_urls_array() -> None:
+    """Preview against a multi-reference (*/edit) model must use the same
+    payload rule as production: image_urls=[style], not image_url."""
+    from unittest.mock import MagicMock, patch
+
+    from api.generation.fal_preview_caller import call_fal_recipe_preview
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "images": [{"url": "https://cdn.fal.ai/result.webp"}]
+    }
+
+    with patch("httpx.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client_cls.return_value.__enter__.return_value = mock_client
+        mock_client.post.return_value = mock_response
+
+        call_fal_recipe_preview(
+            model_id="fal-ai/flux-2/edit",
+            prompt="p",
+            style_reference_url="https://cdn.example.com/style.jpg",
+            api_key="k",
+        )
+
+        call_args = mock_client.post.call_args
+        payload = call_args.kwargs.get("json") or call_args[1].get("json", {})
+        assert payload.get("image_urls") == ["https://cdn.example.com/style.jpg"]
+        assert "image_url" not in payload
+
+
+@pytest.mark.unit
 def test_call_fal_recipe_preview_omits_image_url_when_none() -> None:
     """call_fal_recipe_preview does not send image_url when style_reference is None."""
     from unittest.mock import MagicMock, patch
