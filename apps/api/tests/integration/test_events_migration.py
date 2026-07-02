@@ -60,10 +60,11 @@ _ALEMBIC_INI_PATH: Path = _APPS_API_ROOT / "alembic.ini"
 # here instead of a confusing test failure deep in an assertion message.
 _BASELINE_REVISION: str = "phase_4_1_baseline"
 _EVENTS_REVISION: str = "phase_4_2_events"
-# The Content Generation phase extended the chain past Phase 4.5: AC1/AC5
-# added ``content_gen_recipes`` and AC4 added ``content_gen_generations`` on
-# top. ``alembic upgrade head`` now stamps alembic_version to the latter.
-_HEAD_REVISION: str = "content_gen_recipe_meta"
+# The Content Generation phase extended the chain past Phase 4.5, and the
+# pivot (M1) added ``trend_recipe_freshness`` on top of
+# ``content_gen_recipe_meta``. ``alembic upgrade head`` now stamps
+# alembic_version to the pivot head.
+_HEAD_REVISION: str = "trend_recipe_freshness"
 
 # Generous timeout — the events migration emits two ``CREATE INDEX``
 # statements but no data backfill; 60s protects against a wedged asyncpg

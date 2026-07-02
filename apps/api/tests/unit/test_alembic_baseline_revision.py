@@ -51,6 +51,9 @@ _GENERATIONS_FILENAME = (
 _RECIPE_META_FILENAME: str = (
     "2026_06_23_0000-content_gen_recipe_meta_add_display_metadata.py"
 )
+_TREND_FRESHNESS_FILENAME: str = (
+    "2026_07_02_0000-trend_recipe_freshness_add_expires_at_and_format_template.py"
+)
 
 # Pinned revision identifiers — single source of truth for the chain
 # topology. Any test that asserts a specific ``down_revision`` value reads
@@ -62,6 +65,7 @@ _REFERRALS_REVISION_ID = "phase_4_5_referrals"
 _RECIPES_REVISION_ID = "content_gen_recipes"
 _GENERATIONS_REVISION_ID = "content_gen_generations"
 _RECIPE_META_REVISION_ID: str = "content_gen_recipe_meta"
+_TREND_FRESHNESS_REVISION_ID: str = "trend_recipe_freshness"
 
 
 def _collect_py_files() -> list[Path]:
@@ -120,12 +124,13 @@ def test_versions_directory_contains_exactly_five_py_files() -> None:
             _RECIPES_FILENAME,
             _GENERATIONS_FILENAME,
             _RECIPE_META_FILENAME,
+            _TREND_FRESHNESS_FILENAME,
         ]
     )
     assert actual_names == expected_names, (
-        "Content Generation Phase must ship exactly seven migrations: "
-        "baseline, events, users, referrals, recipes, generations, and "
-        "recipe_meta. "
+        "The chain must ship exactly eight migrations: baseline, events, "
+        "users, referrals, recipes, generations, recipe_meta, and "
+        "trend_freshness (pivot M1). "
         f"Expected files {expected_names!r}; found {actual_names!r}. An extra "
         "file indicates an orphan revision; a missing file indicates a "
         "regression in the migration chain."

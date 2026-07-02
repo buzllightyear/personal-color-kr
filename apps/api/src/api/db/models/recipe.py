@@ -237,6 +237,29 @@ class Recipe(Base):
         server_default="0",
     )
 
+    # ----- expires_at: trend freshness horizon (pivot, STRATEGY §7-D #1) -----
+    # A trend is defined by timeliness. NULL = evergreen (every pre-pivot
+    # recipe keeps working unchanged). The public catalog hides rows whose
+    # expiry has passed: ``expires_at IS NULL OR expires_at > now()``.
+    # POST /v1/generate deliberately does NOT gate on expiry — expired means
+    # "no longer this week's trend", not "unsafe to generate" (a stale
+    # client-side catalog must not 404 mid-generation).
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # ----- format_template: deterministic compositing layer (§7-D #2) -----
+    # Operator-authored JSON describing the post-generation overlay (MVP
+    # slice: one canonical text-overlay kind; validated by the internal
+    # ``FormatTemplate`` schema in api.schemas.recipes). INTERNAL-ONLY —
+    # like ``prompt_template`` it never appears on the public catalog
+    # response. NULL = no format layer.
+    format_template: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
     # ----- created_at: insertion timestamp -----
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -21,10 +21,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from api.db.models.recipe import (
     RECIPE_STATUS_DELETED,
@@ -83,6 +83,50 @@ class RecipeStatusEnum(str, Enum):
     deleted = RECIPE_STATUS_DELETED
 
 
+class FormatTemplate(BaseModel):
+    """INTERNAL schema for the recipe's deterministic compositing layer.
+
+    Pivot M1 slice (STRATEGY §7-E): exactly one canonical kind —
+    ``text_overlay`` — validated at authoring time so operators can start
+    writing templates before the compositor ships (Task 8, gated on the
+    Korean-capable font decision). ``extra="forbid"`` makes an operator
+    typo (e.g. ``"font"`` instead of ``"font_size"``) fail loud at write
+    time instead of being silently ignored at render time.
+
+    Like ``prompt_template``, this NEVER appears on the public catalog
+    response (docs/INVARIANTS.md #4 — pinned in test_recipes_catalog).
+    """
+
+    version: Literal[1]
+    kind: Literal["text_overlay"]
+    text: str = Field(..., min_length=1, description="Overlay text (Korean OK)")
+    position: Literal["top", "bottom", "center"]
+    font_size: int | None = Field(None, gt=0, description="Point size; None = auto")
+    color: str | None = Field(None, description="CSS-style hex color; None = default")
+
+    model_config = {"extra": "forbid"}
+
+
+def _validate_format_template(
+    value: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Round-trip an incoming dict through :class:`FormatTemplate`.
+
+    ``None`` passes (nullable — no format layer). The validated dict is
+    returned as authored; normalization is the compositor's job, not the
+    storage layer's.
+    """
+    if value is None:
+        return None
+    try:
+        FormatTemplate.model_validate(value)
+    except ValidationError as exc:
+        raise ValueError(
+            f"format_template does not match the FormatTemplate schema: {exc}"
+        ) from exc
+    return value
+
+
 class RecipeCreate(BaseModel):
     """Request body for ``POST /admin/recipes``.
 
@@ -112,9 +156,16 @@ class RecipeCreate(BaseModel):
     )
     publish_date: datetime | None = Field(None, description="Catalog publish date")
     display_order: int = Field(0, description="Featured-section sort weight")
+    expires_at: datetime | None = Field(
+        None, description="Trend freshness horizon; NULL = evergreen"
+    )
+    format_template: dict[str, Any] | None = Field(
+        None, description="Deterministic compositing template (internal-only)"
+    )
 
     _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
     _validate_model_id = field_validator("model_id")(_validate_edit_model)
+    _validate_format_tpl = field_validator("format_template")(_validate_format_template)
 
     @field_validator("status", mode="before")
     @classmethod
@@ -145,9 +196,12 @@ class RecipeUpdate(BaseModel):
     parameters: dict[str, Any] | None = None
     publish_date: datetime | None = None
     display_order: int | None = None
+    expires_at: datetime | None = None
+    format_template: dict[str, Any] | None = None
 
     _validate_thumbnail_url = field_validator("thumbnail_url")(_validate_https_url)
     _validate_model_id = field_validator("model_id")(_validate_edit_model)
+    _validate_format_tpl = field_validator("format_template")(_validate_format_template)
 
 
 class RecipeResponse(BaseModel):
@@ -166,6 +220,8 @@ class RecipeResponse(BaseModel):
     status: RecipeStatusEnum
     publish_date: datetime | None
     display_order: int
+    expires_at: datetime | None
+    format_template: dict[str, Any] | None
     created_at: datetime
     updated_at: datetime
 
@@ -184,7 +240,10 @@ class CatalogRecipeResponse(BaseModel):
 
     Exposes only the fields needed for catalog display and recipe
     selection. Internal generation details (model_id, prompt_template,
-    parameters) are intentionally omitted from the public surface.
+    parameters, format_template) are intentionally omitted from the
+    public surface — format_template is moat-internal exactly like
+    prompt_template (docs/INVARIANTS.md #4). ``expires_at`` IS public:
+    a later mobile milestone renders the trend countdown from it.
     """
 
     recipe_id: str
@@ -195,6 +254,7 @@ class CatalogRecipeResponse(BaseModel):
     style_reference_key: str | None
     publish_date: datetime | None
     display_order: int
+    expires_at: datetime | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -257,6 +317,7 @@ def validate_transition(current_status: str, target_status: str) -> None:
 
 
 __all__ = [
+    "FormatTemplate",
     "RecipeStatusEnum",
     "RecipeCreate",
     "RecipeUpdate",

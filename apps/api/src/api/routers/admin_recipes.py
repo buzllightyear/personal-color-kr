@@ -164,6 +164,8 @@ async def create_recipe(
         status=body.status.value,
         publish_date=body.publish_date,
         display_order=body.display_order,
+        expires_at=body.expires_at,
+        format_template=body.format_template,
     )
     session.add(recipe)
     try:
@@ -271,6 +273,12 @@ async def update_recipe(
         recipe.description = body.description
     if "thumbnail_url" in fields_set:
         recipe.thumbnail_url = body.thumbnail_url
+    # expires_at / format_template (pivot M1): nullable, same explicit-null-clears
+    # contract — clearing expires_at makes the recipe evergreen again.
+    if "expires_at" in fields_set:
+        recipe.expires_at = body.expires_at
+    if "format_template" in fields_set:
+        recipe.format_template = body.format_template
 
     # Explicitly bump updated_at so a raw-SQL or ORM path both update it.
     recipe.updated_at = datetime.now(timezone.utc)

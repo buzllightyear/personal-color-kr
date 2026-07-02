@@ -73,6 +73,7 @@ def _make_recipe(
     status: str = RECIPE_STATUS_PUBLISHED,
     publish_date: datetime | None = None,
     display_order: int = 0,
+    expires_at: datetime | None = None,
 ) -> Recipe:
     """Build an in-memory Recipe ORM object (no DB round-trip)."""
     recipe = Recipe()
@@ -91,6 +92,8 @@ def _make_recipe(
     recipe.description = None
     recipe.tags = []
     recipe.thumbnail_url = None
+    recipe.expires_at = expires_at
+    recipe.format_template = None
     return recipe
 
 
@@ -115,11 +118,44 @@ class _StubScalars:
         return self._rows
 
 
+def _row_matches_clause(row: Recipe, clause: Any) -> bool:
+    """Duck-typed interpreter for the catalog query's WHERE tree.
+
+    Understands AND/OR lists, ``==``, ``IS NULL``, and ``>`` — the exact
+    operators the catalog statement uses (status equality + the freshness
+    ``expires_at IS NULL OR expires_at > now`` disjunction). Anything else
+    raises AttributeError so the stub fails loud instead of silently
+    returning unfiltered rows.
+
+    NOTE: this stub interprets the clause like Postgres would for these
+    operators, but the authoritative freshness verification is the
+    integration-tier seeded test (unit stubs cannot prove SQL semantics —
+    codex review R1).
+    """
+    children = getattr(clause, "clauses", None)
+    op_name = getattr(getattr(clause, "operator", None), "__name__", "")
+    if children is not None:
+        results = [_row_matches_clause(row, child) for child in children]
+        if op_name == "or_":
+            return any(results)
+        return all(results)
+    col_name = str(clause.left.key)
+    value = getattr(row, col_name, None)
+    right = clause.right
+    if op_name == "is_" and type(right).__name__ == "Null":
+        return value is None
+    if op_name == "eq":
+        return bool(value == right.value)
+    if op_name == "gt":
+        return value is not None and bool(value > right.value)
+    raise AttributeError(f"unsupported operator in stub: {op_name!r}")
+
+
 class _CatalogStubSession:
     """In-memory async session stub for catalog endpoint tests.
 
-    Filters rows by status when the statement contains a simple
-    ``Recipe.status == value`` WHERE clause.  Returns rows in the
+    Interprets the statement's WHERE tree via :func:`_row_matches_clause`
+    (status equality + the freshness disjunction).  Returns rows in the
     order they were provided to the constructor (callers are responsible
     for supplying them in the DB-sorted order they wish to simulate).
     """
@@ -128,16 +164,11 @@ class _CatalogStubSession:
         self._recipes = list(recipes)
 
     async def execute(self, stmt: Any) -> _StubSelectResult:
-        """Simulate ``SELECT recipes WHERE status = ? ORDER BY ...``."""
+        """Simulate ``SELECT recipes WHERE ... ORDER BY ...``."""
         rows = list(self._recipes)
-        try:
-            whereclause = getattr(stmt, "whereclause", None)
-            if whereclause is not None:
-                col_name = str(whereclause.left.key)
-                filter_value = whereclause.right.value
-                rows = [r for r in rows if getattr(r, col_name, None) == filter_value]
-        except AttributeError:
-            pass
+        whereclause = getattr(stmt, "whereclause", None)
+        if whereclause is not None:
+            rows = [r for r in rows if _row_matches_clause(r, whereclause)]
         return _StubSelectResult(rows)
 
 
@@ -507,3 +538,77 @@ async def test_catalog_response_field_values_are_correct() -> None:
     assert item["display_order"] == 3
     # publish_date is a timezone-aware ISO string.
     assert item["publish_date"] is not None
+
+
+# ---------------------------------------------------------------------------
+# Tests: freshness filter (pivot M1 — expires_at)
+# ---------------------------------------------------------------------------
+# NOTE: the stub interprets the WHERE tree faithfully for these operators,
+# but the authoritative proof runs on real Postgres:
+# tests/integration/test_catalog_freshness_filter.py (codex review R1 —
+# a wrong query could still pass a stub).
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_catalog_excludes_expired_recipes() -> None:
+    """A published recipe whose expires_at has passed is hidden from the catalog."""
+    fresh = _make_recipe(
+        recipe_id="fresh", expires_at=_NOW + timedelta(days=7), publish_date=_DAY1
+    )
+    expired = _make_recipe(
+        recipe_id="expired", expires_at=_NOW - timedelta(days=1), publish_date=_DAY1
+    )
+    app = _build_catalog_app([fresh, expired])
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.get(_CATALOG_URL)
+
+    assert resp.status_code == 200
+    recipe_ids = [r["recipe_id"] for r in resp.json()["recipes"]]
+    assert "fresh" in recipe_ids
+    assert "expired" not in recipe_ids
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_catalog_includes_evergreen_null_expiry_recipes() -> None:
+    """expires_at IS NULL = evergreen — every pre-pivot recipe stays visible."""
+    evergreen = _make_recipe(recipe_id="evergreen", expires_at=None)
+    app = _build_catalog_app([evergreen])
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.get(_CATALOG_URL)
+
+    assert resp.status_code == 200
+    assert [r["recipe_id"] for r in resp.json()["recipes"]] == ["evergreen"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_catalog_response_includes_expires_at_but_never_format_template() -> None:
+    """expires_at is public (client countdown); format_template is INTERNAL —
+    like prompt_template it must never leave the server (INVARIANTS #4)."""
+    recipe = _make_recipe(recipe_id="trend", expires_at=_NOW + timedelta(days=7))
+    recipe.format_template = {
+        "version": 1,
+        "kind": "text_overlay",
+        "text": "이번 주 트렌드",
+        "position": "bottom",
+    }
+    app = _build_catalog_app([recipe])
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.get(_CATALOG_URL)
+
+    assert resp.status_code == 200
+    item = resp.json()["recipes"][0]
+    assert "expires_at" in item
+    assert item["expires_at"] is not None
+    assert "format_template" not in item
