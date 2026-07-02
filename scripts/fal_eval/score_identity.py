@@ -56,6 +56,9 @@ def main() -> None:
             continue
 
         sp = row["selfie_path"]
+        if not sp:  # garment-solo stage-0 cell — no person, identity N/A
+            row["arcface"] = None
+            continue
         if sp not in input_emb:
             input_emb[sp] = _largest_face_embedding(app, sp)
         a = input_emb[sp]

@@ -31,8 +31,10 @@ each model's own size knob (`extra`) so cost (per-MP) and framing are comparable
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 # ~1MP, 3:4 portrait (matches a phone selfie; keeps per-MP cost ~1×).
 PORTRAIT = {"width": 896, "height": 1152}
@@ -154,6 +156,11 @@ class Recipe:
     # pass it as the second image_urls[] element; models with
     # supports_garment=False are skipped for these cells.
     needs_garment: bool = False
+    # Stage-0 probe (STRATEGY §10-B pre-stage): garment-ONLY cells — no selfie,
+    # the garment photo is the single reference image. "Before dressing a person,
+    # the garment alone must render faithfully." Single-reference models can run
+    # these too (the garment takes the sole image slot).
+    garment_only: bool = False
 
 
 # `texture` probe: ask for ~no change, to expose each model's intrinsic skin/texture.
@@ -295,7 +302,112 @@ RECIPES: list[Recipe] = [
         ),
         needs_garment=True,
     ),
+    # Stage-0 probe (§10-B): can the model render MY garment alone, faithfully,
+    # as a clean normalized shot? If not, dressing a person with it is moot.
+    # Single variant (bounds cost); runs at both stages ("realistic" is in the
+    # screen variant set).
+    Recipe(
+        "garment_solo",
+        None,
+        (
+            PromptVariant(
+                "realistic",
+                "clean catalog product photo of the garment from the image, "
+                "laid flat on a plain light-grey background, soft even studio "
+                "light, no person, accurate color, pattern, material and shape, "
+                "photorealistic",
+            ),
+        ),
+        needs_garment=True,
+        garment_only=True,
+    ),
 ]
+
+# ---------------------------------------------------------------------------
+# Enrichment axis (STRATEGY §10-B eval implication)
+# ---------------------------------------------------------------------------
+# The production harness will run a garment-understanding stage before
+# generation and inject its output (the "garment profile") into the prompt.
+# This axis measures whether that injection actually buys quality — the receipt
+# for the operator's "quality > hook immediacy" ruling — and WHICH injection
+# form buys the most. Applies to garment cells only:
+#
+#   none      — the prompt as-is (today's baseline)
+#   freeform  — append a free-text garment description
+#               (sidecar: garments/<stem>.txt, operator/VLM-authored)
+#   profile   — append a structured garment profile rendered from the §10-B
+#               7-field contract (sidecar: garments/<stem>.profile.json)
+#
+# Sidecars are REQUIRED for active enrichment keys — enumeration fails loud if
+# one is missing (a silently-skipped condition would bias the comparison).
+# Stage 1 screens the extremes (none vs profile: does understanding help at
+# all?); stage 2 adds freeform (which form?).
+
+ENRICHMENT_KEYS: tuple[str, ...] = ("none", "freeform", "profile")
+SCREEN_ENRICHMENT_KEYS: tuple[str, ...] = ("none", "profile")
+
+# The §10-B garment-profile contract: 7 fields (카테고리·색·패턴·소재감·핏·기장·디테일).
+GARMENT_PROFILE_FIELDS: tuple[str, ...] = (
+    "category",
+    "color",
+    "pattern",
+    "material",
+    "fit",
+    "length",
+    "details",
+)
+
+
+def garment_info_text(garment: Path, enrichment: str) -> str | None:
+    """Sidecar text to inject for (garment, enrichment); None for 'none'.
+
+    Fails loud (SystemExit) on a missing/empty/invalid sidecar so a forgotten
+    file can never silently degrade one arm of the comparison.
+    """
+    if enrichment == "none":
+        return None
+    if enrichment == "freeform":
+        sidecar = garment.with_name(garment.stem + ".txt")
+        if not sidecar.exists():
+            raise SystemExit(
+                f"enrichment '{enrichment}' is active but {sidecar} is missing — "
+                f"write a free-text description of {garment.name} there"
+            )
+        text = sidecar.read_text().strip()
+        if not text:
+            raise SystemExit(f"{sidecar} is empty — write the garment description")
+        return text
+    if enrichment == "profile":
+        sidecar = garment.with_name(garment.stem + ".profile.json")
+        if not sidecar.exists():
+            raise SystemExit(
+                f"enrichment '{enrichment}' is active but {sidecar} is missing — "
+                f"fill the §10-B profile: "
+                f'{{{", ".join(f_ + ": …" for f_ in GARMENT_PROFILE_FIELDS)}}}'
+            )
+        profile = json.loads(sidecar.read_text())
+        missing = [
+            f_ for f_ in GARMENT_PROFILE_FIELDS if not str(profile.get(f_, "")).strip()
+        ]
+        extra = [k for k in profile if k not in GARMENT_PROFILE_FIELDS]
+        if missing or extra:
+            raise SystemExit(
+                f"{sidecar} must have exactly the 7 §10-B fields — "
+                f"missing/empty: {missing or '—'}, unknown: {extra or '—'}"
+            )
+        return "; ".join(
+            f"{f_}: {str(profile[f_]).strip()}" for f_ in GARMENT_PROFILE_FIELDS
+        )
+    raise SystemExit(f"unknown enrichment key: {enrichment!r}")
+
+
+def enriched_prompt(variant_text: str, enrichment: str, garment: Path | None) -> str:
+    """The prompt actually sent for a cell — variant text + optional injection."""
+    info = garment_info_text(garment, enrichment) if garment is not None else None
+    if info is None:
+        return variant_text
+    return f"{variant_text}. The garment is: {info}"
+
 
 # ---------------------------------------------------------------------------
 # Two-stage funnel (resumable: widening config re-runs only the new cells)
@@ -326,6 +438,10 @@ def active_knobs(model: Model) -> tuple[dict, ...]:
     return model.knobs if is_stage2() else model.knobs[:1]
 
 
+def active_enrichment_keys() -> tuple[str, ...]:
+    return ENRICHMENT_KEYS if is_stage2() else SCREEN_ENRICHMENT_KEYS
+
+
 def active_selfies(selfies: list) -> list:
     return selfies if is_stage2() else selfies[:SCREEN_SELFIE_LIMIT]
 
@@ -349,6 +465,12 @@ SEEDS_PER_CELL = 1  # >1 also measures consistency (varies seed; multiplies cost
 # Garment cells pair each selfie with the first N garments (NOT the full
 # cross-product) to bound cost. Raise deliberately for stage 2 if needed.
 GARMENT_PAIR_LIMIT = 2
+# Test-retest (verifier-less zone ②, rater reliability): ~this % of scoreable
+# cells appear TWICE in the blind sheet under different blind IDs (same image,
+# zero extra API cost). Selection is a stable hash property of the cell key, so
+# rebuilding/widening never reshuffles which cells are duplicated. The unblind
+# step reports per-column self-agreement (mean |Δ|).
+RETEST_PERCENT = 10
 
 
 def active_garments(garments: list) -> list:
