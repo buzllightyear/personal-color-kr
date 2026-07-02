@@ -48,21 +48,32 @@ class Model:
     endpoint: str  # fal model path (POST https://fal.run/{endpoint})
     origin: str  # training lineage — the non-buyable axis we're spanning
     usd_per_image: float  # rough cost for ~1MP output (VERIFY on the model page)
-    build_args: Callable[[str, str], dict]  # (selfie_url, prompt) -> request args
+    # (selfie_url, prompt, garment_url=None) -> request args
+    build_args: Callable[..., dict]
     extra: dict = field(default_factory=dict)  # size + fixed per-model knobs
     # Naturalness-knob sweep: each dict is merged LAST (overrides `extra`). One
     # cell per knob. `({},)` = no knob (single default cell). Only models with a
     # verified deviation knob sweep; the rest stay single.
     knobs: tuple[dict, ...] = ({},)
+    # Multi-reference capable (selfie + garment as image_urls[]). The single-ref
+    # baseline cannot take a garment; garment cells skip it.
+    supports_garment: bool = True
 
 
-def _ref_urls(selfie_url: str, prompt: str) -> dict:
-    """All four editors (Seedream/Qwen/Nano Banana/FLUX.2): prompt + image_urls[]."""
-    return {"prompt": prompt, "image_urls": [selfie_url]}
+def _ref_urls(selfie_url: str, prompt: str, garment_url: str | None = None) -> dict:
+    """All four editors (Seedream/Qwen/Nano Banana/FLUX.2): prompt + image_urls[].
+
+    The garment, when present, is the SECOND element — prompts refer to
+    "the first image" (person) and "the second image" (garment).
+    """
+    urls = [selfie_url] + ([garment_url] if garment_url else [])
+    return {"prompt": prompt, "image_urls": urls}
 
 
-def _flux_i2i(selfie_url: str, prompt: str) -> dict:
+def _flux_i2i(selfie_url: str, prompt: str, garment_url: str | None = None) -> dict:
     """Negative baseline — plain FLUX.1 dev i2i (no identity mechanism)."""
+    if garment_url is not None:
+        raise ValueError("fluxdev_i2i is single-reference; garment cells must skip it")
     return {"prompt": prompt, "image_url": selfie_url}
 
 
@@ -112,6 +123,7 @@ MODELS: list[Model] = [
         # Naturalness lever (biggest for i2i): lower strength preserves the real
         # selfie's photographic texture. Light vs heavier edit.
         knobs=({"strength": 0.45}, {"strength": 0.7}),
+        supports_garment=False,
     ),
 ]
 
@@ -137,6 +149,11 @@ class Recipe:
         str | None
     )  # thumbnail_url (= promised look / fidelity target); None for probe
     variants: tuple[PromptVariant, ...]
+    # Pivot (STRATEGY §10): the daily loop is "my real garment × this week's
+    # trend+format". Garment recipes pair each selfie with a garment photo and
+    # pass it as the second image_urls[] element; models with
+    # supports_garment=False are skipped for these cells.
+    needs_garment: bool = False
 
 
 # `texture` probe: ask for ~no change, to expose each model's intrinsic skin/texture.
@@ -218,6 +235,66 @@ RECIPES: list[Recipe] = [
             ),
         ),
     ),
+    # ---- Pivot garment recipes (§10 ii-a: operator curates the TREATMENT —
+    # scene/lighting/format; the user's garment is the raw material). Prompts
+    # refer to image order: first = person, second = garment. Identical across
+    # models (blocked factor), like the three variants above.
+    Recipe(
+        "garment_scene",
+        None,  # fidelity target = the garment input itself, shown on the sheet
+        (
+            PromptVariant(
+                "neutral",
+                "the person from the first image wearing the garment from the "
+                "second image, natural soft daylight, plain background, candid "
+                "photo, identity unchanged, garment color and pattern preserved, "
+                "realistic fit and drape",
+            ),
+            PromptVariant(
+                "realistic",
+                "the person from the first image wearing the garment from the "
+                "second image, walking on a quiet Seoul street in the late "
+                "afternoon, natural light, candid street-style photo, identity "
+                "unchanged, garment faithfully rendered",
+            ),
+            PromptVariant(
+                "stylized",
+                "the person from the first image wearing the garment from the "
+                "second image, editorial fashion shoot, dramatic studio lighting, "
+                "high-fashion styling, identity unchanged, garment color and "
+                "pattern preserved",
+            ),
+        ),
+        needs_garment=True,
+    ),
+    Recipe(
+        "garment_format",
+        None,
+        (
+            PromptVariant(
+                "neutral",
+                "the person from the first image wearing the garment from the "
+                "second image, casual daylight snapshot, 35mm film grain, small "
+                "orange film datestamp in the corner, identity unchanged, garment "
+                "faithfully rendered",
+            ),
+            PromptVariant(
+                "realistic",
+                "the person from the first image wearing the garment from the "
+                "second image, instagram-ready outfit post, analog film look with "
+                "date stamp, natural pose, identity unchanged, garment color and "
+                "fit preserved",
+            ),
+            PromptVariant(
+                "stylized",
+                "the person from the first image wearing the garment from the "
+                "second image, magazine editorial layout mood, polaroid frame "
+                "aesthetic, styled composition, identity unchanged, garment "
+                "faithfully rendered",
+            ),
+        ),
+        needs_garment=True,
+    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -266,5 +343,13 @@ def knob_label(knob: dict) -> str:
 
 SELFIE_DIR = "selfies"  # consented KR test selfies (*.jpg / *.png)
 REAL_HOLDOUT_DIR = "real_holdout"  # REAL selfies NOT used as inputs — for blind AI-티
+GARMENT_DIR = "garments"  # garment photos (hanger + worn shots; §10-A fit note)
 OUT_DIR = "out"
 SEEDS_PER_CELL = 1  # >1 also measures consistency (varies seed; multiplies cost)
+# Garment cells pair each selfie with the first N garments (NOT the full
+# cross-product) to bound cost. Raise deliberately for stage 2 if needed.
+GARMENT_PAIR_LIMIT = 2
+
+
+def active_garments(garments: list) -> list:
+    return garments[:GARMENT_PAIR_LIMIT]

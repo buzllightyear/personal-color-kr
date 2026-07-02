@@ -57,7 +57,17 @@ export FAL_KEY="<key_id>:<key_secret>"     # ⚠️ fal-client reads FAL_KEY (NO
    lighting/glasses). ⚠️ no random people's faces — privacy.
 2. (Blind AI-티 test) put a few more **held-out REAL** selfies — NOT used as
    inputs — in `real_holdout/`.
-3. In `config.py`, fill each recipe's **`realistic`** variant from the real
+3. **(Pivot, STRATEGY §10)** put garment photos in `garments/` — mix **hanger/
+   flat shots and worn shots** (fit is a garment×body property; worn shots carry
+   it, flat shots don't — §10-A). Garment recipes (`garment_scene`,
+   `garment_format`) pair each selfie with the first `GARMENT_PAIR_LIMIT`
+   garments and pass the garment as the SECOND `image_urls[]` element. The
+   `fluxdev_i2i` baseline is single-reference and skips garment cells. Scoring
+   gains a `garment_fidelity` column (1–5, **bounded**: my garment's category/
+   color/pattern/fit preserved — not pixel-level SKU matching) and summarize
+   gates on `GARMENT_FLOOR` **fail-closed** (unscored garment cells or no
+   garment cells = fail).
+4. In `config.py`, fill each recipe's **`realistic`** variant from the real
    resolved `prompt_template`, set `reference` to the recipe's `thumbnail_url`
    (fidelity target), and adjust the `neutral`/`stylized` variants if needed. The
    `texture` probe is recipe-independent — leave it. Model request schemas are
@@ -67,7 +77,9 @@ export FAL_KEY="<key_id>:<key_secret>"     # ⚠️ fal-client reads FAL_KEY (NO
 ## Run order
 ```bash
 # --- Stage 1 (FINALISTS empty in config.py) ---
-python run_matrix.py        # screen → out/<model>/<recipe>/<variant>/<knob>/<selfie>.png + runs.json
+python run_matrix.py        # ESTIMATE ONLY: prints new-cell count + max cost, no spend
+python run_matrix.py --yes  # operator-approved paid run (INVARIANTS #8)
+                            # → out/<model>/<recipe>/<variant>/<knob>/<selfie>[_<garment>]_<seed>.png + runs.json
 python score_identity.py    # add ArcFace cosine(input↔output) to each row → runs.json
 python build_report.py      # → results.csv (human cols blank) + contact_sheet.html
 # open contact_sheet.html, score 1–5 per dimension (incl. the texture probe), then:
