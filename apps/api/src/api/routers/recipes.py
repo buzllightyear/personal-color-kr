@@ -39,13 +39,14 @@ the Phase 4.1 ``sqlalchemy`` single-import-boundary invariant.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Final
 
 from fastapi import APIRouter, Depends, status
 
 from api.db.models.recipe import RECIPE_STATUS_PUBLISHED, Recipe
 from api.db.models.user import User
-from api.db.session import AsyncSession, get_session, select
+from api.db.session import AsyncSession, Select, get_session, select
 from api.dependencies.auth import require_current_user
 from api.schemas.recipes import CatalogRecipeListResponse, CatalogRecipeResponse
 
@@ -54,6 +55,28 @@ _LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
 #: Router hosting ``GET /v1/recipes``. The ``/v1`` prefix is applied by
 #: ``api.main.create_app``.
 router: APIRouter = APIRouter(tags=["recipes"])
+
+
+def build_catalog_statement(now: datetime) -> Select[tuple[Recipe]]:
+    """Build the public-catalog SELECT for a given "now".
+
+    Published recipes only, minus expired trends (pivot M1):
+    ``expires_at IS NULL`` = evergreen (every pre-pivot recipe) stays
+    visible; a set expiry hides the recipe once ``now`` passes it.
+
+    Extracted from the handler so the integration tier can pin the
+    freshness semantics against real Postgres with the EXACT statement
+    the endpoint runs (tests/integration/test_catalog_freshness_filter.py)
+    — the unit-tier stub interprets the clause tree, but only a real
+    database proves the SQL. Column operators only; no ``sqlalchemy``
+    import (AC11 boundary).
+    """
+    return (
+        select(Recipe)
+        .where(Recipe.status == RECIPE_STATUS_PUBLISHED)
+        .where((Recipe.expires_at.is_(None)) | (Recipe.expires_at > now))
+        .order_by(Recipe.publish_date.desc(), Recipe.display_order.asc())
+    )
 
 
 @router.get(
@@ -91,11 +114,7 @@ async def list_catalog_recipes(
         An empty list is returned when no recipes are published yet —
         this is a normal state during catalog bootstrap.
     """
-    stmt = (
-        select(Recipe)
-        .where(Recipe.status == RECIPE_STATUS_PUBLISHED)
-        .order_by(Recipe.publish_date.desc(), Recipe.display_order.asc())
-    )
+    stmt = build_catalog_statement(now=datetime.now(timezone.utc))
     result = await session.execute(stmt)
     recipes = list(result.scalars().all())
 

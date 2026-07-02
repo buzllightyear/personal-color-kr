@@ -1141,3 +1141,140 @@ async def test_update_recipe_thumbnail_url_rejects_invalid() -> None:
             json={"thumbnail_url": "http://not-https.com/img.png"},
         )
     assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Pivot M1: trend fields (expires_at + format_template)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_recipe_persists_trend_fields() -> None:
+    """POST /admin/recipes accepts and echoes expires_at + format_template."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "trend_recipe",
+                "model_id": "fal-ai/flux/dev/image-to-image",
+                "prompt_template": "a portrait, {personal_color_modifier}",
+                "title": "이번 주 트렌드",
+                "expires_at": "2026-07-09T00:00:00Z",
+                "format_template": {
+                    "version": 1,
+                    "kind": "text_overlay",
+                    "text": "이번 주 트렌드",
+                    "position": "bottom",
+                },
+            },
+        )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["expires_at"] is not None
+    assert data["format_template"]["kind"] == "text_overlay"
+    assert data["format_template"]["text"] == "이번 주 트렌드"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_trend_fields_explicit_null_clears() -> None:
+    """PUT with explicit null clears expires_at + format_template
+    (same nullable-clear contract as description/thumbnail_url)."""
+    recipe = _make_recipe(recipe_id="clear_trend")
+    recipe.expires_at = datetime(2026, 7, 9, tzinfo=timezone.utc)
+    recipe.format_template = {
+        "version": 1,
+        "kind": "text_overlay",
+        "text": "old",
+        "position": "top",
+    }
+    stub = _StubSession({"clear_trend": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/clear_trend",
+            json={"expires_at": None, "format_template": None},
+        )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["expires_at"] is None
+    assert data["format_template"] is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_recipe_omitted_trend_fields_leave_unchanged() -> None:
+    """PUT that omits the trend fields leaves them untouched."""
+    recipe = _make_recipe(recipe_id="keep_trend")
+    recipe.expires_at = datetime(2026, 7, 9, tzinfo=timezone.utc)
+    recipe.format_template = {
+        "version": 1,
+        "kind": "text_overlay",
+        "text": "keep",
+        "position": "bottom",
+    }
+    stub = _StubSession({"keep_trend": recipe})
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.put(
+            "/v1/admin/recipes/keep_trend",
+            json={"title": "새 제목"},
+        )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["expires_at"] is not None
+    assert data["format_template"]["text"] == "keep"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_template",
+    [
+        {"version": 1, "kind": "text_overlay", "position": "bottom"},  # no text
+        {"version": 1, "kind": "collage", "text": "x", "position": "top"},  # kind
+        {"version": 2, "kind": "text_overlay", "text": "x", "position": "top"},
+        {  # unknown field — operator typo must fail loud, not silently drop
+            "version": 1,
+            "kind": "text_overlay",
+            "text": "x",
+            "position": "bottom",
+            "font": "Pretendard",
+        },
+        {"version": 1, "kind": "text_overlay", "text": "", "position": "top"},
+        {"version": 1, "kind": "text_overlay", "text": "x", "position": "middle"},
+    ],
+)
+async def test_create_recipe_rejects_invalid_format_template(
+    bad_template: dict,
+) -> None:
+    """An invalid format_template shape is rejected with 422 at authoring time."""
+    stub = _StubSession()
+    app = _build_app_with_stub(stub)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url=_BASE_URL
+    ) as client:
+        resp = await client.post(
+            "/v1/admin/recipes",
+            json={
+                "recipe_id": "bad_template",
+                "model_id": "fal-ai/flux/dev/image-to-image",
+                "prompt_template": "portrait",
+                "title": "Test",
+                "format_template": bad_template,
+            },
+        )
+    assert resp.status_code == 422, resp.text

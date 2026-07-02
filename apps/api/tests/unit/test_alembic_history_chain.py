@@ -76,6 +76,7 @@ _REFERRALS_REVISION_ID: str = "phase_4_5_referrals"
 _RECIPES_REVISION_ID: str = "content_gen_recipes"
 _GENERATIONS_REVISION_ID: str = "content_gen_generations"
 _RECIPE_META_REVISION_ID: str = "content_gen_recipe_meta"
+_TREND_FRESHNESS_REVISION_ID: str = "trend_recipe_freshness"
 
 
 def _load_script_directory() -> ScriptDirectory:
@@ -121,12 +122,12 @@ def test_alembic_history_reports_single_head_at_recipe_meta_revision() -> None:
     # ``tuple`` for the equality assertion so the message reads naturally
     # regardless of the concrete container type alembic chose.
     heads = tuple(script.get_heads())
-    assert heads == (_RECIPE_META_REVISION_ID,), (
+    assert heads == (_TREND_FRESHNESS_REVISION_ID,), (
         f"alembic must report exactly one head and it must be "
-        f"{_RECIPE_META_REVISION_ID!r} (the Content Generation recipe meta "
+        f"{_TREND_FRESHNESS_REVISION_ID!r} (the pivot's trend-freshness "
         f"migration); got {heads!r}. More than one head indicates the migration "
         f"chain branched (e.g. two migrations both set "
-        f"``down_revision = 'content_gen_generations'`` without merging); a "
+        f"``down_revision = 'content_gen_recipe_meta'`` without merging); a "
         f"different head indicates an additional migration sneaked in "
         f"prematurely."
     )
@@ -179,16 +180,17 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
 
     walk = list(script.walk_revisions())
 
-    assert len(walk) == 7, (
-        f"alembic chain must contain exactly seven revisions "
+    assert len(walk) == 8, (
+        f"alembic chain must contain exactly eight revisions "
         f"(baseline + events + users + referrals + recipes + generations + "
-        f"recipe_meta); "
+        f"recipe_meta + trend_freshness); "
         f"walk_revisions() yielded {len(walk)}: "
         f"{[r.revision for r in walk]!r}. An extra revision indicates an "
         f"orphan migration; fewer revisions indicate a missing chain link."
     )
 
     (
+        trend_freshness_script,
         recipe_meta_script,
         generations_script,
         recipes_script,
@@ -198,9 +200,22 @@ def test_alembic_walk_revisions_yields_chain_head_to_base_in_order() -> None:
         base_script,
     ) = walk
 
-    # ---- Head position: the recipe_meta migration sits on top.
+    # ---- Head position: the trend-freshness migration sits on top.
+    assert trend_freshness_script.revision == _TREND_FRESHNESS_REVISION_ID, (
+        f"The head of walk_revisions() must be {_TREND_FRESHNESS_REVISION_ID!r} "
+        f"(the pivot's trend-freshness migration); "
+        f"got {trend_freshness_script.revision!r}."
+    )
+
+    # ---- Trend-freshness migration chains on the recipe_meta migration.
+    assert trend_freshness_script.down_revision == _RECIPE_META_REVISION_ID, (
+        f"Trend-freshness migration's down_revision must equal "
+        f"{_RECIPE_META_REVISION_ID!r}; got {trend_freshness_script.down_revision!r}."
+    )
+
+    # ---- Recipe meta migration keeps its position.
     assert recipe_meta_script.revision == _RECIPE_META_REVISION_ID, (
-        f"The head of walk_revisions() must be {_RECIPE_META_REVISION_ID!r} "
+        f"Second script in walk must be {_RECIPE_META_REVISION_ID!r} "
         f"(the Content Generation recipe meta migration); "
         f"got {recipe_meta_script.revision!r}."
     )
