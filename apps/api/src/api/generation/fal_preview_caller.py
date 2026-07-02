@@ -42,6 +42,8 @@ from typing import Any, Final
 
 import httpx
 
+from api.generation.approved_models import reference_mode_for
+
 _LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
 
 # Base URL for all fal.ai models served via the synchronous REST endpoint.
@@ -214,10 +216,16 @@ def call_fal_recipe_preview(
 
     # Build payload: prompt first, then optional style reference,
     # then model-specific parameters (so parameters can override defaults
-    # if the recipe intentionally re-sets a field).
+    # if the recipe intentionally re-sets a field).  The reference key
+    # follows the SAME per-model rule as the production seam
+    # (reference_mode_for): the */edit family takes image_urls[] — an
+    # image_url sent there would be silently dropped by the model.
     payload: dict[str, Any] = {"prompt": prompt}
     if style_reference_url is not None:
-        payload["image_url"] = style_reference_url
+        if reference_mode_for(model_id) == "multi":
+            payload["image_urls"] = [style_reference_url]
+        else:
+            payload["image_url"] = style_reference_url
     if parameters:
         payload.update(parameters)
 

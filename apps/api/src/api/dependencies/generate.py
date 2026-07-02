@@ -2,8 +2,8 @@
 
 The HTTP handler (``api.routers.generate``) stays free of the fal.ai vendor
 seam and the NSFW classifier by depending on :func:`get_generate_runner`,
-which returns a callable of shape ``(FalGenerationConfig, bytes) ->
-OrchestrationResult``.
+which returns a callable of shape ``(FalGenerationConfig, GenerationInputs)
+-> OrchestrationResult``.
 
 * **Production** (``get_generate_runner``): loads the fal.ai API key via the
   authorised core-python loader, constructs the production
@@ -24,16 +24,18 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Final
 
-from personal_color.generate.fal_client import FalGenerationConfig
+from personal_color.generate.fal_client import FalGenerationConfig, GenerationInputs
 from personal_color.generate.orchestrator import (
     OrchestrationResult,
     orchestrate_generation,
 )
 from personal_color.generate.rejection import FalNsfwClassifier
 
-#: A generation runner: turn a recipe-derived config + raw selfie bytes into an
-#: accepted, rejection-passed :class:`OrchestrationResult` (or raise).
-GenerateRunner = Callable[[FalGenerationConfig, bytes], OrchestrationResult]
+#: A generation runner: turn a recipe-derived config + per-request user images
+#: (selfie + optional garment) into an accepted, rejection-passed
+#: :class:`OrchestrationResult` (or raise).  Future reference inputs extend
+#: :class:`GenerationInputs`, not this signature.
+GenerateRunner = Callable[[FalGenerationConfig, GenerationInputs], OrchestrationResult]
 
 #: Total wall-clock budget for the generate → reject → retry loop. Matches the
 #: Seed Contract's 30 s end-to-end SLO.
@@ -48,7 +50,7 @@ def get_generate_runner() -> GenerateRunner:
     """
 
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         # Imported here so the module stays importable without core-python's
         # image_edit package installed; a missing key raises LookupError,
@@ -59,7 +61,7 @@ def get_generate_runner() -> GenerateRunner:
         classifier = FalNsfwClassifier(api_key)
         return orchestrate_generation(
             config,
-            selfie_bytes,
+            inputs,
             api_key=api_key,
             nsfw_classifier=classifier,
             total_budget_seconds=DEFAULT_GENERATION_BUDGET_SECONDS,

@@ -46,7 +46,7 @@ from api.dependencies.generate import get_generate_runner
 from api.dependencies.storage import get_object_storage
 from api.main import create_app
 from api.storage.object_storage import InMemoryObjectStorage
-from personal_color.generate.fal_client import FalGenerationConfig
+from personal_color.generate.fal_client import FalGenerationConfig, GenerationInputs
 from personal_color.generate.orchestrator import (
     GenerationBudgetExhaustedError,
     OrchestrationResult,
@@ -177,10 +177,10 @@ async def test_generate_returns_watermarked_png_on_success() -> None:
     captured: dict[str, Any] = {}
 
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         captured["config"] = config
-        captured["selfie"] = selfie_bytes
+        captured["inputs"] = inputs
         return OrchestrationResult(
             image_bytes=_png_bytes(),
             retry_count=2,
@@ -205,11 +205,16 @@ async def test_generate_returns_watermarked_png_on_success() -> None:
     assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
     out = Image.open(io.BytesIO(resp.content))
     assert out.size == (64, 64)
-    # The handler forwarded the recipe-derived config + selfie to the runner.
+    # The handler forwarded the recipe-derived config + inputs to the runner.
+    # BACKWARD-COMPAT PIN: a request with only recipe_id + selfie (the current
+    # mobile client's exact multipart shape) yields garment_bytes=None and the
+    # single reference mode for the i2i baseline model.
     assert captured["config"].model_id == "fal-ai/flux/dev/image-to-image"
     assert captured["config"].prompt == "An editorial portrait, soft studio light"
     assert captured["config"].parameters == {"num_inference_steps": 28}
-    assert captured["selfie"] == _png_bytes((10, 10, 10))
+    assert captured["config"].reference_mode == "single"
+    assert captured["inputs"].selfie_bytes == _png_bytes((10, 10, 10))
+    assert captured["inputs"].garment_bytes is None
 
     # AC4 — the watermarked result is persisted: one gallery row committed,
     # its bytes stored under the row's key, and the id echoed in the header.
@@ -232,7 +237,7 @@ async def test_generate_succeeds_even_when_persistence_fails() -> None:
             raise RuntimeError("storage down")
 
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         return OrchestrationResult(
             image_bytes=_png_bytes(),
@@ -261,7 +266,7 @@ async def test_generate_succeeds_even_when_persistence_fails() -> None:
 @pytest.mark.asyncio
 async def test_generate_unknown_recipe_returns_404() -> None:
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         raise AssertionError("runner must not be called for an unknown recipe")
 
@@ -281,7 +286,7 @@ async def test_generate_unknown_recipe_returns_404() -> None:
 @pytest.mark.parametrize("status", [RECIPE_STATUS_HIDDEN, RECIPE_STATUS_DELETED])
 async def test_generate_non_published_recipe_returns_404(status: str) -> None:
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         raise AssertionError("runner must not be called for a non-published recipe")
 
@@ -307,7 +312,7 @@ async def test_generate_text_to_image_model_returns_503() -> None:
     """
 
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         raise AssertionError("runner must not be called for a t2i-misconfigured recipe")
 
@@ -336,7 +341,7 @@ async def test_generate_strips_unfilled_personal_color_placeholder() -> None:
     captured: dict[str, Any] = {}
 
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         captured["config"] = config
         return OrchestrationResult(
@@ -365,7 +370,7 @@ async def test_generate_strips_unfilled_personal_color_placeholder() -> None:
 @pytest.mark.asyncio
 async def test_generate_budget_exhausted_returns_503() -> None:
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         raise GenerationBudgetExhaustedError(
             "budget exhausted", retry_count=4, last_reject_reason="artifact"
@@ -384,9 +389,156 @@ async def test_generate_budget_exhausted_returns_503() -> None:
 
 
 @pytest.mark.asyncio
+async def test_generate_with_garment_on_multi_model_forwards_garment() -> None:
+    """Garment + a multi-reference (*/edit) recipe → 200; the runner receives
+    the garment bytes and a multi-mode config."""
+    captured: dict[str, Any] = {}
+
+    def _runner(
+        config: FalGenerationConfig, inputs: GenerationInputs
+    ) -> OrchestrationResult:
+        captured["config"] = config
+        captured["inputs"] = inputs
+        return OrchestrationResult(
+            image_bytes=_png_bytes(),
+            retry_count=0,
+            last_verdict=_passed_verdict(),
+        )
+
+    garment = _png_bytes((200, 30, 30))
+    recipe = _make_recipe(recipe_id="r-001", model_id="fal-ai/flux-2/edit")
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={
+                "selfie": ("s.png", _png_bytes((10, 10, 10)), "image/png"),
+                "garment": ("g.png", garment, "image/png"),
+            },
+        )
+
+    assert resp.status_code == 200
+    assert captured["config"].reference_mode == "multi"
+    assert captured["inputs"].garment_bytes == garment
+    assert captured["inputs"].selfie_bytes == _png_bytes((10, 10, 10))
+
+
+@pytest.mark.asyncio
+async def test_generate_garment_on_single_model_returns_422() -> None:
+    """Garment + a single-reference recipe → 422 garment_not_supported; the
+    runner is never called (no fal spend on a doomed request)."""
+
+    def _runner(
+        config: FalGenerationConfig, inputs: GenerationInputs
+    ) -> OrchestrationResult:
+        raise AssertionError("runner must not be called for garment_not_supported")
+
+    recipe = _make_recipe(recipe_id="r-001", model_id="fal-ai/flux/dev/image-to-image")
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={
+                "selfie": ("s.png", _png_bytes(), "image/png"),
+                "garment": ("g.png", _png_bytes((200, 30, 30)), "image/png"),
+            },
+        )
+
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "garment_not_supported"
+
+
+@pytest.mark.asyncio
+async def test_generate_empty_garment_returns_422_not_500() -> None:
+    """A present-but-empty garment part is a 422 wire error, never a 500
+    (GenerationInputs' ValueError backstop must not be reachable)."""
+
+    def _runner(
+        config: FalGenerationConfig, inputs: GenerationInputs
+    ) -> OrchestrationResult:
+        raise AssertionError("runner must not be called for an empty garment")
+
+    recipe = _make_recipe(recipe_id="r-001", model_id="fal-ai/flux-2/edit")
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={
+                "selfie": ("s.png", _png_bytes(), "image/png"),
+                "garment": ("g.png", b"", "image/png"),
+            },
+        )
+
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "empty_file"
+
+
+@pytest.mark.asyncio
+async def test_generate_garment_with_bad_content_type_returns_415() -> None:
+    def _runner(
+        config: FalGenerationConfig, inputs: GenerationInputs
+    ) -> OrchestrationResult:
+        raise AssertionError("runner must not be called for a bad garment type")
+
+    recipe = _make_recipe(recipe_id="r-001", model_id="fal-ai/flux-2/edit")
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={
+                "selfie": ("s.png", _png_bytes(), "image/png"),
+                "garment": ("g.gif", _png_bytes(), "image/gif"),
+            },
+        )
+
+    assert resp.status_code == 415
+    assert resp.json()["detail"] == "unsupported_media_type"
+
+
+@pytest.mark.asyncio
+async def test_generate_multi_model_without_garment_still_works() -> None:
+    """A multi-reference recipe with NO garment stays valid — the seam sends
+    image_urls=[selfie] downstream (selfie-only generation on an edit model)."""
+    captured: dict[str, Any] = {}
+
+    def _runner(
+        config: FalGenerationConfig, inputs: GenerationInputs
+    ) -> OrchestrationResult:
+        captured["config"] = config
+        captured["inputs"] = inputs
+        return OrchestrationResult(
+            image_bytes=_png_bytes(),
+            retry_count=0,
+            last_verdict=_passed_verdict(),
+        )
+
+    recipe = _make_recipe(recipe_id="r-001", model_id="fal-ai/qwen-image-2/edit")
+    app = _build_app([recipe], _runner)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
+        resp = await client.post(
+            _GENERATE_URL,
+            data={"recipe_id": "r-001"},
+            files={"selfie": ("s.png", _png_bytes(), "image/png")},
+        )
+
+    assert resp.status_code == 200
+    assert captured["config"].reference_mode == "multi"
+    assert captured["inputs"].garment_bytes is None
+
+
+@pytest.mark.asyncio
 async def test_generate_requires_authentication() -> None:
     def _runner(
-        config: FalGenerationConfig, selfie_bytes: bytes
+        config: FalGenerationConfig, inputs: GenerationInputs
     ) -> OrchestrationResult:
         raise AssertionError("runner must not be called when unauthenticated")
 

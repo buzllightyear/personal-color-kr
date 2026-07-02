@@ -30,7 +30,7 @@ is permanent. NEVER add a bare text-to-image id here.
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Literal
 
 #: fal.ai model ids that accept an input image (image-to-image / edit).
 #: Keep in sync with ``scripts/fal_eval/config.py`` candidates until the eval
@@ -39,6 +39,22 @@ from typing import Final
 APPROVED_EDIT_MODELS: Final[frozenset[str]] = frozenset(
     {
         "fal-ai/flux/dev/image-to-image",
+        "fal-ai/flux-2/edit",
+        "fal-ai/bytedance/seedream/v4.5/edit",
+        "fal-ai/qwen-image-2/edit",
+        "fal-ai/nano-banana-2/edit",
+    }
+)
+
+#: The subset of :data:`APPROVED_EDIT_MODELS` whose request schema takes
+#: ``image_urls[]`` (array) — the ``*/edit`` family, VERIFIED against each
+#: model's fal API page (2026-06-25, see ``scripts/fal_eval/config.py``).
+#: These are also the only models that can take a garment reference (as the
+#: second array element).  A model added to APPROVED_EDIT_MODELS must be
+#: deliberately assigned here or left single — the exhaustiveness unit test
+#: (``tests/unit/test_approved_models.py``) fails on an unassigned entry.
+MULTI_REFERENCE_EDIT_MODELS: Final[frozenset[str]] = frozenset(
+    {
         "fal-ai/flux-2/edit",
         "fal-ai/bytedance/seedream/v4.5/edit",
         "fal-ai/qwen-image-2/edit",
@@ -58,4 +74,20 @@ def is_approved_edit_model(model_id: str) -> bool:
     return model_id in APPROVED_EDIT_MODELS
 
 
-__all__ = ["APPROVED_EDIT_MODELS", "is_approved_edit_model"]
+def reference_mode_for(model_id: str) -> Literal["single", "multi"]:
+    """Return the fal payload key shape for ``model_id``.
+
+    ``"multi"`` → ``image_urls[]`` (the ``*/edit`` family), ``"single"`` →
+    ``image_url`` (plain image-to-image; conservative default for anything
+    unknown — unapproved ids are rejected upstream by
+    :func:`is_approved_edit_model` anyway).
+    """
+    return "multi" if model_id in MULTI_REFERENCE_EDIT_MODELS else "single"
+
+
+__all__ = [
+    "APPROVED_EDIT_MODELS",
+    "MULTI_REFERENCE_EDIT_MODELS",
+    "is_approved_edit_model",
+    "reference_mode_for",
+]
