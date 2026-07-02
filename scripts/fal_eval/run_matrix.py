@@ -24,6 +24,8 @@ all models; set → deep sweep over the finalists only.
 
 Usage:
     python run_matrix.py                       # estimate only (no key needed)
+    python run_matrix.py --recipes=garment_solo    # scope to specific recipes
+                                               # (stage-0 probe run)
     export FAL_KEY="<key_id>:<key_secret>"     # NOT FAL_API_KEY
     python run_matrix.py --yes                 # operator-approved paid run
 """
@@ -110,9 +112,29 @@ def _list_images(dir_name: str) -> list[Path]:
     )
 
 
+def _recipe_filter() -> set[str] | None:
+    """Optional `--recipes=a,b` scoping (e.g. `--recipes=garment_solo` for a
+    stage-0-only probe run). None = all recipes."""
+    for arg in sys.argv[1:]:
+        if arg.startswith("--recipes="):
+            keys = {k.strip() for k in arg.split("=", 1)[1].split(",") if k.strip()}
+            unknown = keys - {r.key for r in RECIPES}
+            if unknown:
+                raise SystemExit(
+                    f"unknown recipe keys {sorted(unknown)} — "
+                    f"available: {sorted(r.key for r in RECIPES)}"
+                )
+            return keys
+    return None
+
+
 def _enumerate_cells() -> list[Cell]:
+    recipe_keys = _recipe_filter()
+    recipes = [r for r in RECIPES if recipe_keys is None or r.key in recipe_keys]
+
+    needs_selfies = any(not r.garment_only for r in recipes)
     all_selfies = _list_images(SELFIE_DIR)
-    if not all_selfies:
+    if needs_selfies and not all_selfies:
         raise SystemExit(
             f"no selfies in {Path(SELFIE_DIR).resolve()} (add consented *.jpg/*.png)"
         )
@@ -123,7 +145,7 @@ def _enumerate_cells() -> list[Cell]:
 
     needs_garment_active = any(
         r.needs_garment
-        for r in RECIPES
+        for r in recipes
         if any(v.key in variant_keys for v in r.variants)
     )
     if needs_garment_active and not garments:
@@ -141,7 +163,7 @@ def _enumerate_cells() -> list[Cell]:
 
     cells: list[Cell] = []
     for selfie in selfies:
-        for recipe in RECIPES:
+        for recipe in recipes:
             if recipe.garment_only:
                 continue  # enumerated below, once — not per selfie
             for variant in recipe.variants:
@@ -173,7 +195,7 @@ def _enumerate_cells() -> list[Cell]:
     # Garment-solo stage-0 probe: garment × model, no selfie multiplier. The
     # garment is the SINGLE reference image, so single-reference models
     # (supports_garment=False) participate too.
-    for recipe in RECIPES:
+    for recipe in recipes:
         if not recipe.garment_only:
             continue
         for variant in recipe.variants:

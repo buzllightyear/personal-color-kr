@@ -104,6 +104,18 @@ MODELS: list[Model] = [
         _ref_urls,
         extra={"resolution": "1K", "aspect_ratio": "3:4", "num_images": 1},
     ),
+    # Efficiency variant of Nano Banana 2 (operator request 2026-07-02) — sub-2s
+    # latency, ~half the 2/edit price. Endpoint + `prompt`/`image_urls[]` schema
+    # verified on the fal model page 2026-07-02; output is fixed 1K, so
+    # aspect_ratio is the only size knob (price: VERIFY on the model page).
+    Model(
+        "nanobanana2lite",
+        "google/nano-banana-2-lite/edit",
+        "Google(lite)",
+        0.039,
+        _ref_urls,
+        extra={"aspect_ratio": "3:4"},
+    ),
     Model(
         "flux2dev",
         "fal-ai/flux-2/edit",
@@ -464,7 +476,7 @@ OUT_DIR = "out"
 SEEDS_PER_CELL = 1  # >1 also measures consistency (varies seed; multiplies cost)
 # Garment cells pair each selfie with the first N garments (NOT the full
 # cross-product) to bound cost. Raise deliberately for stage 2 if needed.
-GARMENT_PAIR_LIMIT = 2
+GARMENT_PAIR_LIMIT = 3
 # Test-retest (verifier-less zone ②, rater reliability): ~this % of scoreable
 # cells appear TWICE in the blind sheet under different blind IDs (same image,
 # zero extra API cost). Selection is a stable hash property of the cell key, so

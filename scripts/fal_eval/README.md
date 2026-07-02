@@ -99,6 +99,12 @@ appear **twice** under different IDs (same image, $0): score them independently
 — `--unblind` reports your own test-retest consistency per column.
 
 ```bash
+# --- Stage 0 (optional cheap probe): garment-solo only ---
+python run_matrix.py --recipes=garment_solo        # estimate (~$1.5 for 3 garments)
+python run_matrix.py --recipes=garment_solo --yes  # → score via the blind flow below;
+                                                   # drops models that can't even
+                                                   # render the garment alone
+
 # --- Stage 1 (FINALISTS empty in config.py) ---
 python run_matrix.py        # ESTIMATE ONLY: prints new-cell count + max cost, no spend
 python run_matrix.py --yes  # operator-approved paid run (INVARIANTS #8)
