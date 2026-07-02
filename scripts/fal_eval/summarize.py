@@ -14,7 +14,14 @@ Naturalness-first ranking (the whole point of the variant matrix):
          artifact     mean ≥ FLOOR_5PT
          korean_fit   mean ≥ FLOOR_5PT
          naturalness  WORST-variant ai_tell ≥ NATURALNESS_FLOOR   ← top priority
+         garment      mean garment_fidelity over garment cells ≥ GARMENT_FLOOR,
+                      FAIL-CLOSED (no garment cells, or unscored scoreable
+                      garment cells → fail) — the pivot's bounded fidelity axis
     2. Rank survivors by naturalness floor, then by (fidelity+aesthetic), then cost.
+
+  Join key = the canonical cell key (build_report.CELL_KEY_COLS, incl. garment
+  + seed) — dedupe/join ONLY. Aggregation stays (model, knob): collapsing groups
+  to cell keys would leave per-cell scores and no floors/means/ranking.
 
   `spread` = max-min ai_tell across variants. High spread = prompt-FRAGILE
   naturalness (the model only looks real with the right prompt) — a risk flag even
@@ -31,6 +38,7 @@ import json
 import statistics as st
 from pathlib import Path
 
+from build_report import cell_key
 from config import OUT_DIR
 
 # Placeholder thresholds — CALIBRATE against labeled outputs (a bar is dead until
@@ -39,6 +47,11 @@ IDENTITY_FLOOR = 0.55
 IDENTITY_MIN_FLOOR = 0.45
 FLOOR_5PT = 3.5
 NATURALNESS_FLOOR = 3.5  # worst-variant ai_tell must clear this
+# Pivot gate (STRATEGY §9-D/§10 bounded garment-fidelity axis): mean
+# garment_fidelity over garment cells must clear this. FAIL-CLOSED: a
+# (model, knob) with no garment cells, or with scoreable garment cells left
+# unscored, fails the gate — it cannot ride to a win on naturalness alone.
+GARMENT_FLOOR = 3.5
 
 VARIANTS = ("texture", "neutral", "realistic", "stylized")
 HUMAN = ("fidelity", "ai_tell", "aesthetic", "korean_fit", "artifact")
@@ -61,14 +74,7 @@ def _mean(xs: list[float]) -> float | None:
 def main() -> None:
     out = Path(OUT_DIR)
     runs = {
-        (
-            r["model"],
-            r["recipe"],
-            r.get("variant", ""),
-            r.get("knob", ""),
-            r["selfie"],
-        ): r
-        for r in json.loads((out / "runs.json").read_text())
+        cell_key(r): r for r in json.loads((out / "runs.json").read_text())
     }
     res_path = out / "results.csv"
     if not res_path.exists():
@@ -79,16 +85,7 @@ def main() -> None:
     with res_path.open() as fh:
         scored = list(csv.DictReader(fh))
     for r in scored:
-        run = runs.get(
-            (
-                r["model"],
-                r["recipe"],
-                r.get("variant", ""),
-                r.get("knob", ""),
-                r["selfie"],
-            ),
-            {},
-        )
+        run = runs.get(cell_key(r), {})
         r["usd_est"] = run.get("usd_est", 0.0)
         r["latency_s"] = run.get("latency_s")
 
@@ -109,6 +106,23 @@ def main() -> None:
         nat_floor = min(nat_vals) if nat_vals else None
         nat_spread = round(max(nat_vals) - min(nat_vals), 2) if nat_vals else None
 
+        # Garment gate (fail-closed). Scoreable = generated or reused cells;
+        # errored generations can't be scored and are excluded from the
+        # completeness check.
+        garment_rows = [r for r in rows if (r.get("garment") or "").strip()]
+        scoreable = [
+            r
+            for r in garment_rows
+            if not r.get("error") or str(r["error"]).startswith("skipped")
+        ]
+        garment_vals = _fnums(scoreable, "garment_fidelity")
+        garment_mean = _mean(garment_vals)
+        garment_ok = (
+            bool(scoreable)
+            and len(garment_vals) == len(scoreable)  # unscored cell → fail
+            and (garment_mean or 0) >= GARMENT_FLOOR
+        )
+
         rec = {
             "model": model,
             "knob": knob,
@@ -118,6 +132,8 @@ def main() -> None:
             "id_min": round(min(af), 3) if af else None,
             "nat_floor": nat_floor,
             "nat_spread": nat_spread,
+            "garment_mean": garment_mean,
+            "garment_ok": garment_ok,
             "cost": float(rows[0]["usd_est"] or 0),
             **{f"nat_{v}": per_variant[v] for v in VARIANTS},
         }
@@ -132,7 +148,7 @@ def main() -> None:
         art_ok = rec["artifact"] is not None and rec["artifact"] >= FLOOR_5PT
         kr_ok = rec["korean_fit"] is not None and rec["korean_fit"] >= FLOOR_5PT
         nat_ok = nat_floor is not None and nat_floor >= NATURALNESS_FLOOR
-        rec["floors_pass"] = bool(id_ok and art_ok and kr_ok and nat_ok)
+        rec["floors_pass"] = bool(id_ok and art_ok and kr_ok and nat_ok and garment_ok)
         diffs = [rec[c] for c in ("fidelity", "aesthetic") if rec.get(c) is not None]
         rec["diff_score"] = round(st.mean(diffs), 2) if diffs else None
         summary.append(rec)
@@ -153,6 +169,8 @@ def main() -> None:
         "origin",
         "n",
         "floors_pass",
+        "garment_ok",
+        "garment_mean",
         "nat_floor",
         "nat_spread",
         "nat_texture",
@@ -173,7 +191,7 @@ def main() -> None:
         w.writerows(summary)
 
     print(
-        f"{'model':12} {'knob':16} {'floor':>5} {'natF':>5} {'sprd':>5} "
+        f"{'model':12} {'knob':16} {'floor':>5} {'garm':>5} {'natF':>5} {'sprd':>5} "
         f"{'tex':>4} {'neu':>4} {'real':>4} {'sty':>4} {'idM':>5} {'idm':>5} "
         f"{'fid':>4} {'aes':>4} {'kr':>4} {'art':>4} {'$':>6}"
     )
@@ -183,8 +201,9 @@ def main() -> None:
         def s(x: object) -> str:
             return str(x) if x is not None else "—"
 
+        garm = s(r["garment_mean"]) if r["garment_ok"] else f"✗{s(r['garment_mean'])}"
         print(
-            f"{r['model']:12} {r['knob']:16} {flag:>5} {s(r['nat_floor']):>5} "
+            f"{r['model']:12} {r['knob']:16} {flag:>5} {garm:>5} {s(r['nat_floor']):>5} "
             f"{s(r['nat_spread']):>5} {s(r['nat_texture']):>4} {s(r['nat_neutral']):>4} "
             f"{s(r['nat_realistic']):>4} {s(r['nat_stylized']):>4} {s(r['id_mean']):>5} "
             f"{s(r['id_min']):>5} {s(r['fidelity']):>4} {s(r['aesthetic']):>4} "
