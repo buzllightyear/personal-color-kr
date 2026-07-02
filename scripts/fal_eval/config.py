@@ -121,7 +121,13 @@ MODELS: list[Model] = [
 
 # Variant keys, ordered cheap-signal-first. The `texture` probe is recipe-
 # independent (lives on the synthetic `texture_probe` recipe only).
-ALL_VARIANT_KEYS: tuple[str, ...] = ("texture", "neutral", "realistic", "stylized")
+ALL_VARIANT_KEYS: tuple[str, ...] = (
+    "texture",
+    "neutral",
+    "realistic",
+    "crafted",
+    "stylized",
+)
 
 
 @dataclass(frozen=True)
@@ -153,68 +159,103 @@ _TEXTURE_PROBE = Recipe(
     ),
 )
 
+# `realistic` = the REAL seeded prompt_template (Supabase `recipes`, 2026-06-26),
+# with the unfilled `{personal_color_modifier}` slot stripped — i.e. EXACTLY what
+# production now sends to fal (post-#104). `neutral`/`stylized` bracket it (minimal
+# vs pushed) to expose where AI-tell appears. `reference=None`: the seeded
+# thumbnail_urls are placeholders (picsum / null), NOT real promised-look images,
+# so fidelity is eyeballed against intent until real references exist.
+#
+# `crafted` = the SAME look as `realistic`, wrapped in the i2i realism layer —
+# identity anchor ("this person … unchanged") + skin-texture PRESERVATION + anti-
+# plastic negatives (the restyle-applicable subset of the portrait-realism
+# playbook; scene-construction tokens omitted — the input selfie owns those). Held
+# identical across models: measures whether deploy-style prompt craft lifts
+# identity (ArcFace) + naturalness (ai_tell) over the naive prod prompt.
 RECIPES: list[Recipe] = [
     _TEXTURE_PROBE,
     Recipe(
-        "glow_makeup",
-        "https://REPLACE_WITH/thumbnail_glow.jpg",
+        "glow_makeup",  # 투명 글로우 메이크업 (glow-makeup-v1)
+        None,
         (
             PromptVariant(
                 "neutral",
-                "투명 글로우 메이크업 느낌만 살짝, natural skin texture, soft daylight, "
-                "minimal retouch, realistic Korean face",  # PLACEHOLDER
+                "portrait, light dewy skin, soft natural daylight, minimal makeup, "
+                "unretouched realistic skin texture",
             ),
             PromptVariant(
                 "realistic",
-                "투명 글로우 메이크업, dewy luminous skin, natural Korean beauty, "
-                "soft studio glow, photographic",  # PLACEHOLDER ← fill from seed prompt_template
+                "editorial portrait, dewy glow makeup, soft studio light",  # seed
+            ),
+            PromptVariant(
+                "crafted",
+                "this person, identity and facial features unchanged, editorial "
+                "portrait with dewy glow makeup and soft studio light, preserve "
+                "real skin texture with visible pores, soft highlight rolloff "
+                "— no plastic or airbrushed skin, no oversharpening, no excessive "
+                "HDR, natural shadows only",
             ),
             PromptVariant(
                 "stylized",
-                "투명 글로우 메이크업, editorial beauty campaign, glossy high-fashion "
-                "glamour, vivid saturated, heavy glow retouch, magazine cover",  # PLACEHOLDER
+                "editorial portrait, dewy glow makeup, soft studio light, glossy "
+                "high-fashion beauty campaign, vivid saturated colors, heavy "
+                "glamour retouch, magazine cover",
             ),
         ),
     ),
     Recipe(
-        "film_mood",
-        "https://REPLACE_WITH/thumbnail_film.jpg",
+        "film_mood",  # 필름 카메라 무드 (film-mood-v1)
+        None,
         (
             PromptVariant(
                 "neutral",
-                "필름 카메라 느낌만 약간, natural 35mm look, muted, candid, realistic "
-                "skin texture, minimal edit",  # PLACEHOLDER
+                "portrait, subtle film look, soft natural light, light grain, "
+                "candid, realistic skin texture",
             ),
             PromptVariant(
                 "realistic",
-                "필름 카메라 무드, analog 35mm film grain, muted tones, nostalgic, "
-                "candid portrait",  # PLACEHOLDER ← fill from seed prompt_template
+                "analog film photo, warm grain, nostalgic mood",  # seed
+            ),
+            PromptVariant(
+                "crafted",
+                "this person, identity and facial features unchanged, analog 35mm "
+                "film photo with warm grain and nostalgic mood, shot on 50mm f1.8, "
+                "preserve real skin texture with visible pores, soft highlight "
+                "rolloff — no plastic or airbrushed skin, no oversharpening, no "
+                "excessive HDR, natural shadows only",
             ),
             PromptVariant(
                 "stylized",
-                "필름 카메라 무드, heavy cinematic teal-orange grade, dramatic film "
-                "stock, stylized vignette, moody editorial",  # PLACEHOLDER
+                "analog film photo, heavy warm grain, dramatic cinematic "
+                "teal-orange grade, strong vignette, moody nostalgic editorial",
             ),
         ),
     ),
     Recipe(
-        "summer_look",
-        "https://REPLACE_WITH/thumbnail_summer.jpg",
+        "summer_look",  # 청량 여름 룩 (fresh-summer-v1)
+        None,
         (
             PromptVariant(
                 "neutral",
-                "청량 여름 느낌만 살짝, bright natural daylight, fresh, realistic skin, "
-                "minimal retouch",  # PLACEHOLDER
+                "portrait, fresh clean skin, soft bright daylight, minimal "
+                "retouch, realistic skin texture",
             ),
             PromptVariant(
                 "realistic",
-                "청량 여름 룩, fresh summer vibe, bright natural light, clean clear "
-                "skin",  # PLACEHOLDER ← fill from seed prompt_template
+                "fresh summer look, clean skin, bright daylight",  # seed
+            ),
+            PromptVariant(
+                "crafted",
+                "this person, identity and facial features unchanged, fresh summer "
+                "look with clean skin in bright natural daylight, preserve real "
+                "skin texture with visible pores, soft highlight rolloff — no "
+                "plastic or airbrushed skin, no oversharpening, no excessive HDR, "
+                "natural shadows only",
             ),
             PromptVariant(
                 "stylized",
-                "청량 여름 룩, vibrant tropical editorial, glossy sun-kissed glamour, "
-                "hyper-saturated, beauty campaign",  # PLACEHOLDER
+                "fresh summer look, vibrant tropical beauty campaign, glossy "
+                "sun-kissed glamour, hyper-saturated, editorial",
             ),
         ),
     ),
@@ -229,8 +270,8 @@ RECIPES: list[Recipe] = [
 # Stage 2 (deep):   FINALISTS set   → finalists only, ALL selfies, ALL variants,
 #   full per-model knob sweep. The naturalness FLOOR + stability decision.
 FINALISTS: tuple[str, ...] = ()  # e.g. ("seedream45", "flux2dev") after stage 1
-SCREEN_SELFIE_LIMIT = 4
-SCREEN_VARIANT_KEYS: tuple[str, ...] = ("texture", "realistic")
+SCREEN_SELFIE_LIMIT = 6  # interleaved f/m naming → first 6 = 3 female + 3 male
+SCREEN_VARIANT_KEYS: tuple[str, ...] = ("texture", "realistic", "crafted")
 
 
 def is_stage2() -> bool:

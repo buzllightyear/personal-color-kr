@@ -37,6 +37,23 @@ from config import (
 )
 
 
+def _load_dotenv(path: str = ".env") -> None:
+    """Minimal .env loader (no dependency): `KEY=value` lines, `#` comments.
+
+    A real exported env var always wins (``setdefault``), so a one-off
+    ``export FAL_KEY=...`` still overrides the file.
+    """
+    p = Path(path)
+    if not p.exists():
+        return
+    for raw in p.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+
+
 def _output_url(result: object) -> str:
     """Pull images[0].url from a fal response, defensively (schemas vary slightly)."""
     if isinstance(result, dict):
@@ -58,8 +75,12 @@ def _output_url(result: object) -> str:
 
 
 def main() -> None:
+    _load_dotenv()  # read FAL_KEY from scripts/fal_eval/.env if present (gitignored)
     if not os.environ.get("FAL_KEY"):
-        raise SystemExit("set FAL_KEY=<key_id>:<key_secret> (fal-client reads it)")
+        raise SystemExit(
+            "set FAL_KEY=<key_id>:<key_secret> — export it, or put it in a "
+            "scripts/fal_eval/.env file (fal-client reads FAL_KEY, NOT FAL_API_KEY)"
+        )
 
     selfie_dir = Path(SELFIE_DIR)
     all_selfies = sorted(

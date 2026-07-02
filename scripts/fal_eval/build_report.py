@@ -33,6 +33,12 @@ from config import OUT_DIR, RECIPES
 
 HUMAN_COLS = ["fidelity", "ai_tell", "aesthetic", "korean_fit", "artifact", "notes"]
 
+# LLM-vision pre-scores (filled by a vision pass, kept SEPARATE from the human
+# columns so LLM↔human disagreement is itself a calibration signal — the cells
+# where they diverge most are the ones worth re-eyeballing). Only the dimensions a
+# vision model can judge from a single image; fidelity/aesthetic stay human-only.
+LLM_COLS = ["llm_ai_tell", "llm_korean_fit", "llm_artifact", "llm_notes"]
+
 _CSV_COLS = [
     "model",
     "origin",
@@ -44,6 +50,7 @@ _CSV_COLS = [
     "latency_s",
     "usd_est",
     "error",
+    *LLM_COLS,
     *HUMAN_COLS,
 ]
 
@@ -53,7 +60,7 @@ def _write_csv(rows: list[dict], path: Path) -> None:
         w = csv.DictWriter(fh, fieldnames=_CSV_COLS, extrasaction="ignore")
         w.writeheader()
         for r in rows:
-            w.writerow({**r, **{c: "" for c in HUMAN_COLS}})
+            w.writerow({**r, **{c: "" for c in (*LLM_COLS, *HUMAN_COLS)}})
 
 
 def _img(src: str, label: str) -> str:

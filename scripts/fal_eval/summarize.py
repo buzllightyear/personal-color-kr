@@ -40,7 +40,7 @@ IDENTITY_MIN_FLOOR = 0.45
 FLOOR_5PT = 3.5
 NATURALNESS_FLOOR = 3.5  # worst-variant ai_tell must clear this
 
-VARIANTS = ("texture", "neutral", "realistic", "stylized")
+VARIANTS = ("texture", "neutral", "realistic", "crafted", "stylized")
 HUMAN = ("fidelity", "ai_tell", "aesthetic", "korean_fit", "artifact")
 
 
@@ -100,13 +100,36 @@ def main() -> None:
     summary = []
     for (model, knob), rows in groups.items():
         af = _fnums(rows, "arcface")
-        # Per-variant naturalness (mean ai_tell), then the floor = worst variant.
-        per_variant = {
-            v: _mean(_fnums([r for r in rows if r.get("variant") == v], "ai_tell"))
-            for v in VARIANTS
-        }
-        nat_vals = [m for m in per_variant.values() if m is not None]
-        nat_floor = min(nat_vals) if nat_vals else None
+
+        def _floor_spread(col: str) -> tuple[dict[str, float | None], float | None]:
+            pv = {
+                v: _mean(_fnums([r for r in rows if r.get("variant") == v], col))
+                for v in VARIANTS
+            }
+            vals = [m for m in pv.values() if m is not None]
+            return pv, (min(vals) if vals else None)
+
+        # Naturalness FLOOR = worst variant's ai_tell. Computed for BOTH the human
+        # score and the LLM pre-score, kept side-by-side. Effective floor = human
+        # when hand-scored, else the LLM pre-score — so stage-1 can screen on the
+        # LLM pass ALONE before any hand-scoring (that's the point of B2).
+        per_variant, nat_floor_h = _floor_spread("ai_tell")
+        _llm_pv, nat_floor_llm = _floor_spread("llm_ai_tell")
+        nat_floor = nat_floor_h if nat_floor_h is not None else nat_floor_llm
+        nat_src = (
+            "human"
+            if nat_floor_h is not None
+            else ("llm" if nat_floor_llm is not None else "—")
+        )
+        # |human − llm| on the floor; large = LLM and you disagree → re-eyeball.
+        nat_agree = (
+            round(nat_floor_h - nat_floor_llm, 2)
+            if nat_floor_h is not None and nat_floor_llm is not None
+            else None
+        )
+        nat_vals = [m for m in per_variant.values() if m is not None] or [
+            m for m in _llm_pv.values() if m is not None
+        ]
         nat_spread = round(max(nat_vals) - min(nat_vals), 2) if nat_vals else None
 
         rec = {
@@ -117,20 +140,35 @@ def main() -> None:
             "id_mean": round(st.mean(af), 3) if af else None,
             "id_min": round(min(af), 3) if af else None,
             "nat_floor": nat_floor,
+            "nat_src": nat_src,
+            "nat_floor_llm": nat_floor_llm,
+            "nat_agree": nat_agree,
             "nat_spread": nat_spread,
             "cost": float(rows[0]["usd_est"] or 0),
             **{f"nat_{v}": per_variant[v] for v in VARIANTS},
         }
         for col in HUMAN:
             rec[col] = _mean(_fnums(rows, col))
+        # Effective artifact / korean_fit gate = human when scored, else the LLM
+        # pre-score, so a stage-1 LLM-only pass can gate these floors too (B2).
+        eff_art = (
+            rec["artifact"]
+            if rec["artifact"] is not None
+            else _mean(_fnums(rows, "llm_artifact"))
+        )
+        eff_kr = (
+            rec["korean_fit"]
+            if rec["korean_fit"] is not None
+            else _mean(_fnums(rows, "llm_korean_fit"))
+        )
 
         id_ok = (
             rec["id_mean"] is not None
             and rec["id_mean"] >= IDENTITY_FLOOR
             and (rec["id_min"] or 0) >= IDENTITY_MIN_FLOOR
         )
-        art_ok = rec["artifact"] is not None and rec["artifact"] >= FLOOR_5PT
-        kr_ok = rec["korean_fit"] is not None and rec["korean_fit"] >= FLOOR_5PT
+        art_ok = eff_art is not None and eff_art >= FLOOR_5PT
+        kr_ok = eff_kr is not None and eff_kr >= FLOOR_5PT
         nat_ok = nat_floor is not None and nat_floor >= NATURALNESS_FLOOR
         rec["floors_pass"] = bool(id_ok and art_ok and kr_ok and nat_ok)
         diffs = [rec[c] for c in ("fidelity", "aesthetic") if rec.get(c) is not None]
@@ -154,10 +192,14 @@ def main() -> None:
         "n",
         "floors_pass",
         "nat_floor",
+        "nat_src",
+        "nat_floor_llm",
+        "nat_agree",
         "nat_spread",
         "nat_texture",
         "nat_neutral",
         "nat_realistic",
+        "nat_crafted",
         "nat_stylized",
         "id_mean",
         "id_min",
@@ -173,9 +215,10 @@ def main() -> None:
         w.writerows(summary)
 
     print(
-        f"{'model':12} {'knob':16} {'floor':>5} {'natF':>5} {'sprd':>5} "
-        f"{'tex':>4} {'neu':>4} {'real':>4} {'sty':>4} {'idM':>5} {'idm':>5} "
-        f"{'fid':>4} {'aes':>4} {'kr':>4} {'art':>4} {'$':>6}"
+        f"{'model':12} {'knob':16} {'gate':>5} {'natF':>5} {'src':>5} {'natL':>5} "
+        f"{'agr':>5} {'sprd':>5} {'tex':>4} {'neu':>4} {'real':>4} {'cra':>4} "
+        f"{'sty':>4} {'idM':>5} {'idm':>5} {'fid':>4} {'aes':>4} {'kr':>4} "
+        f"{'art':>4} {'$':>6}"
     )
     for r in summary:
         flag = "PASS" if r["floors_pass"] else "fail"
@@ -185,10 +228,27 @@ def main() -> None:
 
         print(
             f"{r['model']:12} {r['knob']:16} {flag:>5} {s(r['nat_floor']):>5} "
+            f"{s(r['nat_src']):>5} {s(r['nat_floor_llm']):>5} {s(r['nat_agree']):>5} "
             f"{s(r['nat_spread']):>5} {s(r['nat_texture']):>4} {s(r['nat_neutral']):>4} "
-            f"{s(r['nat_realistic']):>4} {s(r['nat_stylized']):>4} {s(r['id_mean']):>5} "
-            f"{s(r['id_min']):>5} {s(r['fidelity']):>4} {s(r['aesthetic']):>4} "
-            f"{s(r['korean_fit']):>4} {s(r['artifact']):>4} {r['cost']:>6}"
+            f"{s(r['nat_realistic']):>4} {s(r['nat_crafted']):>4} {s(r['nat_stylized']):>4} "
+            f"{s(r['id_mean']):>5} {s(r['id_min']):>5} {s(r['fidelity']):>4} "
+            f"{s(r['aesthetic']):>4} {s(r['korean_fit']):>4} {s(r['artifact']):>4} "
+            f"{r['cost']:>6}"
+        )
+
+    # LLM↔human disagreement: cells where the two naturalness floors diverge ≥1.0
+    # are the ones worth re-eyeballing (the whole reason llm_* is kept separate).
+    disagree = [
+        r
+        for r in summary
+        if (r["nat_agree"] is not None and abs(r["nat_agree"]) >= 1.0)
+    ]
+    if disagree:
+        print(
+            "\n⚠ LLM↔human naturalness disagree (|Δ|≥1.0) — re-eyeball: "
+            + ", ".join(
+                f"{r['model']}/{r['knob']}(Δ{r['nat_agree']})" for r in disagree
+            )
         )
     print(f"\n→ {out / 'summary.csv'}")
     winners = [r for r in summary if r["floors_pass"]]
