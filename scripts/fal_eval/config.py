@@ -437,11 +437,11 @@ def enriched_prompt(variant_text: str, enrichment: str, garment: Path | None) ->
 #   pass to drop models that are clearly AI-y or fail the identity floor.
 # Stage 2 (deep):   FINALISTS set   → finalists only, ALL selfies, ALL variants,
 #   full per-model knob sweep. The naturalness FLOOR + stability decision.
-# Operator decision 2026-07-03 (stage-0 garment-solo, 36 cells, retest |Δ|=0.25):
-# nanobanana2lite (3.33, fastest, $0.039) + seedream45 (2.67, won the worn-shot
-# bottoms group) — "적당한 퀄리티, 적당한 가격", complementary strengths. Dressing
-# ability (person×garment) is deliberately deferred to the next round.
-FINALISTS: tuple[str, ...] = ("nanobanana2lite", "seedream45")
+# Operator decisions: 2026-07-03 1차 — lite+seedream45 (stage-0 근거). 2차 —
+# 착장 프로브에서 seedream45 완전 탈락(착장 픽 10% + 얼굴 보존 불능 판정) →
+# dressing model = lite 단독. lite: 착장픽 14/17, 시도당 58%, 약점 = 얼굴
+# 드리프트 + 핏 각색 (→ PROMPT_RX 고삐 프로브가 수리 가능성 검사).
+FINALISTS: tuple[str, ...] = ("nanobanana2lite",)
 SCREEN_SELFIE_LIMIT = 4
 SCREEN_VARIANT_KEYS: tuple[str, ...] = ("texture", "realistic")
 
@@ -455,7 +455,30 @@ def is_stage2() -> bool:
 # stage. Combine with `run_matrix.py --recipes=...` to scope recipes.
 PROBE_VARIANT_KEYS: tuple[str, ...] = ("realistic",)  # 착장 프로브 2026-07-03
 PROBE_SELFIE_LIMIT: int | None = 2  # 여1·남1 (halved scope, operator 2026-07-03)
-PROBE_ENRICHMENT_KEYS: tuple[str, ...] = ("none", "profile")
+# Enrichment axis OFF — disconfirmed across two rounds (STRATEGY §10-B note).
+PROBE_ENRICHMENT_KEYS: tuple[str, ...] = ("none",)
+
+# ---- Prompt-Rx axis (고삐 프로브, operator-approved 2026-07-03): can prompt
+# phrases repair lite's two defects — face drift (42% of attempts) and fit
+# adaptation (원핏 고정 = operator MVP default)? Applies to garment cells only;
+# "" = baseline (same prompt as the previous round → cells are reused, $0).
+# If a phrase works it becomes the production prompt_template's base scaffold.
+_RX_FACE = (
+    ", the face is an exact, unmodified likeness of the person in the first "
+    "image — identical facial features, face shape and skin tone, no "
+    "beautification, no face repainting"
+)
+_RX_FIT = (
+    ", preserve the garment's original fit and silhouette exactly as shown in "
+    "the second image — do not slim, crop, or tailor it to the wearer's body"
+)
+PROMPT_RX: dict[str, str] = {
+    "": "",
+    "face": _RX_FACE,
+    "fit": _RX_FIT,
+    "face_fit": _RX_FACE + _RX_FIT,
+}
+ACTIVE_RX_KEYS: tuple[str, ...] = ("", "face", "fit", "face_fit")
 
 
 def active_models() -> list[Model]:

@@ -41,8 +41,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from config import (
+    ACTIVE_RX_KEYS,
     GARMENT_DIR,
     OUT_DIR,
+    PROMPT_RX,
     RECIPES,
     SEEDS_PER_CELL,
     SELFIE_DIR,
@@ -79,11 +81,13 @@ class Cell:
     selfie: Path | None
     garment: Path | None
     enrichment: str
+    rx: str  # prompt-Rx arm ("" = baseline; see config.PROMPT_RX)
     seed_i: int
 
     @property
     def prompt(self) -> str:
-        return enriched_prompt(self.variant.text, self.enrichment, self.garment)
+        base = enriched_prompt(self.variant.text, self.enrichment, self.garment)
+        return base + PROMPT_RX[self.rx]
 
     @property
     def out_path(self) -> Path:
@@ -94,6 +98,8 @@ class Cell:
             bits.append(self.garment.stem)
         if self.enrichment != "none":
             bits.append(f"enr-{self.enrichment}")
+        if self.rx:
+            bits.append(f"rx-{self.rx}")
         return (
             Path(OUT_DIR)
             / self.model.key
@@ -173,25 +179,28 @@ def _enumerate_cells() -> list[Cell]:
                     list(garments) if recipe.needs_garment else [None]
                 )
                 enrichment_axis = enrichments if recipe.needs_garment else ("none",)
+                rx_axis = ACTIVE_RX_KEYS if recipe.needs_garment else ("",)
                 for garment in garment_axis:
                     for enrichment in enrichment_axis:
-                        for model in models:
-                            if recipe.needs_garment and not model.supports_garment:
-                                continue
-                            for knob in active_knobs(model):
-                                for seed_i in range(SEEDS_PER_CELL):
-                                    cells.append(
-                                        Cell(
-                                            model,
-                                            recipe,
-                                            variant,
-                                            knob,
-                                            selfie,
-                                            garment,
-                                            enrichment,
-                                            seed_i,
+                        for rx in rx_axis:
+                            for model in models:
+                                if recipe.needs_garment and not model.supports_garment:
+                                    continue
+                                for knob in active_knobs(model):
+                                    for seed_i in range(SEEDS_PER_CELL):
+                                        cells.append(
+                                            Cell(
+                                                model,
+                                                recipe,
+                                                variant,
+                                                knob,
+                                                selfie,
+                                                garment,
+                                                enrichment,
+                                                rx,
+                                                seed_i,
+                                            )
                                         )
-                                    )
     # Garment-solo stage-0 probe: garment × model, no selfie multiplier. The
     # garment is the SINGLE reference image, so single-reference models
     # (supports_garment=False) participate too.
@@ -203,6 +212,8 @@ def _enumerate_cells() -> list[Cell]:
                 continue
             for garment in garments:
                 for enrichment in enrichments:
+                    # rx phrases talk about the wearer's face/body — meaningless
+                    # (and a 4× cost multiplier) on no-person solo cells.
                     for model in models:
                         for knob in active_knobs(model):
                             for seed_i in range(SEEDS_PER_CELL):
@@ -215,6 +226,7 @@ def _enumerate_cells() -> list[Cell]:
                                         None,
                                         garment,
                                         enrichment,
+                                        "",
                                         seed_i,
                                     )
                                 )
@@ -285,6 +297,7 @@ def main() -> None:
             "garment": cell.garment.name if cell.garment else "",
             "garment_path": str(cell.garment) if cell.garment else "",
             "enrichment": cell.enrichment,
+            "rx": cell.rx,
             "seed": cell.seed_i,
             "out_path": str(out_path),
             "usd_est": cell.model.usd_per_image,
@@ -324,6 +337,8 @@ def main() -> None:
         status = "✗ " + row["error"] if row["error"] else "✓"
         garment_s = f" +{row['garment']}" if row["garment"] else ""
         enr_s = f" [{cell.enrichment}]" if cell.enrichment != "none" else ""
+        if cell.rx:
+            enr_s += f" rx:{cell.rx}"
         print(
             f"{status}  {cell.model.key:12} {cell.recipe.key:14} "
             f"{cell.variant.key:9} {row['knob']:16} "

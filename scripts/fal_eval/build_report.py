@@ -76,7 +76,8 @@ HUMAN_COLS = [
 ]
 
 # Canonical cell identity — dedupe/join/upsert ONLY (aggregation key stays
-# (model, knob); see summarize.py). `enrichment` is the §10-B axis.
+# (model, knob); see summarize.py). `enrichment` is the §10-B axis; `rx` is the
+# prompt-Rx arm ("" = baseline, so pre-rx rows keep their identity).
 CELL_KEY_COLS = (
     "model",
     "recipe",
@@ -85,6 +86,7 @@ CELL_KEY_COLS = (
     "selfie",
     "garment",
     "enrichment",
+    "rx",
     "seed",
 )
 
@@ -97,6 +99,7 @@ _CSV_COLS = [
     "selfie",
     "garment",
     "enrichment",
+    "rx",
     "seed",
     "arcface",
     "latency_s",
@@ -434,7 +437,12 @@ def _write_labeled(rows: list[dict], path: Path) -> None:
             knob_s = "" if knob in ("", "default") else f" · {knob}"
             enr = c.get("enrichment", "none")
             enr_s = "" if enr in ("", "none") else f" · enr:{enr}"
-            label = f'{c["model"]}{knob_s}{enr_s} · {c["origin"]} · {af_s} · ${c["usd_est"]}'
+            rx = c.get("rx", "")
+            rx_s = f" · rx:{rx}" if rx else ""
+            label = (
+                f'{c["model"]}{knob_s}{enr_s}{rx_s} · {c["origin"]} · {af_s}'
+                f' · ${c["usd_est"]}'
+            )
             if c["error"] and not str(c["error"]).startswith("skipped"):
                 label += f' · ✗{str(c["error"])[:30]}'
             parts.append(
