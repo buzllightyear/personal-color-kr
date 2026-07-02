@@ -429,7 +429,11 @@ def enriched_prompt(variant_text: str, enrichment: str, garment: Path | None) ->
 #   pass to drop models that are clearly AI-y or fail the identity floor.
 # Stage 2 (deep):   FINALISTS set   → finalists only, ALL selfies, ALL variants,
 #   full per-model knob sweep. The naturalness FLOOR + stability decision.
-FINALISTS: tuple[str, ...] = ()  # e.g. ("seedream45", "flux2dev") after stage 1
+# Operator decision 2026-07-03 (stage-0 garment-solo, 36 cells, retest |Δ|=0.25):
+# nanobanana2lite (3.33, fastest, $0.039) + seedream45 (2.67, won the worn-shot
+# bottoms group) — "적당한 퀄리티, 적당한 가격", complementary strengths. Dressing
+# ability (person×garment) is deliberately deferred to the next round.
+FINALISTS: tuple[str, ...] = ("nanobanana2lite", "seedream45")
 SCREEN_SELFIE_LIMIT = 4
 SCREEN_VARIANT_KEYS: tuple[str, ...] = ("texture", "realistic")
 
