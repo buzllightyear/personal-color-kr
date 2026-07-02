@@ -260,7 +260,8 @@ RECIPES: list[Recipe] = [
     # models (blocked factor), like the three variants above.
     Recipe(
         "garment_scene",
-        None,  # fidelity target = the garment input itself, shown on the sheet
+        # Operator-curated trend mood ref (2026-07-03): off-guard walking candid.
+        "trend_refs/deec217fa5cd19f405d211584cc1fafd.jpg",
         (
             PromptVariant(
                 "neutral",
@@ -269,12 +270,14 @@ RECIPES: list[Recipe] = [
                 "photo, identity unchanged, garment color and pattern preserved, "
                 "realistic fit and drape",
             ),
+            # Operator-approved 2026-07-03 (distilled from trend_refs).
             PromptVariant(
                 "realistic",
                 "the person from the first image wearing the garment from the "
-                "second image, walking on a quiet Seoul street in the late "
-                "afternoon, natural light, candid street-style photo, identity "
-                "unchanged, garment faithfully rendered",
+                "second image, off-guard candid snap taken by a friend on a "
+                "phone while walking mid-stride on a city street, natural "
+                "light, un-staged amateur snapshot realism, slightly imperfect "
+                "framing, identity unchanged, garment faithfully rendered",
             ),
             PromptVariant(
                 "stylized",
@@ -288,7 +291,10 @@ RECIPES: list[Recipe] = [
     ),
     Recipe(
         "garment_format",
-        None,
+        # Operator-curated trend mood ref (2026-07-03): 0.5x ultra-wide selfie.
+        # (UI/text/sticker overlays in the refs are format_template compositing
+        # territory — generation carries only composition/light/snapshot grain.)
+        "trend_refs/557fac2d1c432dda5829ee84ccfa0354.jpg",
         (
             PromptVariant(
                 "neutral",
@@ -297,12 +303,14 @@ RECIPES: list[Recipe] = [
                 "orange film datestamp in the corner, identity unchanged, garment "
                 "faithfully rendered",
             ),
+            # Operator-approved 2026-07-03 (distilled from trend_refs).
             PromptVariant(
                 "realistic",
                 "the person from the first image wearing the garment from the "
-                "second image, instagram-ready outfit post, analog film look with "
-                "date stamp, natural pose, identity unchanged, garment color and "
-                "fit preserved",
+                "second image, 0.5x ultra-wide front-camera selfie from a "
+                "playful low angle, mild wide-angle distortion, indoor natural "
+                "light, casual off-guard expression, phone snapshot look, "
+                "identity unchanged, garment color and fit preserved",
             ),
             PromptVariant(
                 "stylized",
@@ -442,11 +450,21 @@ def is_stage2() -> bool:
     return bool(FINALISTS)
 
 
+# ---- Probe overrides: operator-scoped small rounds (e.g. the 착장 프로브)
+# that need a narrower matrix than the stage defaults. Empty/None = follow the
+# stage. Combine with `run_matrix.py --recipes=...` to scope recipes.
+PROBE_VARIANT_KEYS: tuple[str, ...] = ("realistic",)  # 착장 프로브 2026-07-03
+PROBE_SELFIE_LIMIT: int | None = 2  # 여1·남1 (halved scope, operator 2026-07-03)
+PROBE_ENRICHMENT_KEYS: tuple[str, ...] = ("none", "profile")
+
+
 def active_models() -> list[Model]:
     return [m for m in MODELS if not FINALISTS or m.key in FINALISTS]
 
 
 def active_variant_keys() -> tuple[str, ...]:
+    if PROBE_VARIANT_KEYS:
+        return PROBE_VARIANT_KEYS
     return ALL_VARIANT_KEYS if is_stage2() else SCREEN_VARIANT_KEYS
 
 
@@ -455,10 +473,14 @@ def active_knobs(model: Model) -> tuple[dict, ...]:
 
 
 def active_enrichment_keys() -> tuple[str, ...]:
+    if PROBE_ENRICHMENT_KEYS:
+        return PROBE_ENRICHMENT_KEYS
     return ENRICHMENT_KEYS if is_stage2() else SCREEN_ENRICHMENT_KEYS
 
 
 def active_selfies(selfies: list) -> list:
+    if PROBE_SELFIE_LIMIT is not None:
+        return selfies[:PROBE_SELFIE_LIMIT]
     return selfies if is_stage2() else selfies[:SCREEN_SELFIE_LIMIT]
 
 
