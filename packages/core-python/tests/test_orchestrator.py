@@ -28,7 +28,8 @@ Test coverage:
     - nsfw_classifier is forwarded verbatim to _score_fn
     - api_key is forwarded verbatim to _generate_fn
     - config is forwarded verbatim to _generate_fn
-    - selfie_bytes are forwarded verbatim to _generate_fn
+    - GenerationInputs is forwarded verbatim to _generate_fn (same instance
+      on every retry attempt — the garment must not be dropped)
     - timeout passed to _generate_fn is positive and <= total_budget_seconds
 """
 
@@ -38,7 +39,11 @@ from typing import Final
 
 import pytest
 
-from personal_color.generate.fal_client import FalGenerationConfig, FalGenerationError
+from personal_color.generate.fal_client import (
+    FalGenerationConfig,
+    FalGenerationError,
+    GenerationInputs,
+)
 from personal_color.generate.orchestrator import (
     GenerationBudgetExhaustedError,
     OrchestrationResult,
@@ -56,6 +61,8 @@ from personal_color.generate.rejection import (
 
 _FAKE_SELFIE: Final[bytes] = b"FAKE_SELFIE_PNG_BYTES"
 _FAKE_RESULT: Final[bytes] = b"FAKE_GENERATED_IMAGE_BYTES"
+
+_INPUTS: Final[GenerationInputs] = GenerationInputs(selfie_bytes=_FAKE_SELFIE)
 _TEST_API_KEY: Final[str] = "test-key-id:test-key-secret"
 
 _MINIMAL_CONFIG: Final[FalGenerationConfig] = FalGenerationConfig(
@@ -101,7 +108,7 @@ _STUB_NSFW: Final[StubNsfwClassifier] = StubNsfwClassifier(score=0.0)
 
 def _always_succeed_generate(
     config: FalGenerationConfig,
-    selfie_bytes: bytes,
+    inputs: GenerationInputs,
     *,
     api_key: str,
     timeout: float,
@@ -120,7 +127,7 @@ def _make_fail_then_succeed_generate(
 
     def _stub(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -138,7 +145,7 @@ def _make_fail_then_succeed_generate(
 
 def _always_retryable_fail_generate(
     config: FalGenerationConfig,
-    selfie_bytes: bytes,
+    inputs: GenerationInputs,
     *,
     api_key: str,
     timeout: float,
@@ -149,7 +156,7 @@ def _always_retryable_fail_generate(
 
 def _always_permanent_fail_generate(
     config: FalGenerationConfig,
-    selfie_bytes: bytes,
+    inputs: GenerationInputs,
     *,
     api_key: str,
     timeout: float,
@@ -208,7 +215,7 @@ def test_first_attempt_passes_returns_orchestration_result() -> None:
     """When the first generation passes rejection, return an OrchestrationResult."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -223,7 +230,7 @@ def test_first_attempt_result_image_bytes_correct() -> None:
     """OrchestrationResult.image_bytes must equal the bytes returned by generate_fn."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -238,7 +245,7 @@ def test_first_attempt_retry_count_is_zero() -> None:
     """When the first attempt passes, retry_count must be 0."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -253,7 +260,7 @@ def test_first_attempt_last_verdict_passed_is_true() -> None:
     """OrchestrationResult.last_verdict.passed must be True."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -273,7 +280,7 @@ def test_one_rejection_then_success_retry_count_one() -> None:
     """First attempt rejected, second passes → retry_count=1."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -289,7 +296,7 @@ def test_two_rejections_then_success_retry_count_two() -> None:
     """Two rejections then success → retry_count=2."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -305,7 +312,7 @@ def test_multiple_rejections_last_verdict_passed_true() -> None:
     """After multiple rejections, OrchestrationResult.last_verdict.passed is True."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -327,7 +334,7 @@ def test_budget_exhausted_raises_error() -> None:
     with pytest.raises(GenerationBudgetExhaustedError):
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=0.01,  # 10 ms — expires quickly
@@ -342,7 +349,7 @@ def test_budget_exhausted_error_retry_count_is_int() -> None:
     with pytest.raises(GenerationBudgetExhaustedError) as exc_info:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=0.01,
@@ -360,7 +367,7 @@ def test_budget_exhausted_error_last_reject_reason_set() -> None:
     with pytest.raises(GenerationBudgetExhaustedError) as exc_info:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=0.01,
@@ -384,7 +391,7 @@ def test_negative_budget_raises_immediately() -> None:
 
     def _counting_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -395,7 +402,7 @@ def test_negative_budget_raises_immediately() -> None:
     with pytest.raises(GenerationBudgetExhaustedError) as exc_info:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=-1.0,  # already expired
@@ -420,7 +427,7 @@ def test_non_retryable_error_propagates_immediately() -> None:
     with pytest.raises(FalGenerationError) as exc_info:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             _generate_fn=_always_permanent_fail_generate,
@@ -437,7 +444,7 @@ def test_non_retryable_error_not_wrapped_in_budget_error() -> None:
     with pytest.raises(FalGenerationError):
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             _generate_fn=_always_permanent_fail_generate,
@@ -448,7 +455,7 @@ def test_non_retryable_error_not_wrapped_in_budget_error() -> None:
     try:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             _generate_fn=_always_permanent_fail_generate,
@@ -478,7 +485,7 @@ def test_non_retryable_error_score_fn_not_called() -> None:
     with pytest.raises(FalGenerationError):
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             _generate_fn=_always_permanent_fail_generate,
@@ -500,7 +507,7 @@ def test_retryable_error_then_success_returns_result() -> None:
 
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -522,7 +529,7 @@ def test_retryable_error_increments_retry_count() -> None:
 
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -539,7 +546,7 @@ def test_retryable_error_budget_exhausted_raises() -> None:
     with pytest.raises(GenerationBudgetExhaustedError):
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=0.01,  # expires quickly
@@ -554,7 +561,7 @@ def test_retryable_error_budget_exhausted_retry_count_positive() -> None:
     with pytest.raises(GenerationBudgetExhaustedError) as exc_info:
         orchestrate_generation(
             _MINIMAL_CONFIG,
-            _FAKE_SELFIE,
+            _INPUTS,
             api_key=_TEST_API_KEY,
             nsfw_classifier=_STUB_NSFW,
             total_budget_seconds=0.01,
@@ -575,7 +582,7 @@ def test_orchestration_result_is_frozen() -> None:
     """OrchestrationResult must be immutable (frozen dataclass)."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -591,7 +598,7 @@ def test_orchestration_result_image_bytes_frozen() -> None:
     """OrchestrationResult.image_bytes must not be reassignable."""
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -650,7 +657,7 @@ def test_api_key_forwarded_to_generate_fn() -> None:
 
     def _capturing_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -660,7 +667,7 @@ def test_api_key_forwarded_to_generate_fn() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_capturing_generate,
@@ -677,7 +684,7 @@ def test_config_forwarded_to_generate_fn() -> None:
 
     def _capturing_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -687,7 +694,7 @@ def test_config_forwarded_to_generate_fn() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_capturing_generate,
@@ -698,30 +705,64 @@ def test_config_forwarded_to_generate_fn() -> None:
 
 
 @pytest.mark.unit
-def test_selfie_bytes_forwarded_to_generate_fn() -> None:
-    """The selfie bytes must be forwarded verbatim to _generate_fn."""
-    received_selfies: list[bytes] = []
+def test_inputs_forwarded_to_generate_fn() -> None:
+    """The GenerationInputs must be forwarded verbatim to _generate_fn."""
+    received_inputs: list[GenerationInputs] = []
 
     def _capturing_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
     ) -> bytes:
-        received_selfies.append(selfie_bytes)
+        received_inputs.append(inputs)
         return _FAKE_RESULT
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_capturing_generate,
         _score_fn=_always_pass_score,
     )
 
-    assert received_selfies == [_FAKE_SELFIE]
+    assert received_inputs == [_INPUTS]
+    assert received_inputs[0] is _INPUTS
+
+
+@pytest.mark.unit
+def test_same_inputs_forwarded_on_every_retry_attempt() -> None:
+    """Every retry attempt must receive the SAME GenerationInputs instance —
+    the garment must not be dropped between attempts."""
+    inputs_with_garment = GenerationInputs(
+        selfie_bytes=_FAKE_SELFIE,
+        garment_bytes=b"FAKE_GARMENT_PNG_BYTES",
+    )
+    received_inputs: list[GenerationInputs] = []
+
+    def _capturing_generate(
+        config: FalGenerationConfig,
+        inputs: GenerationInputs,
+        *,
+        api_key: str,
+        timeout: float,
+    ) -> bytes:
+        received_inputs.append(inputs)
+        return _FAKE_RESULT
+
+    orchestrate_generation(
+        _MINIMAL_CONFIG,
+        inputs_with_garment,
+        api_key=_TEST_API_KEY,
+        nsfw_classifier=_STUB_NSFW,
+        _generate_fn=_capturing_generate,
+        _score_fn=_make_reject_then_pass_score(2),  # type: ignore[arg-type]
+    )
+
+    assert len(received_inputs) == 3
+    assert all(received is inputs_with_garment for received in received_inputs)
 
 
 @pytest.mark.unit
@@ -731,7 +772,7 @@ def test_timeout_passed_to_generate_fn_is_positive() -> None:
 
     def _capturing_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -741,7 +782,7 @@ def test_timeout_passed_to_generate_fn_is_positive() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
@@ -761,7 +802,7 @@ def test_timeout_passed_to_generate_fn_does_not_exceed_budget() -> None:
 
     def _capturing_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -771,7 +812,7 @@ def test_timeout_passed_to_generate_fn_does_not_exceed_budget() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=total_budget,
@@ -799,7 +840,7 @@ def test_nsfw_classifier_forwarded_to_score_fn() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=stub_classifier,
         _generate_fn=_always_succeed_generate,
@@ -825,7 +866,7 @@ def test_generated_bytes_forwarded_to_score_fn() -> None:
 
     orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         _generate_fn=_always_succeed_generate,
@@ -848,7 +889,7 @@ def test_rejection_then_retryable_error_then_success() -> None:
 
     def _mixed_generate(
         config: FalGenerationConfig,
-        selfie_bytes: bytes,
+        inputs: GenerationInputs,
         *,
         api_key: str,
         timeout: float,
@@ -871,7 +912,7 @@ def test_rejection_then_retryable_error_then_success() -> None:
 
     result = orchestrate_generation(
         _MINIMAL_CONFIG,
-        _FAKE_SELFIE,
+        _INPUTS,
         api_key=_TEST_API_KEY,
         nsfw_classifier=_STUB_NSFW,
         total_budget_seconds=30.0,
