@@ -192,10 +192,34 @@ _STYLE = (
     "<style>body{font:13px system-ui;margin:16px}h2{margin:24px 0 8px}"
     "section{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}"
     "figure{margin:0;width:200px}img{width:200px;height:200px;object-fit:cover;"
-    "border:1px solid #ccc;border-radius:6px;background:#f4f4f4}"
+    "border:1px solid #ccc;border-radius:6px;background:#f4f4f4;cursor:zoom-in}"
     "figcaption{font-size:11px;color:#444;margin-top:2px}"
     ".anchor img{border-color:#000}.garment img{border-color:#06c}"
-    ".base figcaption{color:#b00}</style>"
+    ".base figcaption{color:#b00}"
+    "#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;"
+    "flex-direction:column;align-items:center;justify-content:center;gap:8px;"
+    "z-index:9;cursor:zoom-out}"
+    "#lb img{width:auto;height:auto;max-width:96vw;max-height:92vh;"
+    "object-fit:contain;border:0;border-radius:4px;background:none}"
+    "#lbcap{color:#fff;font-size:14px}</style>"
+)
+
+# Click any image → full-size overlay (Esc or click to close). The caption
+# (blind ID / label) is shown under the enlarged image for scoring.
+_LIGHTBOX = (
+    '<div id=lb><img alt=""><div id=lbcap></div></div>'
+    "<script>"
+    "document.addEventListener('click',function(e){"
+    "var lb=document.getElementById('lb');"
+    "if(e.target.closest('#lb')){lb.style.display='none';return}"
+    "var f=e.target.closest('figure');if(!f)return;"
+    "lb.querySelector('img').src=f.querySelector('img').src;"
+    "var c=f.querySelector('figcaption');"
+    "document.getElementById('lbcap').textContent=c?c.textContent:'';"
+    "lb.style.display='flex'});"
+    "document.addEventListener('keydown',function(e){"
+    "if(e.key==='Escape')document.getElementById('lb').style.display='none'});"
+    "</script>"
 )
 
 
@@ -302,6 +326,7 @@ def _write_blind(rows: list[dict], out: Path) -> None:
         for bid, _r in sorted(group):  # blind-ID (hash) order = deterministic shuffle
             parts.append(_img(f"imgs/{bid}.png", bid))
         parts.append("</section>")
+    parts.append(_LIGHTBOX)
     (blind_dir / "blind_sheet.html").write_text("".join(parts))
 
     n_retest = sum(1 for _, _, retest in entries if retest)
@@ -412,6 +437,7 @@ def _write_labeled(rows: list[dict], path: Path) -> None:
                 f'{_img(_rel(c["out_path"], html_dir), label)}</div>'
             )
         parts.append("</section>")
+    parts.append(_LIGHTBOX)
     path.write_text("".join(parts))
 
 
