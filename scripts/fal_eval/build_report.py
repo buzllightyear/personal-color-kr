@@ -41,6 +41,11 @@ Human rubric (1–5, in blind_scores.csv):
   garment_fidelity — (garment cells only, else blank) does MY garment render
                      faithfully — category, color, pattern, fit preserved?
                      (bounded axis, STRATEGY §9-D/§10 — NOT pixel SKU matching)
+                     GARMENT-SOLO rule (operator decision 2026-07-02): if a
+                     PERSON appears in a garment_solo output (the prompt says
+                     "no person"), cap garment_fidelity at 2 and write "인물"
+                     in notes — the model failed to ISOLATE the garment from a
+                     worn input, which is the ability stage-0 exists to test.
 
 `ai_tell` here is the quick eyeball; the GOLD-STANDARD naturalness test is the
 separate BLIND protocol (blind_ai_test.py). Score the `texture` probe variant too.
