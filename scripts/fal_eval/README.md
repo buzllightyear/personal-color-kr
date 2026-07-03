@@ -32,9 +32,11 @@ Naturalness is **prompt-sensitive**, so one prompt per model would measure
 
 ## What it measures
 - **정체성 보존** → ArcFace cosine(input ↔ output) — *quantified* (`score_identity.py`).
-- **AI 티 없음 / 레시피 충실도 / 미적 / 한국인 적합 / 아티팩트** → human rubric
-  (1–5) in `results.csv`, eyeballed via `contact_sheet.html`; naturalness gets a
-  separate **blind** gold-standard test (`blind_ai_test.py`).
+- **AI 티 없음 / 레시피 충실도 / 미적 / 한국인 적합 / 아티팩트 / 의상 충실도** →
+  human rubric (1–5), scored **blind** via `out/blind/blind_sheet.html` +
+  `blind_scores.csv` (model/knob/cost hidden; `--unblind` maps scores back and
+  reports test-retest self-agreement); naturalness additionally gets the
+  separate spot-the-AI gold standard (`blind_ai_test.py`).
 - **속도 / 비용** → latency + est. cost per cell, in `runs.json`.
 
 ## Two-stage funnel (bounds cost; resumable)
@@ -67,6 +69,18 @@ export FAL_KEY="<key_id>:<key_secret>"     # ⚠️ fal-client reads FAL_KEY (NO
    color/pattern/fit preserved — not pixel-level SKU matching) and summarize
    gates on `GARMENT_FLOOR` **fail-closed** (unscored garment cells or no
    garment cells = fail).
+   - **Enrichment sidecars (§10-B axis)** — per garment photo, next to it:
+     `<stem>.profile.json` (the 7-field §10-B profile: category/color/pattern/
+     material/fit/length/details) and, for stage 2, `<stem>.txt` (free-text
+     description). Garment cells run once per active enrichment key
+     ({none, profile} at stage 1; + freeform at stage 2), injecting the sidecar
+     into the prompt — this measures whether the production garment-
+     understanding stage actually buys quality (the receipt for the
+     "quality > hook immediacy" ruling). A missing sidecar fails the run
+     LOUDLY at estimate time (a silently-skipped arm would bias the comparison).
+   - **Garment-solo stage-0 (`garment_solo` recipe)** — garment × model cells
+     with NO selfie (the garment is the single reference): can the model render
+     my garment alone, faithfully? Single-reference models participate too.
 4. In `config.py`, fill each recipe's **`realistic`** variant from the real
    resolved `prompt_template`, set `reference` to the recipe's `thumbnail_url`
    (fidelity target), and adjust the `neutral`/`stylized` variants if needed. The
@@ -74,21 +88,42 @@ export FAL_KEY="<key_id>:<key_secret>"     # ⚠️ fal-client reads FAL_KEY (NO
    **verified** (2026-06-25): the four editors take `prompt` + `image_urls[]`;
    the baseline `fluxdev_i2i` uses `image_url` + `strength`.
 
-## Run order
+## Run order — scoring is BLIND by default (verifier-less zone ②)
+
+The scorer (you) also knows each model's cost/origin/reputation, so a labeled
+sheet contaminates the scores. `build_report.py` therefore produces a **blind**
+sheet: outputs are copied to hash IDs (the file path can't leak the model),
+labels show only the blind ID, order is hash-shuffled — inputs/reference stay
+visible (you can't judge fidelity without them). ~`RETEST_PERCENT`% of cells
+appear **twice** under different IDs (same image, $0): score them independently
+— `--unblind` reports your own test-retest consistency per column.
+
 ```bash
+# --- Stage 0 (optional cheap probe): garment-solo only ---
+python run_matrix.py --recipes=garment_solo        # estimate (~$1.5 for 3 garments)
+python run_matrix.py --recipes=garment_solo --yes  # → score via the blind flow below;
+                                                   # drops models that can't even
+                                                   # render the garment alone
+
 # --- Stage 1 (FINALISTS empty in config.py) ---
 python run_matrix.py        # ESTIMATE ONLY: prints new-cell count + max cost, no spend
 python run_matrix.py --yes  # operator-approved paid run (INVARIANTS #8)
-                            # → out/<model>/<recipe>/<variant>/<knob>/<selfie>[_<garment>]_<seed>.png + runs.json
+                            # → out/<model>/<recipe>/<variant>/<knob>/<selfie>[_<garment>][_enr-*]_<seed>.png + runs.json
 python score_identity.py    # add ArcFace cosine(input↔output) to each row → runs.json
-python build_report.py      # → results.csv (human cols blank) + contact_sheet.html
-# open contact_sheet.html, score 1–5 per dimension (incl. the texture probe), then:
-python summarize.py         # → per-(model,knob) table; pick finalists by naturalness floor + identity
+python build_report.py      # → results.csv + out/blind/{blind_sheet.html, blind_scores.csv}
+# open blind_sheet.html, score 1–5 per blind ID in blind_scores.csv
+# (do NOT open blind_map.csv; don't hand-edit results.csv human columns), then:
+python build_report.py --unblind   # scores → results.csv + retest self-agreement
+                                   # + labeled contact_sheet.html (safe now)
+python summarize.py         # → per-(model,knob) table + §10-B enrichment-axis /
+                            #   garment-solo views; pick finalists
 
 # --- Stage 2 (set FINALISTS=(...) in config.py) ---
-python run_matrix.py        # deep sweep, finalists only (reuses stage-1 cells)
+python run_matrix.py --yes  # deep sweep, finalists only (reuses stage-1 cells;
+                            # blind IDs are stable — your stage-1 scores survive)
 python score_identity.py && python build_report.py
-python summarize.py         # naturalness-floor decision among finalists
+# score the NEW blank blind rows, then:
+python build_report.py --unblind && python summarize.py
 
 # --- Naturalness gold standard (run on the finalists' outputs) ---
 python blind_ai_test.py build   # → blind_deck.html + blind_responses.csv (+ hidden blind_key.csv)
@@ -96,11 +131,16 @@ python blind_ai_test.py build   # → blind_deck.html + blind_responses.csv (+ h
 python blind_ai_test.py score   # → per-model fooled-rate + real-photo sanity baseline
 ```
 
+`build_report.py --labeled` renders the labeled sheet early for debugging —
+anything scored while looking at it is not blind (it warns).
+
 ## Cost
-Per cell ≈ $0.02–0.08. **Stage 1**: 5 models × 4 selfies × (texture + 3×realistic)
-× 1 knob = ~80 cells ≈ **$3**. **Stage 2**: 2 finalists × ~7 selfies × 4 variants ×
-2 knobs (+ texture) ≈ ~120–170 cells ≈ **$5–8**. `run_matrix.py` is resumable
-(skips existing) so reruns don't re-pay.
+Per cell ≈ $0.02–0.08. **Stage 1** (2 selfies × 2 garments): person recipes
+~40 + garment recipes × {none, profile} ~64 + garment-solo ~20 ≈ **~124 cells
+≈ $5**. **Stage 2**: finalists only, all variants/knobs/selfies + freeform
+enrichment. `run_matrix.py` prints the exact count × price before any spend,
+and is resumable (skips existing) so reruns don't re-pay. Retest duplicates
+cost **$0** (same image, scored twice).
 
 ## Bar calibration (the point)
 A bar like "ArcFace ≥ 0.6" or "ai_tell ≥ 3.5 floor" is dead until anchored to

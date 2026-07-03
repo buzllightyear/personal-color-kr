@@ -1,9 +1,13 @@
 # NEVER commit test selfies, generated outputs, scoring artifacts, env, or keys.
 # selfies/ + real_holdout/ contain consented faces (privacy); out/ is paid output.
+# garments/ holds third-party product photos (+ their sidecars) — local only.
 selfies/
 real_holdout/
+garments/
 out/
 .venv/
 __pycache__/
 *.pyc
 .env
+# third-party mood/trend reference images — local only.
+trend_refs/

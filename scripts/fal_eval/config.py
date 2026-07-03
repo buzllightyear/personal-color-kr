@@ -31,8 +31,10 @@ each model's own size knob (`extra`) so cost (per-MP) and framing are comparable
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 # ~1MP, 3:4 portrait (matches a phone selfie; keeps per-MP cost ~1×).
 PORTRAIT = {"width": 896, "height": 1152}
@@ -102,6 +104,18 @@ MODELS: list[Model] = [
         _ref_urls,
         extra={"resolution": "1K", "aspect_ratio": "3:4", "num_images": 1},
     ),
+    # Efficiency variant of Nano Banana 2 (operator request 2026-07-02) — sub-2s
+    # latency, ~half the 2/edit price. Endpoint + `prompt`/`image_urls[]` schema
+    # verified on the fal model page 2026-07-02; output is fixed 1K, so
+    # aspect_ratio is the only size knob (price: VERIFY on the model page).
+    Model(
+        "nanobanana2lite",
+        "google/nano-banana-2-lite/edit",
+        "Google(lite)",
+        0.039,
+        _ref_urls,
+        extra={"aspect_ratio": "3:4"},
+    ),
     Model(
         "flux2dev",
         "fal-ai/flux-2/edit",
@@ -154,6 +168,11 @@ class Recipe:
     # pass it as the second image_urls[] element; models with
     # supports_garment=False are skipped for these cells.
     needs_garment: bool = False
+    # Stage-0 probe (STRATEGY §10-B pre-stage): garment-ONLY cells — no selfie,
+    # the garment photo is the single reference image. "Before dressing a person,
+    # the garment alone must render faithfully." Single-reference models can run
+    # these too (the garment takes the sole image slot).
+    garment_only: bool = False
 
 
 # `texture` probe: ask for ~no change, to expose each model's intrinsic skin/texture.
@@ -241,7 +260,8 @@ RECIPES: list[Recipe] = [
     # models (blocked factor), like the three variants above.
     Recipe(
         "garment_scene",
-        None,  # fidelity target = the garment input itself, shown on the sheet
+        # Operator-curated trend mood ref (2026-07-03): off-guard walking candid.
+        "trend_refs/deec217fa5cd19f405d211584cc1fafd.jpg",
         (
             PromptVariant(
                 "neutral",
@@ -250,12 +270,14 @@ RECIPES: list[Recipe] = [
                 "photo, identity unchanged, garment color and pattern preserved, "
                 "realistic fit and drape",
             ),
+            # Operator-approved 2026-07-03 (distilled from trend_refs).
             PromptVariant(
                 "realistic",
                 "the person from the first image wearing the garment from the "
-                "second image, walking on a quiet Seoul street in the late "
-                "afternoon, natural light, candid street-style photo, identity "
-                "unchanged, garment faithfully rendered",
+                "second image, off-guard candid snap taken by a friend on a "
+                "phone while walking mid-stride on a city street, natural "
+                "light, un-staged amateur snapshot realism, slightly imperfect "
+                "framing, identity unchanged, garment faithfully rendered",
             ),
             PromptVariant(
                 "stylized",
@@ -269,7 +291,10 @@ RECIPES: list[Recipe] = [
     ),
     Recipe(
         "garment_format",
-        None,
+        # Operator-curated trend mood ref (2026-07-03): 0.5x ultra-wide selfie.
+        # (UI/text/sticker overlays in the refs are format_template compositing
+        # territory — generation carries only composition/light/snapshot grain.)
+        "trend_refs/557fac2d1c432dda5829ee84ccfa0354.jpg",
         (
             PromptVariant(
                 "neutral",
@@ -278,12 +303,14 @@ RECIPES: list[Recipe] = [
                 "orange film datestamp in the corner, identity unchanged, garment "
                 "faithfully rendered",
             ),
+            # Operator-approved 2026-07-03 (distilled from trend_refs).
             PromptVariant(
                 "realistic",
                 "the person from the first image wearing the garment from the "
-                "second image, instagram-ready outfit post, analog film look with "
-                "date stamp, natural pose, identity unchanged, garment color and "
-                "fit preserved",
+                "second image, 0.5x ultra-wide front-camera selfie from a "
+                "playful low angle, mild wide-angle distortion, indoor natural "
+                "light, casual off-guard expression, phone snapshot look, "
+                "identity unchanged, garment color and fit preserved",
             ),
             PromptVariant(
                 "stylized",
@@ -295,7 +322,112 @@ RECIPES: list[Recipe] = [
         ),
         needs_garment=True,
     ),
+    # Stage-0 probe (§10-B): can the model render MY garment alone, faithfully,
+    # as a clean normalized shot? If not, dressing a person with it is moot.
+    # Single variant (bounds cost); runs at both stages ("realistic" is in the
+    # screen variant set).
+    Recipe(
+        "garment_solo",
+        None,
+        (
+            PromptVariant(
+                "realistic",
+                "clean catalog product photo of the garment from the image, "
+                "laid flat on a plain light-grey background, soft even studio "
+                "light, no person, accurate color, pattern, material and shape, "
+                "photorealistic",
+            ),
+        ),
+        needs_garment=True,
+        garment_only=True,
+    ),
 ]
+
+# ---------------------------------------------------------------------------
+# Enrichment axis (STRATEGY §10-B eval implication)
+# ---------------------------------------------------------------------------
+# The production harness will run a garment-understanding stage before
+# generation and inject its output (the "garment profile") into the prompt.
+# This axis measures whether that injection actually buys quality — the receipt
+# for the operator's "quality > hook immediacy" ruling — and WHICH injection
+# form buys the most. Applies to garment cells only:
+#
+#   none      — the prompt as-is (today's baseline)
+#   freeform  — append a free-text garment description
+#               (sidecar: garments/<stem>.txt, operator/VLM-authored)
+#   profile   — append a structured garment profile rendered from the §10-B
+#               7-field contract (sidecar: garments/<stem>.profile.json)
+#
+# Sidecars are REQUIRED for active enrichment keys — enumeration fails loud if
+# one is missing (a silently-skipped condition would bias the comparison).
+# Stage 1 screens the extremes (none vs profile: does understanding help at
+# all?); stage 2 adds freeform (which form?).
+
+ENRICHMENT_KEYS: tuple[str, ...] = ("none", "freeform", "profile")
+SCREEN_ENRICHMENT_KEYS: tuple[str, ...] = ("none", "profile")
+
+# The §10-B garment-profile contract: 7 fields (카테고리·색·패턴·소재감·핏·기장·디테일).
+GARMENT_PROFILE_FIELDS: tuple[str, ...] = (
+    "category",
+    "color",
+    "pattern",
+    "material",
+    "fit",
+    "length",
+    "details",
+)
+
+
+def garment_info_text(garment: Path, enrichment: str) -> str | None:
+    """Sidecar text to inject for (garment, enrichment); None for 'none'.
+
+    Fails loud (SystemExit) on a missing/empty/invalid sidecar so a forgotten
+    file can never silently degrade one arm of the comparison.
+    """
+    if enrichment == "none":
+        return None
+    if enrichment == "freeform":
+        sidecar = garment.with_name(garment.stem + ".txt")
+        if not sidecar.exists():
+            raise SystemExit(
+                f"enrichment '{enrichment}' is active but {sidecar} is missing — "
+                f"write a free-text description of {garment.name} there"
+            )
+        text = sidecar.read_text().strip()
+        if not text:
+            raise SystemExit(f"{sidecar} is empty — write the garment description")
+        return text
+    if enrichment == "profile":
+        sidecar = garment.with_name(garment.stem + ".profile.json")
+        if not sidecar.exists():
+            raise SystemExit(
+                f"enrichment '{enrichment}' is active but {sidecar} is missing — "
+                f"fill the §10-B profile: "
+                f'{{{", ".join(f_ + ": …" for f_ in GARMENT_PROFILE_FIELDS)}}}'
+            )
+        profile = json.loads(sidecar.read_text())
+        missing = [
+            f_ for f_ in GARMENT_PROFILE_FIELDS if not str(profile.get(f_, "")).strip()
+        ]
+        extra = [k for k in profile if k not in GARMENT_PROFILE_FIELDS]
+        if missing or extra:
+            raise SystemExit(
+                f"{sidecar} must have exactly the 7 §10-B fields — "
+                f"missing/empty: {missing or '—'}, unknown: {extra or '—'}"
+            )
+        return "; ".join(
+            f"{f_}: {str(profile[f_]).strip()}" for f_ in GARMENT_PROFILE_FIELDS
+        )
+    raise SystemExit(f"unknown enrichment key: {enrichment!r}")
+
+
+def enriched_prompt(variant_text: str, enrichment: str, garment: Path | None) -> str:
+    """The prompt actually sent for a cell — variant text + optional injection."""
+    info = garment_info_text(garment, enrichment) if garment is not None else None
+    if info is None:
+        return variant_text
+    return f"{variant_text}. The garment is: {info}"
+
 
 # ---------------------------------------------------------------------------
 # Two-stage funnel (resumable: widening config re-runs only the new cells)
@@ -305,7 +437,11 @@ RECIPES: list[Recipe] = [
 #   pass to drop models that are clearly AI-y or fail the identity floor.
 # Stage 2 (deep):   FINALISTS set   → finalists only, ALL selfies, ALL variants,
 #   full per-model knob sweep. The naturalness FLOOR + stability decision.
-FINALISTS: tuple[str, ...] = ()  # e.g. ("seedream45", "flux2dev") after stage 1
+# Operator decisions: 2026-07-03 1차 — lite+seedream45 (stage-0 근거). 2차 —
+# 착장 프로브에서 seedream45 완전 탈락(착장 픽 10% + 얼굴 보존 불능 판정) →
+# dressing model = lite 단독. lite: 착장픽 14/17, 시도당 58%, 약점 = 얼굴
+# 드리프트 + 핏 각색 (→ PROMPT_RX 고삐 프로브가 수리 가능성 검사).
+FINALISTS: tuple[str, ...] = ("nanobanana2lite",)
 SCREEN_SELFIE_LIMIT = 4
 SCREEN_VARIANT_KEYS: tuple[str, ...] = ("texture", "realistic")
 
@@ -314,11 +450,44 @@ def is_stage2() -> bool:
     return bool(FINALISTS)
 
 
+# ---- Probe overrides: operator-scoped small rounds (e.g. the 착장 프로브)
+# that need a narrower matrix than the stage defaults. Empty/None = follow the
+# stage. Combine with `run_matrix.py --recipes=...` to scope recipes.
+PROBE_VARIANT_KEYS: tuple[str, ...] = ("realistic",)  # 착장 프로브 2026-07-03
+PROBE_SELFIE_LIMIT: int | None = 2  # 여1·남1 (halved scope, operator 2026-07-03)
+# Enrichment axis OFF — disconfirmed across two rounds (STRATEGY §10-B note).
+PROBE_ENRICHMENT_KEYS: tuple[str, ...] = ("none",)
+
+# ---- Prompt-Rx axis (고삐 프로브, operator-approved 2026-07-03): can prompt
+# phrases repair lite's two defects — face drift (42% of attempts) and fit
+# adaptation (원핏 고정 = operator MVP default)? Applies to garment cells only;
+# "" = baseline (same prompt as the previous round → cells are reused, $0).
+# If a phrase works it becomes the production prompt_template's base scaffold.
+_RX_FACE = (
+    ", the face is an exact, unmodified likeness of the person in the first "
+    "image — identical facial features, face shape and skin tone, no "
+    "beautification, no face repainting"
+)
+_RX_FIT = (
+    ", preserve the garment's original fit and silhouette exactly as shown in "
+    "the second image — do not slim, crop, or tailor it to the wearer's body"
+)
+PROMPT_RX: dict[str, str] = {
+    "": "",
+    "face": _RX_FACE,
+    "fit": _RX_FIT,
+    "face_fit": _RX_FACE + _RX_FIT,
+}
+ACTIVE_RX_KEYS: tuple[str, ...] = ("", "face", "fit", "face_fit")
+
+
 def active_models() -> list[Model]:
     return [m for m in MODELS if not FINALISTS or m.key in FINALISTS]
 
 
 def active_variant_keys() -> tuple[str, ...]:
+    if PROBE_VARIANT_KEYS:
+        return PROBE_VARIANT_KEYS
     return ALL_VARIANT_KEYS if is_stage2() else SCREEN_VARIANT_KEYS
 
 
@@ -326,7 +495,15 @@ def active_knobs(model: Model) -> tuple[dict, ...]:
     return model.knobs if is_stage2() else model.knobs[:1]
 
 
+def active_enrichment_keys() -> tuple[str, ...]:
+    if PROBE_ENRICHMENT_KEYS:
+        return PROBE_ENRICHMENT_KEYS
+    return ENRICHMENT_KEYS if is_stage2() else SCREEN_ENRICHMENT_KEYS
+
+
 def active_selfies(selfies: list) -> list:
+    if PROBE_SELFIE_LIMIT is not None:
+        return selfies[:PROBE_SELFIE_LIMIT]
     return selfies if is_stage2() else selfies[:SCREEN_SELFIE_LIMIT]
 
 
@@ -348,7 +525,13 @@ OUT_DIR = "out"
 SEEDS_PER_CELL = 1  # >1 also measures consistency (varies seed; multiplies cost)
 # Garment cells pair each selfie with the first N garments (NOT the full
 # cross-product) to bound cost. Raise deliberately for stage 2 if needed.
-GARMENT_PAIR_LIMIT = 2
+GARMENT_PAIR_LIMIT = 3
+# Test-retest (verifier-less zone ②, rater reliability): ~this % of scoreable
+# cells appear TWICE in the blind sheet under different blind IDs (same image,
+# zero extra API cost). Selection is a stable hash property of the cell key, so
+# rebuilding/widening never reshuffles which cells are duplicated. The unblind
+# step reports per-column self-agreement (mean |Δ|).
+RETEST_PERCENT = 10
 
 
 def active_garments(garments: list) -> list:

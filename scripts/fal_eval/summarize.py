@@ -27,6 +27,14 @@ Naturalness-first ranking (the whole point of the variant matrix):
   naturalness (the model only looks real with the right prompt) — a risk flag even
   if the floor passes.
 
+Two §10-B analysis views print after the main table (views only — the
+deployable-unit aggregation stays (model, knob)):
+  - ENRICHMENT AXIS: garment cells grouped by {none, freeform, profile} — does
+    injecting garment understanding into the prompt buy quality (the receipt
+    for the "quality > hook immediacy" ruling), and which form buys the most?
+  - GARMENT-SOLO stage-0: per-model garment_fidelity on the no-selfie probe —
+    a model that can't render the garment alone won't dress a person with it.
+
 Usage:
     python summarize.py
 """
@@ -73,9 +81,7 @@ def _mean(xs: list[float]) -> float | None:
 
 def main() -> None:
     out = Path(OUT_DIR)
-    runs = {
-        cell_key(r): r for r in json.loads((out / "runs.json").read_text())
-    }
+    runs = {cell_key(r): r for r in json.loads((out / "runs.json").read_text())}
     res_path = out / "results.csv"
     if not res_path.exists():
         raise SystemExit(
@@ -210,6 +216,63 @@ def main() -> None:
             f"{s(r['korean_fit']):>4} {s(r['artifact']):>4} {r['cost']:>6}"
         )
     print(f"\n→ {out / 'summary.csv'}")
+
+    def fmt(x: object) -> str:
+        return str(x) if x is not None else "—"
+
+    # ---- §10-B enrichment axis (analysis view; garment cells only).
+    garment_scored = [r for r in scored if (r.get("garment") or "").strip()]
+    enr_keys = ("none", "freeform", "profile")
+    if garment_scored:
+        print("\nENRICHMENT AXIS (garment cells) — does injection buy quality?")
+        print(
+            f"{'enrichment':10} {'n':>4} {'garm_fid':>8} {'ai_tell':>7} "
+            f"{'fidelity':>8} {'lat_s':>6}"
+        )
+        for enr in enr_keys:
+            rows_e = [
+                r for r in garment_scored if (r.get("enrichment") or "none") == enr
+            ]
+            if not rows_e:
+                continue
+            print(
+                f"{enr:10} {len(rows_e):>4} "
+                f"{fmt(_mean(_fnums(rows_e, 'garment_fidelity'))):>8} "
+                f"{fmt(_mean(_fnums(rows_e, 'ai_tell'))):>7} "
+                f"{fmt(_mean(_fnums(rows_e, 'fidelity'))):>8} "
+                f"{fmt(_mean(_fnums(rows_e, 'latency_s'))):>6}"
+            )
+        # Per-model pivot: which injection form helps WHICH model (garm_fid).
+        by_model: dict[str, list[dict]] = {}
+        for r in garment_scored:
+            by_model.setdefault(r["model"], []).append(r)
+        print(f"{'garm_fid by model':18} " + " ".join(f"{e:>9}" for e in enr_keys))
+        for model in sorted(by_model):
+            vals = []
+            for enr in enr_keys:
+                rows_me = [
+                    r for r in by_model[model] if (r.get("enrichment") or "none") == enr
+                ]
+                vals.append(fmt(_mean(_fnums(rows_me, "garment_fidelity"))))
+            print(f"{model:18} " + " ".join(f"{v:>9}" for v in vals))
+
+    # ---- §10-B garment-solo stage-0 (no-selfie probe; view only).
+    solo = [r for r in garment_scored if not (r.get("selfie") or "").strip()]
+    if solo:
+        print("\nGARMENT-SOLO stage-0 — garment alone, per model")
+        print(f"{'model':12} {'n':>4} {'garm_fid':>8} {'artifact':>8} {'ai_tell':>7}")
+        solo_by_model: dict[str, list[dict]] = {}
+        for r in solo:
+            solo_by_model.setdefault(r["model"], []).append(r)
+        for model in sorted(solo_by_model):
+            rows_m = solo_by_model[model]
+            print(
+                f"{model:12} {len(rows_m):>4} "
+                f"{fmt(_mean(_fnums(rows_m, 'garment_fidelity'))):>8} "
+                f"{fmt(_mean(_fnums(rows_m, 'artifact'))):>8} "
+                f"{fmt(_mean(_fnums(rows_m, 'ai_tell'))):>7}"
+            )
+
     winners = [r for r in summary if r["floors_pass"]]
     if winners:
         w = winners[0]
