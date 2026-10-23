@@ -55,9 +55,7 @@ DETAIL_IMAGE_NOT_FOUND: Final[str] = "image_not_found"
 router: APIRouter = APIRouter(tags=["gallery"])
 
 
-def select_active_generations(
-    user_id: uuid.UUID, now: datetime
-) -> Select[tuple[Generation]]:
+def select_active_generations(user_id: uuid.UUID, now: datetime) -> Select[Generation]:
     """Build the SELECT for a user's non-expired generations (newest first)."""
     return (
         select(Generation)
@@ -69,7 +67,7 @@ def select_active_generations(
 
 def select_active_generation(
     generation_id: uuid.UUID, user_id: uuid.UUID, now: datetime
-) -> Select[tuple[Generation]]:
+) -> Select[Generation]:
     """Build the SELECT for one non-expired generation owned by the user."""
     return (
         select(Generation)

@@ -143,5 +143,9 @@ This repo's cross-file obligations, gathered as one index — change the left an
 - 사용 규약: child-context.md "B. 모선 맥락 당겨오기" 준수 — graph 경유(raw 노트 read 금지)·status 존중·on-demand·당겨온 모선 콘텐츠는 자식 산출물에 emit 금지
 
 ## 환류
-- 기준: `.claude/mothership.json`의 `reflux.criteria` 참조
-- 방식: 작업 중 수동 ("모선에 저장해") + 세션 마무리 시 후보 제안
+자식은 모선에 아무것도 쓰지 않는다. 이 repo엔 `findings.md`가 없다 — 실측·사고는
+`docs/sessions/YYYY-MM-DD-*.md`, 규약이 된 교훈은 `docs/decisions/NNNN-*.md`(ADR) 또는
+이 `CLAUDE.md` 조항, 근거는 커밋 메시지에 남긴다. 모선이 국면 단위로 읽어간다.
+
+사용자가 "모선에 저장해"라고 하면: 저장하지 않는다. 해당 내용을 위 기록에 남긴 뒤
+"모선 세션에서 환류하자"고 안내한다.

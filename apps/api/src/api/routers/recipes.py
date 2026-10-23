@@ -57,7 +57,7 @@ _LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
 router: APIRouter = APIRouter(tags=["recipes"])
 
 
-def build_catalog_statement(now: datetime) -> Select[tuple[Recipe]]:
+def build_catalog_statement(now: datetime) -> Select[Recipe]:
     """Build the public-catalog SELECT for a given "now".
 
     Published recipes only, minus expired trends (pivot M1):
